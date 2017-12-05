@@ -4,13 +4,11 @@ For sharing my adventofcode.com solutions
 These are designed to be run in "script mode," without precompiling:
 
 ```
-cd <year>
-scala <day>.scala
+scala <year>/<day>.scala
 ```
 
 e.g.
 
 ```
-cd 2017
-scala 5.scala
+scala 2017/5.scala
 ```
