@@ -4,12 +4,12 @@ def redistribute(input: Vector[Int]): Vector[Int] = {
   val max = input.max
   val index = input.indexWhere(_ == max)
   val zeroed = input.updated(index, 0)
-  (max to 1 by -1).foldLeft(zeroed){case (xs, offset) =>
+  (1 to max).foldLeft(zeroed){case (xs, offset) =>
     val rotI = (index + offset) % input.size
     xs.updated(rotI, xs(rotI) + 1)
   }
 }
- 
+
 val redistributions = Stream.iterate(input)(redistribute)
 val cumulative = redistributions.scanLeft(Set.empty[Vector[Int]])(_ + _)
 val zipped = redistributions zip cumulative
