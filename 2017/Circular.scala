@@ -18,6 +18,14 @@ final class Circular[A] (v: Vector[A]) {
     new Circular(newBefore ++ replacedBefore ++ newAfter ++ replacedAfter)
   }
 
+  def apply(i: Int): A = v(wrapI(i))
+
+  def grouped(groupSize: Int): Iterator[Circular[A]] = {
+    v grouped(groupSize) map {new Circular(_)}
+  }
+
+  def reduceLeft[B >: A](op: (B, A) => B): B = v.reduceLeft(op)
+
   override def toString: String = v.mkString("Circular(", ", ", ")")
 
   private def wrapI(i: Int): Int = i % v.size
