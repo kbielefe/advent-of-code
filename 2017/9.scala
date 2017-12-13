@@ -1,13 +1,9 @@
 import scala.io.Source
 import Math.max
 
-val input = Source.fromFile("input9.txt").toStream
+val input = Source.fromFile("input9.txt").mkString
 
-val cancel = input.scanLeft(0){case (cancel, char) =>
-  if (cancel < 2 && char == '!') 2 else max(0, cancel - 1)
-}.drop(1).map(_ > 0)
-
-val nonCanceled = (cancel zip input) filterNot {_._1} map {_._2}
+val nonCanceled = input.replaceAll("!.", "")
 
 val isGarbage = nonCanceled.scanLeft(false){case (garbage, char) =>
   if (char == '>') false else char == '<' || garbage
