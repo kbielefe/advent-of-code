@@ -23,11 +23,7 @@ println(answer1)
 
 def subTowerWeights(tower: String): Array[Int] = {
   val subs = subTowers(tower)
-  if (subs.isEmpty) {
-    Array.empty[Int]
-  } else {
-    subs.map{subTower => subTowerWeights(subTower).sum + weights(subTower)}
-  }
+  subs.map{subTower => subTowerWeights(subTower).sum + weights(subTower)}
 }
 
 def weightFreqs(tower: String): Map[Int, Int] =
