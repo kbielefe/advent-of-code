@@ -13,7 +13,7 @@ final class Circular[A] (v: Vector[A]) {
   def patch(from: Int, that: GenSeq[A], replaced: Int): Circular[A] = {
     val (before, after) = v splitAt wrapI(from)
     val replacedAfter = after drop wrapI(replaced)
-    val replacedBefore = before drop max(0, wrapI(replaced) - after.size) 
+    val replacedBefore = before drop max(0, wrapI(replaced) - after.size)
     val (newAfter, newBefore) = that.toVector splitAt after.size
     new Circular(newBefore ++ replacedBefore ++ newAfter ++ replacedAfter)
   }
