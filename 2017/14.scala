@@ -1,4 +1,4 @@
-import Math.{min, max}
+import scala.annotation.tailrec
 
 val input = "jxqlasbh"
 val testInput = "flqrgnkx"
@@ -32,31 +32,29 @@ val squares = (0 to 127)
 val answer1 = squares.size
 println(answer1)
 
-def region(head: (Int, Int), result: Set[(Int, Int)] = Set.empty[(Int, Int)]): Set[(Int, Int)] = {
-  val (row, col) = head
-  val neighbors = (Set(
-    (row + 1, col),
-    (row - 1, col),
-    (row, col + 1),
-    (row, col - 1),
-    (row, col)
-  ) & squares) -- result
-  if (neighbors.isEmpty)
+@tailrec
+def region(toVisit: Set[(Int, Int)], result: Set[(Int, Int)] = Set.empty[(Int, Int)]): Set[(Int, Int)] = {
+  if (toVisit.isEmpty) {
     result
-  else {
-    val newResult = result ++ neighbors
-    neighbors.flatMap(neighbor => region(neighbor, newResult))
+  } else {
+    val head@(row, col) = toVisit.head
+    val neighbors = Set(
+      (row + 1, col),
+      (row - 1, col),
+      (row, col + 1),
+      (row, col - 1)
+    ) & squares -- result
+    region(toVisit ++ neighbors - head, result + head)
   }
 }
 
-@scala.annotation.tailrec
+@tailrec
 def regionCount(squares: Set[(Int, Int)], count: Int = 0): Int = {
   if (squares.isEmpty) {
     count
   } else {
     val head = squares.head
-    val currentRegion = region(head)
-    println(currentRegion)
+    val currentRegion = region(Set(head))
     val tail = squares -- currentRegion
     regionCount(tail, count + 1)
   }
