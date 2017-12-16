@@ -31,8 +31,8 @@ println(answer1)
 
 def iterations = Iterator.iterate(initial)(danceMoves)
 
-def lengthUntilLoop = iterations.drop(1).takeWhile(_ != initial).size + 1
+def loopLength = iterations.drop(1).takeWhile(_ != initial).size + 1
 
-val answer2 = iterations.drop(1000000000 % lengthUntilLoop).next
+val answer2 = iterations.drop(1000000000 % loopLength).next
 
 println(answer2)
