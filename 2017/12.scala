@@ -3,6 +3,9 @@ import scala.io.Source
 val lines = Source.fromFile("input12.txt").getLines
 val input = lines.map(_ split " <-> ").map{x => (x(0).toInt, x(1).split(", ").map(_.trim.toInt).toSet)}.toMap
 
+def zipFunc[A,B](left: Stream[A], right: Stream[B])(f: Stream[B] => Stream[B]): Stream[A] = {
+}
+
 def group(root: Int): Set[Int] = {
   val closure = Stream.iterate(Set(root)){_ flatMap {x => input(x) + x}}
   val sizes = closure map {_.size}
