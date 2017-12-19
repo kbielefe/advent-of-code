@@ -55,7 +55,6 @@ def infinitePath = Iterator.iterate(initial){case (currentSquare, dir) =>
   val left    = input.getOrElse(leftSquare,    ' ')
   val right   = input.getOrElse(rightSquare,   ' ')
   val forward = input.getOrElse(forwardSquare, ' ')
-  val current = input(currentSquare)
 
   if (forward != ' ') {
     (forwardSquare, dir)
