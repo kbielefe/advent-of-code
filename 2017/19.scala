@@ -52,20 +52,16 @@ def infinitePath = Iterator.iterate(initial){case (currentSquare, dir) =>
   val forwardSquare = square(forwardOffsets)
   val    leftSquare = square(leftOffsets)
   val   rightSquare = square(rightOffsets)
-  val   forwardChar = if (dir == 'n' || dir == 's') '|' else '-'
-  val      turnChar = if (dir == 'n' || dir == 's') '-' else '|'
   val left    = input.getOrElse(leftSquare,    ' ')
   val right   = input.getOrElse(rightSquare,   ' ')
   val forward = input.getOrElse(forwardSquare, ' ')
   val current = input(currentSquare)
 
-  if (current != '+' && forward != ' ') {
+  if (forward != ' ') {
     (forwardSquare, dir)
-  } else if (current == '+' && forward != ' ' && forward != turnChar) {
-    (forwardSquare, dir)
-  } else if (current == '+' && left != ' ' && left != forwardChar) {
+  } else if (left != ' ') {
     (leftSquare, leftTurn(dir))
-  } else if (current == '+' && right != ' ' && right != forwardChar){
+  } else if (right != ' ') {
     (rightSquare, rightTurn(dir))
   } else {
     (currentSquare, 'd') // Done
