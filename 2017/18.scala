@@ -5,32 +5,50 @@ import scala.collection.immutable.Queue
 
 val input = Source.fromFile("input18.txt").getLines.map(_ split " ").toVector
 
-def getArg(registers: Map[String, Long])(arg: String): Long =
-  Try(arg.toLong).getOrElse(registers.getOrElse(arg, 0))
+class Assembly[S](
+    instructions: Vector[Array[String]],
+    regUpdate:    Map[String, (Long, Long) => Long],
+    pcUpdate:     Map[String, (Long, Long) => Long],
+    stateUpdate:  Map[String, (Long, Long, S) => S]) {
 
-def execute = Iterator.iterate((Map.empty[String, Long], Vector.empty[(String, Long)])){case (regs, actions) =>
-  def reg = getArg(regs) _
-  val pc = reg("pc").toInt
-  val Array(instruction, arg1, arg2) = input(pc).padTo(3, "")
-  val newPc = if (instruction == "jgz" && reg(arg1) > 0) pc + reg(arg2) else pc + 1
-  val newRegs = instruction match {
-    case "snd" => regs + ("lastSound" -> reg(arg1))
-    case "set" => regs + (arg1 -> reg(arg2))
-    case "add" => regs + (arg1 -> (reg(arg1) + reg(arg2)))
-    case "mul" => regs + (arg1 -> reg(arg1) * reg(arg2))
-    case "mod" => regs + (arg1 -> reg(arg1) % reg(arg2))
-    case _     => regs
+  def getArg(registers: Map[String, Long])(arg: String): Long =
+    Try(arg.toLong).getOrElse(registers.getOrElse(arg, 0))
+
+  def execute(initialState: S) =
+      Iterator.iterate((Map.empty[String, Long], 0, initialState)){case (regs, pc, state) =>
+    def reg = getArg(regs) _
+    val Array(instruction, arg1, arg2) = instructions(pc).padTo(3, "")
+    def incPc(x: Long, y: Long): Long = 1
+    val newPc = pc + pcUpdate.getOrElse(instruction, incPc _)(reg(arg1), reg(arg2)).toInt
+    val newRegs = if (regUpdate contains instruction)
+        regs + (arg1 -> regUpdate(instruction)(reg(arg1), reg(arg2)))
+      else
+        regs
+    def keepState(x: Long, y: Long, s: S): S = s
+    val newState = stateUpdate.getOrElse(instruction, keepState _)(reg(arg1), reg(arg2), state)
+    (newRegs, newPc, newState)
   }
-  val newActions = instruction match {
-    case "snd"                     => actions :+ (("snd", reg(arg1)))
-    case "rcv" if (reg(arg1) != 0) => actions :+ (("rcv", reg("lastSound")))
-    case _                         => actions
-  }
-  (newRegs + ("pc" -> newPc), newActions)
 }
 
-val answer1 = execute.map(_._2).filterNot(_.isEmpty).dropWhile(_.last._1 == "snd").map(_.last._2).next
+val regUpdate = Map[String, (Long, Long) => Long](
+  "set" -> {case (_, arg2) => arg2},
+  "add" -> {_ + _},
+  "mul" -> {_ * _},
+  "mod" -> {_ % _}
+)
+val pcUpdate = Map[String, (Long, Long) => Long](
+  "jgz" -> {case (arg1, arg2) => if (arg1 > 0) arg2 else 1}
+)
+val stateUpdate = Map[String, (Long, Long, Long) => Long](
+  "snd" -> {case (arg1, _, _) => arg1}
+)
+val assembly = new Assembly(input, regUpdate, pcUpdate, stateUpdate)
+
+val answer1 = assembly.execute(-1).dropWhile{x => input(x._2)(0) != "rcv"}.map(_._3).next
 println(answer1)
+
+def getArg(registers: Map[String, Long])(arg: String): Long =
+  Try(arg.toLong).getOrElse(registers.getOrElse(arg, 0))
 
 @tailrec
 def execute2(regs: Map[String, Long], from: Queue[Long], to: Queue[Long], count: Int): (Map[String, Long], Queue[Long], Int) = {
