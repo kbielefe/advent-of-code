@@ -39,23 +39,25 @@ val rightTurn = Map(
   'w' -> 'n'
 )
 
-def getSquare(x: Int, y: Int, dir: Char, offsets: Map[Char, (Int, Int)]): (Int, Int) = {
+def getSquare(current: (Int, Int), dir: Char)(offsets: Map[Char, (Int, Int)]): (Int, Int) = {
+  val (x, y) = current
   val (offX, offY) = offsets(dir)
   (x + offX, y + offY)
 }
 
 val initial = (input.keySet.find(_._1 == 0).get, 's')
 
-def infinitePath = Iterator.iterate(initial){case ((x, y), dir) =>
-  val forwardSquare = getSquare(x, y, dir, forwardOffsets)
-  val    leftSquare = getSquare(x, y, dir, leftOffsets)
-  val   rightSquare = getSquare(x, y, dir, rightOffsets)
+def infinitePath = Iterator.iterate(initial){case (currentSquare, dir) =>
+  def square = getSquare(currentSquare, dir) _
+  val forwardSquare = square(forwardOffsets)
+  val    leftSquare = square(leftOffsets)
+  val   rightSquare = square(rightOffsets)
   val   forwardChar = if (dir == 'n' || dir == 's') '|' else '-'
   val      turnChar = if (dir == 'n' || dir == 's') '-' else '|'
   val left    = input.getOrElse(leftSquare,    ' ')
   val right   = input.getOrElse(rightSquare,   ' ')
   val forward = input.getOrElse(forwardSquare, ' ')
-  val current = input.getOrElse((x, y), ' ')
+  val current = input(currentSquare)
 
   if (current != '+' && forward != ' ') {
     (forwardSquare, dir)
@@ -66,7 +68,7 @@ def infinitePath = Iterator.iterate(initial){case ((x, y), dir) =>
   } else if (current == '+' && right != ' ' && right != forwardChar){
     (rightSquare, rightTurn(dir))
   } else {
-    ((x, y), 'd') // Done
+    (currentSquare, 'd') // Done
   }
 }
 
