@@ -84,7 +84,7 @@ def gridToString(size: Int, grid: Grid): String = {
 }
 
 val initial = parseGrid(".#./..#/###")
-def iterations = Iterator.iterate((3, initial)){case (size, grid) =>
+def iterations(initial: Grid) = Iterator.iterate((3, initial)){case (size, grid) =>
   val split = splitGrid(size, grid)
   val enhancer = sizeCompare(size, twoByTwo, threeByThree)
   val enhanced = split.map(enhancer)
@@ -102,10 +102,25 @@ def printGrid(grid: Grid, size: Int = 0): Unit = {
 }
 
 def printGrids(drop: Int): Unit =
-  iterations.drop(drop).take(2).map{case (size, grid) => gridToString(size, grid)} foreach println
+  iterations(initial).drop(drop).take(2).map{case (size, grid) => gridToString(size, grid)} foreach println
 
-val answer1 = iterations.drop(5).next._2.size
+val answer1 = iterations(initial).drop(5).next._2.size
 println(answer1)
 
-//val answer2 = iterations.drop(18).next._2.size
-//println(answer2)
+def countIterMap: Map[Grid, List[(Grid, Int)]] = {
+  threeByThree.keySet.toList.map{grid =>
+    val targetGrids = splitGrid(9, iterations(grid).drop(3).next._2).toList
+    val counts = targetGrids.groupBy(identity).mapValues(_.size).toList
+    (grid, counts)
+  }.toMap
+}
+
+def gridCounts = Iterator.iterate(List(initial -> 1)){counts =>
+  val unsummed: List[(Grid, Int)]= counts.flatMap{case (grid, count) =>
+    countIterMap(grid).map{case (k,v) => (k, v * count)}
+  }
+  unsummed.groupBy(_._1).mapValues(_.map(_._2).sum).toList
+}
+
+val answer2 = gridCounts.drop(6).next.map{case (grid, count) => grid.size * count}.sum
+println(answer2)
