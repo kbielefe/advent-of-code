@@ -43,3 +43,8 @@ val assembly = new Assembly(input, regUpdate, pcUpdate, stateUpdate)
 
 val answer1 = assembly.execute(0).dropWhile{x => x._2 >= 0 && x._2 < input.size}.map(_._3).next
 println(answer1)
+
+val primes = Source.fromFile("primes.txt").getLines.map(_.toInt).toSet
+
+val answer2 = (105700 to 122700 by 17).filterNot(primes contains _).size
+println(answer2)
