@@ -29,11 +29,10 @@ def bridges(input: Map[Int, Components], acc: Bridge = List.empty[(Int, Int)])(p
 
 def strength(bridge: Bridge): Int = bridge.map{case (x, y) => x + y}.sum
 
-val memBridge = bridges(input)(0)
+val memBridge = bridges(input)(0).map(x => (x.length, strength(x)))
 
-val answer1 = memBridge.map(strength).max
+val answer1 = memBridge.maxBy(_._2)._2
 println(answer1)
 
-val longestLength = memBridge.map{_.length}.max
-val answer2 = memBridge.filter{_.length == longestLength}.map(strength).max
+val answer2 = memBridge.max._2
 println(answer2)
