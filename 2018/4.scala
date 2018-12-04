@@ -21,6 +21,12 @@ val (_, _, intervals) = input.foldLeft((0, 0, Set.empty[Interval])){case ((guard
   }
 }
 
+def mostFrequentMinute(intervals: List[Interval]): (Int, Int) = {
+  val allMinutes = intervals flatMap {interval => (interval.first until interval.last).toList}
+  val frequencies = allMinutes.groupBy(identity).mapValues(_.length)
+  frequencies.maxBy{_._2}
+}
+
 val grouped = intervals.toList groupBy {_.guard}
 val minutesAsleep = grouped.mapValues{_.map{interval => interval.last - interval.first}.sum}
 val sleepiestMinutes = minutesAsleep.maxBy{_._2}._2
@@ -33,3 +39,7 @@ val minutesWithLargestFrequency = frequency.filter{_._2 == largestFrequency}.map
 val answer1 = sleepiestGuard * minutesWithLargestFrequency.min
 
 println(answer1)
+
+val (guard2, (minute, _)) = grouped.mapValues(mostFrequentMinute).maxBy{_._2._2}
+val answer2 = guard2 * minute
+println(answer2)
