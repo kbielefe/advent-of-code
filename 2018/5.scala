@@ -3,7 +3,7 @@ import scala.io.Source
 val input = Source.fromFile("input5.txt").mkString("").trim()
 
 def reacts(x: Char, y: Char): Boolean = {
-  (x.toUpper == y.toUpper) && ((x.isLower && y.isUpper) || (x.isUpper && y.isLower))
+  (x.toUpper == y.toUpper) && (x.isUpper != y.isUpper)
 }
 
 def react(input: String): Int = {
