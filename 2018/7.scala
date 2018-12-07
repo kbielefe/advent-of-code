@@ -31,47 +31,34 @@ def getNoIncoming(edges: Map[Char, Set[Char]], nodes: Set[Char]): Set[Char] = {
   nodes -- hasIncoming(edges)
 }
 
-@tailrec
-def toposort(result: List[Char], noIncoming: Set[Char], edges: Map[Char, Set[Char]], nodes: Set[Char]): String = {
-  if (noIncoming.isEmpty)
-    result.reverse.mkString("")
-  else {
-    val next = noIncoming.toList.sorted.head
-    val newResult = next :: result
-    val newNodes = nodes - next
-    val newEdges = edges - next
-    val newNoIncoming = getNoIncoming(newEdges, newNodes)
-    toposort(newResult, newNoIncoming, newEdges, newNodes)
-  }
-}
-
-val answer1 = toposort(List.empty[Char], getNoIncoming(edges, nodes), edges, nodes)
-println(answer1)
-
 val offset = if (example) 1 else 61
 def duration(task: Char): Int = task - 'A' + offset
 val workerCount = if (example) 2 else 5 
 
 @tailrec
-def parallelToposort(result: Int, noIncoming: Set[Char], edges: Map[Char, Set[Char]], nodes: Set[Char], wip: Set[(Char, Int)]): Int = {
+def toposort(workerCount: Int, result: List[Char], totalDuration: Int, noIncoming: Set[Char], edges: Map[Char, Set[Char]], nodes: Set[Char], wip: Set[(Char, Int)]): (String, Int) = {
   if (noIncoming.isEmpty)
-    result - 1
+    (result.reverse.mkString(""), totalDuration - 1)
   else {
-    val newResult = result + 1
+    val newDuration = totalDuration + 1
     val (carryoverWip, completed) = wip map {case (task, remaining) => (task, remaining - 1)} partition {_._2 > 0}
     val completedTasks = completed map {_._1}
     val carryoverTasks = carryoverWip map {_._1}
     val newNodes = nodes -- completedTasks
     val newEdges = edges -- completedTasks
     val newNoIncoming = getNoIncoming(newEdges, newNodes)
+    val newResult = completedTasks.toList ++ result
 
     val availableWorkers = workerCount - carryoverWip.size
     val newTasks = (newNoIncoming -- carryoverTasks).toList.sorted.take(availableWorkers).toSet
 
     val newWip = carryoverWip ++ (newTasks map {task => (task, duration(task))})
-    parallelToposort(newResult, newNoIncoming, newEdges, newNodes, newWip)
+    toposort(workerCount, newResult, newDuration, newNoIncoming, newEdges, newNodes, newWip)
   }
 }
 
-val answer2 = parallelToposort(0, getNoIncoming(edges, nodes), edges, nodes, Set.empty[(Char, Int)])
+val (answer1, _) = toposort(1, List.empty[Char], 0, getNoIncoming(edges, nodes), edges, nodes, Set.empty[(Char, Int)])
+val (_, answer2) = toposort(workerCount, List.empty[Char], 0, getNoIncoming(edges, nodes), edges, nodes, Set.empty[(Char, Int)])
+
+println(answer1)
 println(answer2)
