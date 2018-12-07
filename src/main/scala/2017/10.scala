@@ -1,7 +1,10 @@
+package advent2017
+import common.{Day, Circular}
 import Math.min
+import scala.io.Source
 
-object advent10 {
-  val raw = "192,69,168,160,78,1,166,28,0,83,198,2,254,255,41,12"
+class Day10(source: Source) extends Day {
+  val raw = source.mkString.trim
   val input  = raw.split(",").map(_.toInt).toVector
   val input2 = raw.map(_.toInt).toVector ++ Vector(17, 31, 73, 47, 23)
   val max = 255
@@ -20,15 +23,10 @@ object advent10 {
 
   val processed = processInput(input)(initial)._3
 
-  val answer1 = processed(0) * processed(1)
+  override def answer1 = (processed(0) * processed(1)).toString
 
   val sparseHash = Stream.iterate(initial)(processInput(input2)).drop(64).head._3
   val denseHash = sparseHash.grouped(16).map(_.reduceLeft(_ ^ _))
 
-  val answer2 = denseHash.map{x => f"${x}%02x"}.mkString("")
-
-  def main(args: Array[String]): Unit = {
-    println(answer1)
-    println(answer2)
-  }
+  override def answer2 = denseHash.map{x => f"${x}%02x"}.mkString("")
 }

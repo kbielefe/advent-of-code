@@ -1,3 +1,4 @@
+package common
 import Math.max
 import scala.collection.GenSeq
 
