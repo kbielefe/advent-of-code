@@ -1,14 +1,10 @@
 # advent-of-code
 For sharing my adventofcode.com solutions
 
-These are designed to be run in "script mode," without precompiling:
+These are designed to be run primarily from the sbt console.
 
-```
-scala <year>/<day>.scala
-```
+Type `run 2018 1` to run a puzzle.
 
-e.g.
+Type `test` to run unit tests.
 
-```
-scala 2017/5.scala
-```
+Type `testOnly advent2018.TestDay1` to just run tests for that day.
