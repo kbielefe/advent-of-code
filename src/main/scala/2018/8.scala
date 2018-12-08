@@ -1,6 +1,7 @@
 package advent2018
-import common.Day
+import common.{Day, StateUtils}
 import scala.io.Source
+import cats.data.State
 
 class Day8(source: Source) extends Day {
 
@@ -8,16 +9,15 @@ class Day8(source: Source) extends Day {
 
   case class Node(children: List[Node], metadata: List[Int])
 
-  def parseNode(input: List[Int]): (Node, List[Int]) = {
-    val childrenCount :: metadataCount :: content = input
-    val (children, metaInput) = (1 to childrenCount).foldLeft((List.empty[Node], content)){case ((result, input), _) =>
-      val (node, newInput) = parseNode(input)
-      (node :: result, newInput)
-    }
-    val metadata = metaInput take metadataCount
-    val newInput = metaInput drop metadataCount
-    (Node(children.reverse, metadata), newInput)
-  }
+  val nextInt: State[List[Int], Int] = State(input => (input.tail, input.head))
+  def nextNode: State[List[Int], Node] = for {
+    childrenCount <- nextInt
+    metadataCount <- nextInt
+    children      <- StateUtils.repeatN(childrenCount)(nextNode)
+    metadata      <- StateUtils.repeatN(metadataCount)(nextInt)
+  } yield Node(children, metadata)
+
+  def parseNode(input: List[Int]): Node = nextNode.runA(input).value
 
   def sumMetadata(node: Node): Int = {
     node.metadata.sum + node.children.map(sumMetadata).sum
@@ -32,10 +32,10 @@ class Day8(source: Source) extends Day {
   }
 
   override def answer1: String = {
-    sumMetadata(parseNode(input)._1).toString
+    sumMetadata(parseNode(input)).toString
   }
 
   override def answer2: String = {
-    nodeValue(parseNode(input)._1).toString
+    nodeValue(parseNode(input)).toString
   }
 }

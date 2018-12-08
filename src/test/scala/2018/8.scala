@@ -11,21 +11,21 @@ class TestDay8 extends UnitSpec {
     "no children and one metadata" should {
       "return a leaf Node" in {
         val day = new Day8(example)
-        day.parseNode(List(0, 1, 2)) shouldBe (day.Node(List.empty, List(2)), List.empty)
+        day.parseNode(List(0, 1, 2)) shouldBe day.Node(List.empty, List(2))
       }
     }
 
     "no children and two metadata" should {
       "return a leaf Node" in {
         val day = new Day8(example)
-        day.parseNode(List(0, 2, 3, 4)) shouldBe (day.Node(List.empty, List(3, 4)), List.empty)
+        day.parseNode(List(0, 2, 3, 4)) shouldBe day.Node(List.empty, List(3, 4))
       }
     }
 
     "one child and one metadata" should {
       "return a branch Node" in {
         val day = new Day8(example)
-        day.parseNode(List(1, 1, 0, 1, 3, 2)) shouldBe (day.Node(List(day.Node(List.empty, List(3))), List(2)), List.empty)
+        day.parseNode(List(1, 1, 0, 1, 3, 2)) shouldBe day.Node(List(day.Node(List.empty, List(3))), List(2))
       }
     }
   }
