@@ -49,4 +49,43 @@ class TestStateUtils extends UnitSpec {
       }
     }
   }
+
+  "repeatWhile" when {
+    val repeatedState = State((s: Int) => (s + 1, s + 2))
+    "immediately false" should {
+      "not change the state" in {
+        val state = StateUtils.repeatWhile[Int, Int]{_ => false}(repeatedState)
+        state.runS(1234).value shouldBe 1234
+      }
+
+      "return an empty list" in {
+        val state = StateUtils.repeatWhile[Int, Int]{_ => false}(repeatedState)
+        state.runA(1234).value shouldBe List.empty[Int]
+      }
+    }
+
+    "true for one iteration" should {
+      "change the state once" in {
+        val state = StateUtils.repeatWhile[Int, Int]{_ <= 1234}(repeatedState)
+        state.runS(1234).value shouldBe 1235
+      }
+
+      "return a single-element list" in {
+        val state = StateUtils.repeatWhile[Int, Int]{_ <= 1234}(repeatedState)
+        state.runA(1234).value shouldBe List(1236)
+      }
+    }
+
+    "true for two iterations" should {
+      "change the state twice" in {
+        val state = StateUtils.repeatWhile[Int, Int]{_ <= 1235}(repeatedState)
+        state.runS(1234).value shouldBe 1236
+      }
+
+      "return a two-element list" in {
+        val state = StateUtils.repeatWhile[Int, Int]{_ <= 1235}(repeatedState)
+        state.runA(1234).value shouldBe List(1236, 1237)
+      }
+    }
+  }
 }
