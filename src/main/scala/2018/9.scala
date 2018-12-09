@@ -47,8 +47,8 @@ class Day9(source: Source) extends Day {
     case regex(x, y) => (x.toInt, y.toInt)
   }
 
-  def moves: Iterator[(Int, Int, Int, LinkedCircular[Int])] = {
-    Iterator.iterate((0, 0, 0, LinkedCircular(Map(0 -> (0, 0))))){case (current, number, _, marbles) =>
+  def moves: Iterator[(Int, Int, Long, LinkedCircular[Int])] = {
+    Iterator.iterate((0, 0, 0L, LinkedCircular(Map(0 -> (0, 0))))){case (current, number, _, marbles) =>
       val newNumber = number + 1
       val multOf23 = (newNumber % 23) == 0
       val newCurrent = if (multOf23) marbles.move(current, -6) else newNumber
@@ -63,13 +63,16 @@ class Day9(source: Source) extends Day {
     }
   }
 
-  override def answer1: String = {
+  def maxScore(lastScore: Int): Long = {
     val playerTurn = Iterator.continually(1 to playerCount).flatten take (lastScore + 1)
     val scores = moves drop 1 map {_._3}
-    val playerScores = playerTurn.zip(scores).toList.groupBy(_._1).mapValues{_.map{_._2}.sum}
-    val maxScore = playerScores.maxBy{_._2}._2
-    maxScore.toString
+    val playerScores = playerTurn.zip(scores).foldLeft(Map.empty[Int, Long]){case (result, (player, score)) =>
+      val previousScore = result.getOrElse(player, 0L)
+      result + (player -> (score + previousScore))
+    }
+    playerScores.maxBy{_._2}._2
   }
 
-  override def answer2: String = ???
+  override def answer1: String = maxScore(lastScore).toString
+  override def answer2: String = maxScore(lastScore * 100).toString
 }
