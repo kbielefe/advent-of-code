@@ -2,7 +2,7 @@ package common
 import Math.max
 import scala.collection.GenSeq
 
-final class Circular[A] (v: Vector[A]) {
+final class Circular[A] (protected val v: Vector[A]) {
   def slice(from: Int, until: Int): Vector[A] = {
     val length = until - from
     val beforeWrap = v.slice(wrapI(from), v.size)
@@ -29,5 +29,11 @@ final class Circular[A] (v: Vector[A]) {
 
   override def toString: String = v.mkString("Circular(", ", ", ")")
 
-  private def wrapI(i: Int): Int = i % v.size
+  override def equals(other: Any): Boolean = other match {
+    case that: Circular[A] => that.v == v
+    case _                 => false
+  }
+
+  // TODO: Normalize negative numbers
+  private def wrapI(i: Int): Int = if (v.isEmpty) 0 else i % v.size
 }
