@@ -20,11 +20,13 @@ javascript:(function() {
     var minutes = Math.round((finish - start) / 1000 / 60);
     var hours = Math.floor(minutes / 60).toString();
     var remainder = (minutes % 60).toString();
-    return hours + " hours, " + remainder + " minutes";
+    var hourPlural = (hours == 1) ? "" : "s";
+    var minutePlural = (minutes == 1) ? "" : "s";
+    return hours + " hour" + hourPlural + ", " + remainder + " minute" + minutePlural;
   };
   var done = function() {
-    resp=JSON.parse(this.responseText);
-    year=resp.event.toString();
+    resp = JSON.parse(this.responseText);
+    year = resp.event.toString();
     mems = Object.values(resp.members).sort((a,b) => b.local_score - a.local_score);
     rows = document.querySelectorAll(".privboard-row");
     for(i=1; i<rows.length; i++) {
