@@ -22,25 +22,25 @@ javascript:(function() {
     var remainder = (minutes % 60).toString();
     return hours + " hours, " + remainder + " minutes";
   };
-	var done = function() {
-		resp=JSON.parse(this.responseText);
+  var done = function() {
+    resp=JSON.parse(this.responseText);
     year=resp.event.toString();
-		mems = Object.values(resp.members).sort((a,b) => b.local_score - a.local_score);
-		rows = document.querySelectorAll(".privboard-row");
-		for(i=1; i<rows.length; i++) {
-			stars = rows[i].querySelectorAll(".privboard-star-both, .privboard-star-firstonly, .privboard-star-unlocked");
-			for(let day in mems[i-1].completion_day_level) {
-				var compl1 = mems[i-1].completion_day_level[day][1];
-				var compl2 = mems[i-1].completion_day_level[day][2];
-				stars[day-1].title = ""
-					+ (compl1 != null ? (hoursAndMinutes(year, day, compl1.get_star_ts*1000)) : "")
-				    + (compl2 != null ? ("\n"+hoursAndMinutes(year, day, compl2.get_star_ts*1000)) : "");
-            }
-        }
-	};
-	var apiEndpoint = window.location.href+".json";
-	var req = new XMLHttpRequest(); req.addEventListener("load", done);
-	req.open("GET", apiEndpoint);
-	req.send();
+    mems = Object.values(resp.members).sort((a,b) => b.local_score - a.local_score);
+    rows = document.querySelectorAll(".privboard-row");
+    for(i=1; i<rows.length; i++) {
+      stars = rows[i].querySelectorAll(".privboard-star-both, .privboard-star-firstonly, .privboard-star-unlocked");
+      for(let day in mems[i-1].completion_day_level) {
+        var compl1 = mems[i-1].completion_day_level[day][1];
+        var compl2 = mems[i-1].completion_day_level[day][2];
+        stars[day-1].title = ""
+          + (compl1 != null ? (hoursAndMinutes(year, day, compl1.get_star_ts*1000)) : "")
+            + (compl2 != null ? ("\n"+hoursAndMinutes(year, day, compl2.get_star_ts*1000)) : "");
+      }
+    }
+  };
+  var apiEndpoint = window.location.href+".json";
+  var req = new XMLHttpRequest(); req.addEventListener("load", done);
+  req.open("GET", apiEndpoint);
+  req.send();
 })();
 ```
