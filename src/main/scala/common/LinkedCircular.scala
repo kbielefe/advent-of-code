@@ -36,23 +36,3 @@ case class LinkedCircular[A](protected val g: Map[A, (A, A)]) {
     Iterator.iterate(startNode){g(_)._2}.take(g.size).toList
   }
 }
-
-/*
- * Middle:
- * 1 -> 2 -> 3
- * 3 -> 2 -> 1
- *
- * Move one to the right:
- * Goal:
- * 2 -> 3 -> 1
- * 1 -> 3 -> 2
- *
- * Actual:
- * 2 -> 3, changelog: append 1 after 3
- * 1 -> 3 -> 2 -> 1, changelog: delete 1 after 2
- *
- * Move one to the right:
- * Goal:
- * 3 -> 1 -> 2
- * 2 -> 1 -> 3
- */
