@@ -61,9 +61,9 @@ class Day10(source: Source) extends Day {
   }
 
   override def answer1: String = {
-    val start: Long = 10630
+    val start: Long = (averageMinDistanceSeconds(points) - 5).toLong
     val interval: Long = 1
-    println(averageMinDistanceSeconds(points))
+    println(start)
     getAnimation(start, interval, points).map(message) take 10 foreach println
     "PHFZCEZX"
   }
