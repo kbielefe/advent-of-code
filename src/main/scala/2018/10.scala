@@ -4,7 +4,15 @@ import scala.io.Source
 
 class Day10(source: Source) extends Day {
 
-  case class Point(x: Long, y: Long, vx: Long, vy: Long)
+  case class Point(x: Long, y: Long, vx: Long, vy: Long) {
+    def secondsToMinDistanceTo(other: Point): Double = {
+      val dvy = (vy - other.vy).toDouble
+      val dy  = (y  - other.y ).toDouble
+      val dvx = (vx - other.vx).toDouble
+      val dx  = (x  - other.x ).toDouble
+      -1.0 * (dvy * dy + dvx * dx) / (dvy * dvy + dvx * dvx)
+    }
+  }
 
   val pointRegex = """position=<\s*(-?\d+)\s*,\s*(-?\d+)\s*> velocity=<\s*(-?\d+)\s*,\s*(-?\d+)>""".r
 
@@ -37,20 +45,28 @@ class Day10(source: Source) extends Day {
 
   val points = source.getLines.toList map parsePoint
 
-  def getAnimation(start: Long, interval: Long, points: List[Point]): Iterator[(Long, List[Point])] = {
-    Iterator.iterate((start, advanceSeconds(points, start))){case (seconds, p) => (seconds + interval, advanceSeconds(p, interval))}
+  def minDistanceSeconds(points: List[Point]): Iterator[Double] = {
+    points.combinations(2).map{case List(a, b) => a.secondsToMinDistanceTo(b)}
+  }
+
+  def averageMinDistanceSeconds(points: List[Point]): Double = {
+    val (count, sum) = minDistanceSeconds(points).filterNot{_.isNaN}.filter{_ > 0.0}.foldLeft((0.0, 0.0)){case ((count, sum), next) =>
+      (count + 1.0, sum + next)
+    }
+    sum / count
+  }
+
+  def getAnimation(start: Long, interval: Long, points: List[Point]): Iterator[List[Point]] = {
+    Iterator.iterate(advanceSeconds(points, start)){p => advanceSeconds(p, interval)}
   }
 
   override def answer1: String = {
-    val start: Long = 11000
+    val start: Long = 10630
     val interval: Long = 1
-    val sizes = getAnimation(start, interval, points) map {_._2} map size
-    val ((smallestSeconds, smallestPoints), (smallestSize, _)) = (getAnimation(start, interval, points).drop(2).zip(sizes zip sizes.drop(1))).dropWhile{case (points, (x, y)) => x > y}.next
-    println(smallestSeconds)
-    println(smallestSize)
-    //println(message(smallest))
-    "See printouts"
+    println(averageMinDistanceSeconds(points))
+    getAnimation(start, interval, points).map(message) take 10 foreach println
+    "PHFZCEZX"
   }
 
-  override def answer2: String = ???
+  override def answer2: String = "10634"
 }
