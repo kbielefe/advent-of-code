@@ -62,6 +62,10 @@ class TestCircularZipper extends UnitSpec {
       "switch current after moving left" in {
         list.moveLeft.current shouldBe 1
       }
+
+      "have a current after moving left once then deleting" in {
+        list.moveLeftN(1).delete.current shouldBe 2
+      }
     }
   }
 }

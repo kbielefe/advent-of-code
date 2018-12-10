@@ -8,7 +8,7 @@ case class CircularZipper[A](left: List[A] = List.empty[A], right: List[A] = Lis
 
   def insertRight(elem: A): CircularZipper[A] = CircularZipper(elem :: left, right)
 
-  def delete: CircularZipper[A] = CircularZipper(left.tail, right)
+  def delete: CircularZipper[A] = CircularZipper(left.tail, right).ensureCurrentOnLeft()
 
   def moveRight: CircularZipper[A] = {
     if (left.isEmpty && right.isEmpty) {
@@ -31,8 +31,7 @@ case class CircularZipper[A](left: List[A] = List.empty[A], right: List[A] = Lis
 
   private def ensureCurrentOnLeft(): CircularZipper[A] = {
     if (left.isEmpty && !right.isEmpty) {
-      val reversedRight = right.reverse
-      CircularZipper(reversedRight, Nil)
+      CircularZipper(right.reverse, Nil)
     } else {
       this
     }
