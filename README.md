@@ -21,7 +21,7 @@ javascript:(function() {
     var hours = Math.floor(minutes / 60).toString();
     var remainder = (minutes % 60).toString();
     var hourPlural = (hours == 1) ? "" : "s";
-    var minutePlural = (minutes == 1) ? "" : "s";
+    var minutePlural = (remainder == 1) ? "" : "s";
     return hours + " hour" + hourPlural + ", " + remainder + " minute" + minutePlural;
   };
   var done = function() {
