@@ -48,6 +48,7 @@ object Runner {
       case "2018/7"  => new advent2018.Day7(source)
       case "2018/8"  => new advent2018.Day8(source)
       case "2018/9"  => new advent2018.Day9(source)
+      case "2018/10" => new advent2018.Day10(source)
       case _         => println("Puzzle not available"); return
     }
     println(day.answer1)
