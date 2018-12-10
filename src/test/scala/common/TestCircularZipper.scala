@@ -19,7 +19,7 @@ class TestCircularZipper extends UnitSpec {
     }
 
     "one element added" should {
-      val list = CircularZipper[Int]().insert(1)
+      val list = CircularZipper[Int]().insertRight(1)
       "not be empty" in {
         list should not be empty
       }
@@ -40,9 +40,9 @@ class TestCircularZipper extends UnitSpec {
         list.moveLeft.current shouldBe 1
       }
     }
-    
+
     "two elements added" should {
-      val list = CircularZipper[Int]().insert(1).insert(2)
+      val list = CircularZipper[Int]().insertRight(1).insertRight(2)
       "not be empty" in {
         list should not be empty
       }
