@@ -1,5 +1,5 @@
 package advent2018
-import common.{Day, LinkedCircular}
+import common.{Day, CircularZipper}
 import scala.io.Source
 
 class Day9(source: Source) extends Day {
@@ -10,25 +10,23 @@ class Day9(source: Source) extends Day {
     case regex(x, y) => (x.toInt, y.toInt)
   }
 
-  def moves: Iterator[(Int, Int, Long, LinkedCircular[Int])] = {
-    Iterator.iterate((0, 0, 0L, LinkedCircular(Map(0 -> (0, 0))))){case (current, number, _, marbles) =>
+  def moves: Iterator[(Int, Long, CircularZipper[Int])] = {
+    Iterator.iterate((0, 0L, CircularZipper(List(0)))){case (number, _, marbles) =>
       val newNumber = number + 1
-      val multOf23 = (newNumber % 23) == 0
-      val newCurrent = if (multOf23) marbles.move(current, -6) else newNumber
-      val removed = marbles.move(current, -7)
-      val insertAfter = marbles.move(current, 1)
-      val newMarbles = if (multOf23)
-          marbles.delete(removed)
-        else
-          marbles.insertAfter(insertAfter, newNumber)
-      val points = if (multOf23) removed + newNumber else 0
-      (newCurrent, newNumber, points, newMarbles)
+      val (points, newMarbles) = if (newNumber % 23 == 0) {
+        val movedLeft = marbles.moveLeftN(7)
+        val removed = movedLeft.current
+        (removed + newNumber, movedLeft.delete.moveRight)
+      } else {
+        (0, marbles.moveRight.insertRight(newNumber))
+      }
+      (newNumber, points, newMarbles)
     }
   }
 
   def maxScore(lastScore: Int): Long = {
     val playerTurn = Iterator.continually(1 to playerCount).flatten take (lastScore + 1)
-    val scores = moves drop 1 map {_._3}
+    val scores = moves drop 1 map {_._2}
     val playerScores = playerTurn.zip(scores).foldLeft(Map.empty[Int, Long]){case (result, (player, score)) =>
       val previousScore = result.getOrElse(player, 0L)
       result + (player -> (score + previousScore))
