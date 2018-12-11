@@ -12,15 +12,11 @@ object Runner {
     val day  = args(1)
     val source = Source.fromResource(s"$year/$day.txt")
     val className = s"advent$year.Day$day"
-    val puzzleClass = Try(Class.forName(className))
-    puzzleClass match {
-      case Success(c) =>
-        val constructor = c.getConstructors()(0)
-        val puzzle = constructor.newInstance(source).asInstanceOf[Day]
-        println(puzzle.answer1)
-        println(puzzle.answer2)
-      case Failure(e) =>
-        println(s"Unable to find class $className")
-    }
+    val answers = Try(Class.forName(className)) map {c =>
+      val constructor = c.getConstructors()(0)
+      val puzzle = constructor.newInstance(source).asInstanceOf[Day]
+      puzzle.answer1 + "\n" + puzzle.answer2
+    } 
+    println(answers getOrElse s"Unable to find class $className")
   }
 }
