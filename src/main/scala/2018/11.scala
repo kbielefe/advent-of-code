@@ -15,22 +15,22 @@ class Day11(source: Source) extends Day {
     hundredsDigit((rackID * y + serialNumber) * rackID) - 5
   }
 
-  def gridTotalPower(width: Int, height: Int)(left: Int, top: Int): Int = {
+  def gridTotalPower(size: Int)(left: Int, top: Int): Int = {
     val powerLevels = for {
-      x <- left until (left + width)
-      y <- top  until (top  + height)
+      x <- left until (left + size)
+      y <- top  until (top  + size)
     } yield powerLevel(x, y)
     powerLevels.sum
   }
 
-  def allGridPowers(width: Int, height: Int): Map[(Int, Int), Int] = {
+  def allGridPowers(size: Int): Map[(Int, Int, Int), Int] = {
     val powerLevels = for {
-      x <- 1 until (width - 2)
-      y <- 1 until (height - 2)
-    } yield ((x, y) -> gridTotalPower(3, 3)(x, y))
+      x <- 1 until (301 - size)
+      y <- 1 until (301 - size)
+    } yield ((x, y, size) -> gridTotalPower(size)(x, y))
     powerLevels.toMap
   }
 
-  override def answer1: String = allGridPowers(300, 300).maxBy{_._2}._1.toString
-  override def answer2: String = ""
+  override def answer1: String = allGridPowers(3).maxBy{_._2}._1.toString
+  override def answer2: String = (1 to 300).map(allGridPowers).foldLeft(Map.empty[(Int, Int, Int), Int]){_ ++ _}.maxBy{_._2}._1.toString
 }
