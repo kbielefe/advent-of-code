@@ -13,9 +13,13 @@ class Day5(source: Source) extends Day {
 
   def niceString(in: String): Boolean = containsThreeVowels(in) && containsDouble(in) && !containsForbiddenStrings(in)
 
-  def hasNonOverlappingPairs(in: String): Boolean = ???
+  def hasNonOverlappingPairs(in: String): Boolean = {
+    val pairsWithIndex = in.sliding(2).zipWithIndex.toList
+    val indicesOnly = pairsWithIndex.groupBy{_._1}.values.map{_.map{_._2}}
+    indicesOnly.exists{x => x.max - x.min > 1}
+  }
 
-  def hasRepeatBetween(in: String): Boolean = ???
+  def hasRepeatBetween(in: String): Boolean = in.sliding(3).exists{x => x(0) == x(2)}
 
   def niceStringPart2(in: String): Boolean = hasNonOverlappingPairs(in) && hasRepeatBetween(in)
 
