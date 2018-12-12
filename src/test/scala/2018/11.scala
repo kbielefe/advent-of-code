@@ -18,7 +18,7 @@ class TestDay11 extends UnitSpec {
     "given 122, 79 serial number 57" should {
       "be -5" in {
         val day = new Day11(serialNumber(57))
-        day.powerLevel(122, 79) shouldBe -5 
+        day.powerLevel(122, 79) shouldBe -5
       }
     }
 
@@ -61,20 +61,24 @@ class TestDay11 extends UnitSpec {
   }
 
   "answer 1" when {
-    "given example" should {
+    "given serial number 9445 (official input)" should {
       "be (233,36,3)" in {
-        val day = new Day11(serialNumber(0))
+        val day = new Day11(serialNumber(9445))
         day.answer1 shouldBe "(233,36,3)"
       }
     }
-  }
 
-  "answer 2" when {
-    "given example" should {
-      "be ???" ignore {
-        val day = new Day11(serialNumber(0))
-        day.answer2
-        assert(true)
+    "given serial number 18" should {
+      "be (33,45,3)" in {
+        val day = new Day11(serialNumber(18))
+        day.answer1 shouldBe "(33,45,3)"
+      }
+    }
+
+    "given serial number 42" should {
+      "be (21,61,3)" in {
+        val day = new Day11(serialNumber(42))
+        day.answer1 shouldBe "(21,61,3)"
       }
     }
   }
