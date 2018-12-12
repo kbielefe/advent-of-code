@@ -1,4 +1,5 @@
 package common
+import scala.annotation.tailrec
 
 object Dynamic {
   /**
@@ -16,5 +17,24 @@ object Dynamic {
     val width: Int = input.headOption map {_.size} getOrElse 0
     val rowOfZeroes: List[A] = List.fill(width)(n.zero)
     input.scanLeft(rowOfZeroes){sumRow(_, _)} drop 1
+  }
+
+  // Returns (start of cycle, period of cycle)
+  def detectCycle[A](it: Iterator[A]): Option[(Int, Int)] = {
+    @tailrec
+    def detectSeen(it: Iterator[A], seen: Map[A, Int], count: Int): Option[(Int, Int)] = {
+      if (!it.hasNext) {
+        None
+      } else {
+        val curr = it.next
+        val startOption = seen.get(curr)
+        if (startOption.isDefined)
+          startOption map {start => (start, count - start)}
+        else
+          detectSeen(it, seen + (curr -> count), count + 1)
+      }
+    }
+
+    detectSeen(it, Map.empty[A, Int], 0)
   }
 }
