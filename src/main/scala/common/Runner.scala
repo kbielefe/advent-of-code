@@ -17,6 +17,7 @@ object Runner {
       val puzzle = constructor.newInstance(source).asInstanceOf[Day]
       puzzle.answer1 + "\n" + puzzle.answer2
     } 
-    println(answers getOrElse s"Unable to find class $className")
+    val output = answers recover {case e: Exception => s"Error constructing class $className:\n${e.toString}"}
+    println(output.get)
   }
 }
