@@ -1,5 +1,5 @@
 package advent2018
-import common.Day
+import common.{Day, Dynamic}
 import scala.io.Source
 
 class Day12(source: Source) extends Day {
@@ -34,6 +34,10 @@ class Day12(source: Source) extends Day {
     }.toList.dropWhile(!_._1).reverse.dropWhile(!_._1).reverse
   }
 
-  override def answer1: String = Iterator.iterate(initialState.zipWithIndex)(growGeneration).drop(20).next.filter(_._1).map(_._2).sum.toString
-  override def answer2: String = ""
+  def answer(in: List[(Boolean, Int)]): String = {
+    in.filter(_._1).map(_._2).sum.toString
+  }
+
+  override def answer1: String = answer(Iterator.iterate(initialState.zipWithIndex)(growGeneration).drop(20).next)
+  override def answer2: String = Dynamic.detectCycle(Iterator.iterate(initialState.zipWithIndex)(growGeneration)).toString
 }
