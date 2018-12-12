@@ -48,31 +48,30 @@ class TestDay11 extends UnitSpec {
     "calculating a 3x3 at 33, 45 with serial number 18" should {
       "be 29" in {
         val day = new Day11(serialNumber(18))
-        day.gridTotalPower(3, 3)(33, 45) shouldBe 29
+        day.gridPower(33, 45, 3)._2 shouldBe 29
       }
     }
 
     "calculating a 3x3 at 21, 61 with serial number 42" should {
       "be 30" in {
         val day = new Day11(serialNumber(42))
-        day.gridTotalPower(3, 3)(21, 61) shouldBe 30
+        day.gridPower(21, 61, 3)._2 shouldBe 30
       }
     }
   }
 
   "answer 1" when {
     "given example" should {
-      "be ???" in {
+      "be (233,36,3)" in {
         val day = new Day11(serialNumber(0))
-        day.answer1
-        assert(true)
+        day.answer1 shouldBe "(233,36,3)"
       }
     }
   }
 
   "answer 2" when {
     "given example" should {
-      "be ???" in {
+      "be ???" ignore {
         val day = new Day11(serialNumber(0))
         day.answer2
         assert(true)

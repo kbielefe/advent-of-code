@@ -65,11 +65,28 @@ class TestDynamic extends UnitSpec {
           List( -8,  6, 17, 30, 29),
           List( -5, 12, 26, 34, 32)
         )
-        // Score of 30 for middle 3x3
-        // for x, y, size = power(x + size - 1, y + size - 1) -
-        //                  power(x + size - 1, y - 1) -
-        //                  power(x - 1, y + size - 1) +
-        //                  power(x - 1, y - 1)
+        val sums = Dynamic.cumulativeSums(input)
+        sums shouldBe output
+      }
+    }
+
+    "given another big input" should {
+      "return the correct output" in {
+        val input = List(
+          List(-2,  -4,   4,   4,   4),
+          List(-4,   4,   4,   4,  -5),
+          List( 4,   3,   3,   4,  -4),
+          List( 1,   1,   2,   4,  -3),
+          List(-1,   0,   2,  -5,  -2)
+        )
+        val output = List(
+          List(-2, -6, -2,  2,  6),
+          List(-6, -6,  2, 10,  9),
+          List(-2,  1, 12, 24, 19),
+          List(-1,  3, 16, 32, 24),
+          List(-2,  2, 17, 28, 18)
+        )
+        // Total power 29
         val sums = Dynamic.cumulativeSums(input)
         sums shouldBe output
       }

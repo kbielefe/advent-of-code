@@ -1,6 +1,10 @@
 package common
 
 object Dynamic {
+  /**
+   * Given a list of rows from top to bottom, outputs a list of lists where
+   * every element is a sum of everything above it and to its left, including itself.
+   */
   def cumulativeSums[A](input: List[List[A]])(implicit n: Numeric[A]): List[List[A]] = {
     def sumRow(above: List[A], row: List[A]): List[A] = {
       val zipped: List[(A, A, A)] = (n.zero :: above, above, row).zipped.toList
