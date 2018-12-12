@@ -38,6 +38,12 @@ class Day12(source: Source) extends Day {
     in.filter(_._1).map(_._2).sum.toString
   }
 
-  override def answer1: String = answer(Iterator.iterate(initialState.zipWithIndex)(growGeneration).drop(20).next)
-  override def answer2: String = Dynamic.detectCycle(Iterator.iterate(initialState.zipWithIndex)(growGeneration)).toString
+  def generationIterator: Iterator[List[(Boolean, Int)]] = Iterator.iterate(initialState.zipWithIndex)(growGeneration)
+
+  override def answer1: String = answer(generationIterator.drop(20).next)
+  override def answer2: String = {
+    val (stableTime, _) = Dynamic.detectCycle(generationIterator.map(_.map{_._1})).get
+    val stablePositions: List[Long] = generationIterator.map(_.filter{_._1}.map{_._2.toLong}).drop(stableTime).next
+    stablePositions.map{x => 50000000000L - stableTime.toLong + x}.sum.toString
+  }
 }
