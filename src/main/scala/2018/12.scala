@@ -21,6 +21,7 @@ class Day12(source: Source) extends Day {
 
   val rules: Map[List[Boolean], Boolean] = input.map(toRule).toMap
 
+  // TODO: Only store the plants
   def growGeneration(in: List[(Boolean, Int)]): List[(Boolean, Int)] = {
     val firstNumber = in.head._2
     val lastNumber = in.last._2
@@ -40,10 +41,13 @@ class Day12(source: Source) extends Day {
 
   def generationIterator: Iterator[List[(Boolean, Int)]] = Iterator.iterate(initialState.zipWithIndex)(growGeneration)
 
+  def generationToString(generation: List[(Boolean, Int)]): String = generation.map{x => if (x._1) '#' else '.'}.mkString
+
   override def answer1: String = answer(generationIterator.drop(20).next)
   override def answer2: String = {
-    val (stableTime, _) = Dynamic.detectCycle(generationIterator.map(_.map{_._1})).get
-    val stablePositions: List[Long] = generationIterator.map(_.filter{_._1}.map{_._2.toLong}).drop(stableTime).next
-    stablePositions.map{x => 50000000000L - stableTime.toLong + x}.sum.toString
+    def removeTimestamp(x: List[(Boolean, Int)]) = x.map{_._1}
+    val (stableTime, _, repeated) = Dynamic.detectCycle(generationIterator, removeTimestamp).get
+    val stablePositions = repeated.filter{_._1}.map{_._2.toLong}
+    stablePositions.map{x => 50000000000L - stableTime.toLong  - 1 + x}.sum.toString
   }
 }
