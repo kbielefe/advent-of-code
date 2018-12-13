@@ -39,4 +39,7 @@ object Dynamic {
 
     detectSeen(it, Map.empty[A, Int], 0)
   }
+
+ def frequency[A](xs: TraversableOnce[A]): Map[A, Int] =
+   xs.foldLeft(Map.empty[A, Int]){case (freq, next) => freq + (next -> (freq.getOrElse(next, 0) + 1))}
 }

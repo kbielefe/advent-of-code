@@ -1,10 +1,10 @@
 package advent2018
-import common.Day
+import common.{Day, Dynamic}
 import scala.io.Source
 
 class Day2(source: Source) extends Day {
   val input = source.getLines.toList
-  val counts = input map {_.groupBy(identity).map{_._2.length}.toList}
+  val counts = input.map{xs => Dynamic.frequency(xs).map{_._2}.toSet}
   def appearsN(n: Int): Int = counts count {_ contains n}
 
   override def answer1 = (appearsN(2) * appearsN(3)).toString
