@@ -1,13 +1,14 @@
 package advent2018
 import common.{Day, Visualize}
 import scala.io.Source
+import cats.data.State
 
 class Day13(source: Source) extends Day {
   type Path    = Map[(Int, Int), Char]
   type Carts   = Map[(Int, Int, Int), Cart]
   type Crashes = Set[(Int, Int)]
 
-  case class Cart(facing: Char, lastTurn: Char)
+  case class Cart(x: Int, y: Int, id: Int, facing: Char, lastTurn: Char)
 
   // TODO: Make a generic parseGrid function from Source or String
   // Allows different coordinate systems: row/col, x/y, etc.
@@ -22,7 +23,7 @@ class Day13(source: Source) extends Day {
     path
       .filter{"^v<>" contains _._2}
       .zipWithIndex
-      .map{case (((x, y), char), z) => ((x, y, z) -> Cart(char, 'R'))}
+      .map{case (((x, y), char), id) => ((x, y, id) -> Cart(x, y, id, char, 'R'))}
       .toMap
   }
 
@@ -36,39 +37,7 @@ class Day13(source: Source) extends Day {
     }
   }
 
-  def move(path: Char, cart: Cart): (Int, Int, Cart) = (path, cart) match {
-    case ('/', Cart('^', t)) => ( 1,  0, Cart('>', t))
-    case ('/', Cart('v', t)) => (-1,  0, Cart('<', t))
-    case ('/', Cart('>', t)) => ( 0, -1, Cart('^', t))
-    case ('/', Cart('<', t)) => ( 0,  1, Cart('v', t))
-
-    case ('\\', Cart('^', t)) => (-1,  0, Cart('<', t))
-    case ('\\', Cart('v', t)) => ( 1,  0, Cart('>', t))
-    case ('\\', Cart('>', t)) => ( 0,  1, Cart('v', t))
-    case ('\\', Cart('<', t)) => ( 0, -1, Cart('^', t))
-
-    case ('-', Cart('<', t)) => (-1, 0, Cart('<', t))
-    case ('-', Cart('>', t)) => ( 1, 0, Cart('>', t))
-
-    case ('|', Cart('^', t)) => (0, -1, Cart('^', t))
-    case ('|', Cart('v', t)) => (0,  1, Cart('v', t))
-
-    case ('+', Cart('v', 'L')) => ( 0, 1, Cart('v', 'S'))
-    case ('+', Cart('v', 'S')) => (-1, 0, Cart('<', 'R'))
-    case ('+', Cart('v', 'R')) => ( 1, 0, Cart('>', 'L'))
-
-    case ('+', Cart('^', 'L')) => ( 0, -1, Cart('^', 'S'))
-    case ('+', Cart('^', 'S')) => ( 1,  0, Cart('>', 'R'))
-    case ('+', Cart('^', 'R')) => (-1,  0, Cart('<', 'L'))
-
-    case ('+', Cart('<', 'L')) => (-1,  0, Cart('<', 'S'))
-    case ('+', Cart('<', 'S')) => ( 0, -1, Cart('^', 'R'))
-    case ('+', Cart('<', 'R')) => ( 0,  1, Cart('v', 'L'))
-
-    case ('+', Cart('>', 'L')) => ( 1,  0, Cart('>', 'S'))
-    case ('+', Cart('>', 'S')) => ( 0,  1, Cart('v', 'R'))
-    case ('+', Cart('>', 'R')) => ( 0, -1, Cart('^', 'L'))
-  }
+  def move(path: Char, cart: Cart): (Int, Int, Cart) = ???
 
   def moveCarts(path: Path, carts: Carts, removeCrashed: Boolean = false): (Carts, Crashes) = {
     val sorted = carts.toList.sortBy(_._1)
@@ -143,10 +112,26 @@ class Day13(source: Source) extends Day {
     val merged =
       path ++
       crashes.map{case (x, y) => ((x, y), 'X')}.toMap ++
-      carts.map{case ((x, y, _), Cart(char, _)) => ((x, y), char)} ++
+      carts.map{case ((x, y, _), Cart(_, _, _, char, _)) => ((x, y), char)} ++
       Map(((148, 109), '*'))
     Visualize.gridToString{case (x, y) => merged.getOrElse((x, y), ' ')}(minX, minY, width, height) ++ Iterator("")
   }
+
+  type CartState = (Set[Cart], Cart)
+
+  def removeCart(remove: Cart): State[CartState, Unit] =
+    State{case (carts, cart) => ((carts - remove, cart), ())}
+
+  def addCart(add: Cart): State[CartState, Unit] =
+    State{case (carts, cart) => ((carts + add, cart), ())}
+
+  def replaceCart(remove: Cart, add: Cart): State[CartState, Unit] =
+    removeCart(remove) flatMap {_ => addCart(add)}
+
+  def changeCurrent(newCurrent: Cart): State[CartState, Unit] =
+    State{case (carts, cart) => ((carts - cart + newCurrent, newCurrent), ())}
+
+  def turnLeft: State[CartState, Unit] = ???
 
   override def answer1: String = firstCrash(source).toString
   override def answer2: String = lastManStanding(source).toString
@@ -155,3 +140,23 @@ class Day13(source: Source) extends Day {
   // 149, 109 is wrong
   // 147, 109 is wrong
 }
+
+// With State:
+// s -> (s, a)
+// state is (Carts, current cart)
+// Take a single cart:
+//  move in current direction
+//  turn at slash
+//  turn at backslash
+//  turn at plus
+//  check for collision
+//  output crash location
+//  remove collided carts
+//  check for single cart
+//  output single cart location
+// Utilities:
+//  change current cart
+//  turn left
+//  turn right
+//  loop through all carts in sorted order
+//  loop until output detected
