@@ -12,6 +12,15 @@ class TestDay13 extends UnitSpec {
    *\-+-/  \-+--/
    *  \------/   """.stripMargin('*').trim)
 
+  def example2 = Source.fromString("""
+   */>-<\
+   *|   |
+   *| /<+-\
+   *| | | v
+   *\>+</ |
+   *  |   ^
+   *  \<->/""".stripMargin('*').trim)
+
   "parsePath" when {
     "given example" should {
       "have a > at 2, 0" in {
@@ -63,6 +72,15 @@ class TestDay13 extends UnitSpec {
       "detect a crash at 7,3" in {
         val day = new Day13(example)
         day.firstCrash(example) shouldBe (7, 3)
+      }
+    }
+  }
+
+  "lastManStanding" when {
+    "given second example path" should {
+      "detect the last man standing at 6, 4" in {
+        val day = new Day13(example)
+        day.lastManStanding(example2) shouldBe (6, 4)
       }
     }
   }
