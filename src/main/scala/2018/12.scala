@@ -7,11 +7,14 @@ class Day12(source: Source) extends Day {
   val input = source.getLines
   val initialStateRegex = """initial state: ([#.]+)""".r
 
-  val initialState = input.next match {
-    case initialStateRegex(state) => toBooleanList(state)
+  val initialState: Set[Int] = input.next match {
+    case initialStateRegex(state) => toState(state)
   }
 
   def toBooleanList(s: String): List[Boolean] = s.toList.map{_ == '#'}
+
+  def toState(s: String): Set[Int] = toBooleanList(s).zipWithIndex.filter{_._1}.map{_._2}.toSet
+
   input.next // skip blank line
 
   val ruleRegex = """([#.]+)\s*=>\s*([#.])""".r
@@ -21,33 +24,22 @@ class Day12(source: Source) extends Day {
 
   val rules: Map[List[Boolean], Boolean] = input.map(toRule).toMap
 
-  // TODO: Only store the plants
-  def growGeneration(in: List[(Boolean, Int)]): List[(Boolean, Int)] = {
-    val firstNumber = in.head._2
-    val lastNumber = in.last._2
-    val fourFalses = List(false, false, false, false)
-    val leftPadding = fourFalses zip ((firstNumber - 4) to (firstNumber - 1))
-    val rightPadding = fourFalses zip ((lastNumber + 1) to (lastNumber + 4))
-    (leftPadding ++ in ++ rightPadding).sliding(5).map{pattern =>
-      val hasPlant = rules.getOrElse(pattern map {_._1}, false)
-      val number = pattern.drop(2).head._2
-      (hasPlant, number)
-    }.toList.dropWhile(!_._1).reverse.dropWhile(!_._1).reverse
+  def growGeneration(in: Set[Int]): Set[Int] = {
+    val pots: Set[Int] = in flatMap {pot => (pot - 4) to (pot + 4)}
+    pots.map{pot =>
+      val pattern = (-2 to 2).toList map {pos => in contains (pot + pos)}
+      rules.get(pattern) flatMap {if (_) Some(pot) else None}
+    }.flatten
   }
 
-  def answer(in: List[(Boolean, Int)]): String = {
-    in.filter(_._1).map(_._2).sum.toString
-  }
+  def answer(in: Set[Int]): String = in.sum.toString
 
-  def generationIterator: Iterator[List[(Boolean, Int)]] = Iterator.iterate(initialState.zipWithIndex)(growGeneration)
-
-  def generationToString(generation: List[(Boolean, Int)]): String = generation.map{x => if (x._1) '#' else '.'}.mkString
+  def generationIterator: Iterator[Set[Int]] = Iterator.iterate(initialState)(growGeneration)
 
   override def answer1: String = answer(generationIterator.drop(20).next)
   override def answer2: String = {
-    def removeTimestamp(x: List[(Boolean, Int)]) = x.map{_._1}
-    val (stableTime, _, repeated) = Dynamic.detectCycle(generationIterator, removeTimestamp).get
-    val stablePositions = repeated.filter{_._1}.map{_._2.toLong}
-    stablePositions.map{x => 50000000000L - stableTime.toLong  - 1 + x}.sum.toString
+    val (stableTime, _, _) = Dynamic.detectCycle(generationIterator.map{x => x.map{_ - x.min}}).get
+    val stablePositions = generationIterator.drop(stableTime).next
+    stablePositions.map{50000000000L - stableTime + _}.sum.toString
   }
 }

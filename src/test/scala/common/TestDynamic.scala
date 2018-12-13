@@ -96,7 +96,7 @@ class TestDynamic extends UnitSpec {
   "detectCycle" when {
     "given a cycling iterator" should {
       "detect the period and time of first repeat" in {
-        Dynamic.detectCycle[Int, Int](Iterator(1,2,3,4,5) ++ Iterator.continually(List(6, 7, 8)).flatten) shouldBe Some((5, 3, 6))
+        Dynamic.detectCycle(Iterator(1,2,3,4,5) ++ Iterator.continually(List(6, 7, 8)).flatten) shouldBe Some((5, 3, 6))
       }
     }
   }

@@ -1,6 +1,13 @@
 package common
 
 object Visualize {
+  def booleanRowToString(f: (Int) => Boolean)(min: Int, max: Int, charIfTrue: Char, charIfFalse: Char): String = {
+    val cells = for {
+      x <- min to max
+    } yield if (f(x)) charIfTrue else charIfFalse
+    cells.mkString
+  }
+
   // returns an iterator of rows
   def gridToString(f: (Int, Int) => Any)(minX: Int, minY: Int, width: Int, height: Int): Iterator[String] = {
     val widths = for {

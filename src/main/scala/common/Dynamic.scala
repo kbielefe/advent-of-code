@@ -21,27 +21,22 @@ object Dynamic {
 
   /*
   * Returns (number of elements before cycle starts, period of cycle, repeated element)
-  * it is the iterator to detect a cycle in
-  * f is a function from the full element to a derived element that has duplicates
-  * For example, the full element may contain a counter, so f strips off that counter so it
-  * won't be considered when looking for duplicates. Or it might create a hash.
   */
- def detectCycle[A,B](it: Iterator[A], f: (A) => B = {x: A => x}): Option[(Int, Int, A)] = {
+ def detectCycle[A](it: Iterator[A]): Option[(Int, Int, A)] = {
     @tailrec
-    def detectSeen(it: Iterator[A], seen: Map[B, Int], count: Int): Option[(Int, Int, A)] = {
+    def detectSeen(it: Iterator[A], seen: Map[A, Int], count: Int): Option[(Int, Int, A)] = {
       if (!it.hasNext) {
         None
       } else {
         val curr = it.next
-        val hash = f(curr)
-        val startOption = seen.get(hash)
+        val startOption = seen.get(curr)
         if (startOption.isDefined)
           startOption map {start => (start, count - start, curr)}
         else
-          detectSeen(it, seen + (hash -> count), count + 1)
+          detectSeen(it, seen + (curr -> count), count + 1)
       }
     }
 
-    detectSeen(it, Map.empty[B, Int], 0)
+    detectSeen(it, Map.empty[A, Int], 0)
   }
 }
