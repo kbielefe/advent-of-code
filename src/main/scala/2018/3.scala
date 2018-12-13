@@ -26,6 +26,7 @@ class Day3(source: Source) extends Day {
     squares.toMap
   }
 
+  // TODO: Make generic function in Dynamic? Use cats-collection diet?
   def mergeMaps(first: ClaimMap, second: ClaimMap): ClaimMap = {
     second.foldLeft(first){case (accum, (nextIndex, nextId)) =>
       val existing: Set[Int] = accum.getOrElse(nextIndex, Set.empty[Int])
