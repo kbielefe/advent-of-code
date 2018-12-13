@@ -6,7 +6,7 @@ class Day13(source: Source) extends Day {
   val input = source
 
   type Path  = Map[(Int, Int), Char]
-  type Carts = Map[(Int, Int), Cart]
+  type Carts = Map[(Int, Int, Int), Cart]
 
   case class Cart(facing: Char, lastTurn: Char)
 
@@ -22,7 +22,8 @@ class Day13(source: Source) extends Day {
   def getCarts(path: Path): Carts = {
     path
       .filter{"^v<>" contains _._2}
-      .map{case ((x, y), char) => ((x, y) -> Cart(char, 'R'))}
+      .zipWithIndex
+      .map{case (((x, y), char), z) => ((x, y, z) -> Cart(char, 'R'))}
       .toMap
   }
 
@@ -71,22 +72,22 @@ class Day13(source: Source) extends Day {
   }
 
   def moveCarts(path: Path, carts: Carts): Carts = {
-    carts.map{case ((x, y), cart) =>
+    carts.map{case ((x, y, z), cart) =>
       val (xOffset, yOffset, newCart) = move(path(x, y), cart)
-      ((x + xOffset, y + yOffset), newCart)
+      ((x + xOffset, y + yOffset, z), newCart)
     }
   }
 
   def firstCrash(path: Path, carts: Carts): (Int, Int) = {
     def crashed(carts: Carts): Set[(Int, Int)] = {
-      carts.groupBy{_._1}.mapValues{_.size}.filter{_._2 > 1}.map{_._1}.toSet
+      carts.groupBy{c => (c._1._1, c._1._2)}.mapValues{_.size}.filter{_._2 > 1}.map{_._1}.toSet
     }
-    val animation = Iterator.iterate(carts)(moveCarts(path, _)).take(20)
+    def animation = Iterator.iterate(carts)(moveCarts(path, _))
     animation.map(crashed).find(!_.isEmpty).get.head
   }
 
   def pathToString(path: Path, carts: Carts): Iterator[String] = {
-    val combined: Path = path ++ (carts mapValues {_.facing})
+    val combined: Path = path ++ (carts map {case ((x, y, z), cart) => ((x, y), cart.facing)})
     Visualize.gridToString{case (x, y) => combined.getOrElse((x, y), ' ')}(0, 0, combined.map{_._1._1}.max + 1, combined.map{_._1._2}.max + 1)
   }
 
@@ -98,6 +99,14 @@ class Day13(source: Source) extends Day {
     }
   }
 
-  override def answer1: String = ???
+  def firstCrash(input: Source): (Int, Int) = {
+    val rawPath = parsePath(input)
+    val path  = removeCartsFromPath(rawPath)
+    val carts = getCarts(rawPath)
+    firstCrash(path, carts)
+  }
+
+  override def answer1: String = firstCrash(input).toString
+  // (89,53) is wrong
   override def answer2: String = ???
 }

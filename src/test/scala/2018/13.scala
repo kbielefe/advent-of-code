@@ -5,7 +5,7 @@ import scala.io.Source
 
 class TestDay13 extends UnitSpec {
   def example = Source.fromString("""
-   */->-\        
+   */->-\
    *|   |  /----\
    *| /-+--+-\  |
    *| | |  | v  |
@@ -31,13 +31,13 @@ class TestDay13 extends UnitSpec {
       "have a right-facing cart at 2, 0" in {
         val day = new Day13(example)
         val carts = day.getCarts(day.parsePath(example))
-        carts((2, 0)) shouldBe day.Cart('>', 'R')
+        carts((2, 0, 0)) shouldBe day.Cart('>', 'R')
       }
 
       "have a down-facing cart at 9, 3" in {
         val day = new Day13(example)
         val carts = day.getCarts(day.parsePath(example))
-        carts((9, 3)) shouldBe day.Cart('v', 'R')
+        carts((9, 3, 1)) shouldBe day.Cart('v', 'R')
       }
     }
   }
@@ -62,11 +62,7 @@ class TestDay13 extends UnitSpec {
     "given example path" should {
       "detect a crash at 7,3" in {
         val day = new Day13(example)
-        val rawPath = day.parsePath(example)
-        val path = day.removeCartsFromPath(rawPath)
-        val carts = day.getCarts(rawPath)
-        day.printAnimation(path, carts)
-        day.firstCrash(path, carts) shouldBe (7, 3)
+        day.firstCrash(example) shouldBe (7, 3)
       }
     }
   }
