@@ -5,8 +5,9 @@ import scala.io.Source
 class Day13(source: Source) extends Day {
   val input = source
 
-  type Path  = Map[(Int, Int), Char]
-  type Carts = Map[(Int, Int, Int), Cart]
+  type Path    = Map[(Int, Int), Char]
+  type Carts   = Map[(Int, Int, Int), Cart]
+  type Crashes = Set[(Int, Int)]
 
   case class Cart(facing: Char, lastTurn: Char)
 
@@ -71,32 +72,35 @@ class Day13(source: Source) extends Day {
     case ('+', Cart('>', 'R')) => ( 0, -1, Cart('^', 'L'))
   }
 
-  def moveCarts(path: Path, carts: Carts): Carts = {
-    carts.map{case ((x, y, z), cart) =>
+  def moveCarts(path: Path, carts: Carts): (Carts, Crashes) = {
+    val sorted = carts.toList.sortBy(_._1)
+    sorted.foldLeft((carts, Set.empty[(Int, Int)])){case ((oldCarts, crashes), ((x, y, z), cart)) =>
       val (xOffset, yOffset, newCart) = move(path(x, y), cart)
-      ((x + xOffset, y + yOffset, z), newCart)
+      val newX = x + xOffset
+      val newY = y + yOffset
+      val newCarts = oldCarts - ((x, y, z)) + (((newX, newY, z), newCart))
+      val crashed = oldCarts.exists{case ((oldX, oldY, _), _) => oldX == newX && oldY == newY}
+      val newCrashes = if (crashed) crashes + ((newX, newY)) else crashes
+      (newCarts, newCrashes)
     }
   }
 
-  def firstCrash(path: Path, carts: Carts): (Int, Int) = {
-    def crashed(carts: Carts): Set[(Int, Int)] = {
-      carts.groupBy{c => (c._1._1, c._1._2)}.mapValues{_.size}.filter{_._2 > 1}.map{_._1}.toSet
+  def animation(path: Path, carts: Carts): Iterator[(Carts, Crashes)] = {
+    Iterator.iterate((carts, Set.empty[(Int, Int)])){case (oldCarts, crashes) =>
+      val (newCarts, newCrashes) = moveCarts(path, oldCarts)
+      (newCarts, crashes ++ newCrashes)
     }
-    def animation = Iterator.iterate(carts)(moveCarts(path, _))
-    animation.map(crashed).find(!_.isEmpty).get.head
+  }
+
+  // TODO: Look up auto-currying in Scala
+  // TODO: Make a runner option to step through an animation
+  def firstCrash(path: Path, carts: Carts): (Int, Int) = {
+    animation(path, carts).find(!_._2.isEmpty).get._2.head
   }
 
   def pathToString(path: Path, carts: Carts): Iterator[String] = {
     val combined: Path = path ++ (carts map {case ((x, y, z), cart) => ((x, y), cart.facing)})
     Visualize.gridToString{case (x, y) => combined.getOrElse((x, y), ' ')}(0, 0, combined.map{_._1._1}.max + 1, combined.map{_._1._2}.max + 1)
-  }
-
-  def printAnimation(path: Path, carts: Carts): Unit = {
-    val animation = Iterator.iterate(carts)(moveCarts(path, _)).take(20)
-    animation.map(pathToString(path, _)) foreach {lines =>
-      lines foreach println
-      println("")
-    }
   }
 
   def firstCrash(input: Source): (Int, Int) = {
@@ -107,6 +111,5 @@ class Day13(source: Source) extends Day {
   }
 
   override def answer1: String = firstCrash(input).toString
-  // (89,53) is wrong
   override def answer2: String = ???
 }
