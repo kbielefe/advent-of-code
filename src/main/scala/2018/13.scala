@@ -1,7 +1,8 @@
 package advent2018
 import common.{Day, Visualize}
 import scala.io.Source
-import cats.data.State
+import cats.data.{State, IndexedStateT}
+import cats.Applicative
 
 class Day13(source: Source) extends Day {
   type Path    = Map[(Int, Int), Char]
@@ -117,21 +118,119 @@ class Day13(source: Source) extends Day {
     Visualize.gridToString{case (x, y) => merged.getOrElse((x, y), ' ')}(minX, minY, width, height) ++ Iterator("")
   }
 
-  type CartState = (Set[Cart], Cart)
+  type CartState  = (Set[Cart], Cart)
+  type UnitState  = State[CartState, Unit]
+  type Collisions = Set[Cart]
 
-  def removeCart(remove: Cart): State[CartState, Unit] =
-    State{case (carts, cart) => ((carts - remove, cart), ())}
+  def mapCurrent(f: Cart => Cart): UnitState =
+    State{case (carts, cart) => ((carts - cart + f(cart), f(cart)), ())}
 
-  def addCart(add: Cart): State[CartState, Unit] =
-    State{case (carts, cart) => ((carts + add, cart), ())}
+  def moveForward: UnitState =
+    mapCurrent{case Cart(x, y, id, facing, lastTurn) => 
+      val (newX, newY) = facing match {
+        case '^' => (x, y - 1)
+        case 'v' => (x, y + 1)
+        case '>' => (x + 1, y)
+        case '<' => (x - 1, y)
+      }
+      Cart(newX, newY, id, facing, lastTurn)
+    }
 
-  def replaceCart(remove: Cart, add: Cart): State[CartState, Unit] =
-    removeCart(remove) flatMap {_ => addCart(add)}
+  def turnLeft(updateLast: Boolean = false): UnitState =
+    mapCurrent{case Cart(x, y, id, facing, lastTurn) => 
+      val newFacing = facing match {
+        case '^' => '<'
+        case 'v' => '>'
+        case '>' => '^'
+        case '<' => 'v'
+      }
+      Cart(x, y, id, newFacing, if (updateLast) 'L' else lastTurn)
+    }
 
-  def changeCurrent(newCurrent: Cart): State[CartState, Unit] =
-    State{case (carts, cart) => ((carts - cart + newCurrent, newCurrent), ())}
+  def turnRight(updateLast: Boolean = false): UnitState =
+    mapCurrent{case Cart(x, y, id, facing, lastTurn) => 
+      val newFacing = facing match {
+        case '^' => '>'
+        case 'v' => '<'
+        case '>' => 'v'
+        case '<' => '^'
+      }
+      Cart(x, y, id, newFacing, if (updateLast) 'R' else lastTurn)
+    }
 
-  def turnLeft: State[CartState, Unit] = ???
+  def stayStraight(updateLast: Boolean = false): UnitState =
+    mapCurrent{cart => if (updateLast) cart.copy(lastTurn = 'S') else cart}
+
+  def turnAtSlash: UnitState =
+    State.get flatMap {_._2.facing match {
+        case '^' => turnRight()
+        case 'v' => turnRight()
+        case '>' => turnLeft()
+        case '<' => turnLeft()
+      }
+    }
+
+  def turnAtBackslash: UnitState =
+    State.get flatMap {_._2.facing match {
+        case '^' => turnLeft()
+        case 'v' => turnLeft()
+        case '>' => turnRight()
+        case '<' => turnRight()
+      }
+    }
+
+  def turnAtPlus: UnitState =
+    State.get flatMap {_._2.lastTurn match {
+        case 'L' => stayStraight(true)
+        case 'S' => turnRight(true)
+        case 'R' => turnLeft(true)
+      }
+    }
+
+  def turn(path: Path): UnitState =
+    State.get flatMap {s => 
+      val pathChar = path((s._2.x, s._2.y))
+      pathChar match {
+        case '\\' => turnAtBackslash
+        case '/'  => turnAtSlash
+        case '+'  => turnAtPlus
+      }
+    }
+
+  def getCollisions: State[CartState, Collisions] =
+    State{case s@(carts, Cart(x, y, _, _, _)) =>
+      (s, carts.filter{c => c.x == x && c.y == y}.toSet)
+    }
+
+  def getCrashLocation(a: Collisions): Option[(Int, Int)] = a.map{c => (c.x, c.y)}.headOption
+
+  def moveCart(cart: Cart, path: Path, part: Int): State[CartState, Option[(Int, Int)]] = {
+    val part1 = for {
+      _            <- moveForward
+      _            <- turn(path)
+      collisions   <- getCollisions
+      crashLocation = getCrashLocation(collisions)
+    } yield crashLocation
+
+    val part2 = part1
+    // remove collided carts
+    // check for single cart
+    // output single cart location
+
+    if (part == 1) part1 else part2
+  }
+
+  def sortCartList[F[_]](implicit f: Applicative[F]): IndexedStateT[F, CartState, List[Cart], Unit] =
+    IndexedStateT{case s@(carts, cart) =>
+       f.pure((carts.toList.sortBy{c => (c.x, c.y)}, ()))
+    }
+
+  // def moveAllCartsOnce(path: Path, part: Int): State[CartState, Option[(Int, Int)]] = {
+  //   for {
+  //     cart  <- sortCartList
+  //     result <- moveCart(cart, path, part)
+  //   } yield result
+  // }
 
   override def answer1: String = firstCrash(source).toString
   override def answer2: String = lastManStanding(source).toString
@@ -140,23 +239,3 @@ class Day13(source: Source) extends Day {
   // 149, 109 is wrong
   // 147, 109 is wrong
 }
-
-// With State:
-// s -> (s, a)
-// state is (Carts, current cart)
-// Take a single cart:
-//  move in current direction
-//  turn at slash
-//  turn at backslash
-//  turn at plus
-//  check for collision
-//  output crash location
-//  remove collided carts
-//  check for single cart
-//  output single cart location
-// Utilities:
-//  change current cart
-//  turn left
-//  turn right
-//  loop through all carts in sorted order
-//  loop until output detected
