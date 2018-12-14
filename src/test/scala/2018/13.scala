@@ -40,13 +40,13 @@ class TestDay13 extends UnitSpec {
       "have a right-facing cart at 2, 0" in {
         val day = new Day13(example)
         val carts = day.getCarts(day.parsePath(example))
-        carts((2, 0, 0)) shouldBe day.Cart('>', 'R')
+        carts((2, 0, 0)) shouldBe day.Cart(2, 0, 0, '>', 'R')
       }
 
       "have a down-facing cart at 9, 3" in {
         val day = new Day13(example)
         val carts = day.getCarts(day.parsePath(example))
-        carts((9, 3, 1)) shouldBe day.Cart('v', 'R')
+        carts((9, 3, 1)) shouldBe day.Cart(9, 3, 1, 'v', 'R')
       }
     }
   }
