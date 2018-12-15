@@ -1,6 +1,7 @@
 package advent2018
 import common.{Day, Grid}
 import scala.io.Source
+import monix.eval.Coeval
 
 class Day13(source: Source) extends Day {
   sealed abstract class Cell(gridChar: Char) extends Grid.Cell {
@@ -48,7 +49,7 @@ class Day13(source: Source) extends Day {
 
   def parseGrid(input: Source): Grid[Cell] = Grid(0, 0, ' ', input, under _, charToCell _)
 
-  def order(grid: Grid[Cell]): Iterator[(Int, Int)] =
+  def order(grid: Grid[Cell]): List[(Int, Int)] =
     grid.readingOrder{
       case c: Cart => true
       case _       => false
@@ -62,7 +63,10 @@ class Day13(source: Source) extends Day {
 
   def firstCrash(input: Source): (Int, Int) = {
     val grid = parseGrid(input)
-    grid.rounds(turn, order).map{_._2}.find{_.isDefined}.get.get
+    grid.rounds[Coeval, Option[(Int, Int)]](turn, order)
+      .map{_._2}
+      .findL{_.isDefined}
+      .value.get.get
   }
 
   def lastManStanding(input: Source): (Int, Int) = ???

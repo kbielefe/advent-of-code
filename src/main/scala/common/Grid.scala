@@ -1,5 +1,8 @@
 package common
 import scala.io.Source
+import monix.tail.Iterant
+import cats.Applicative
+import cats.effect.Sync
 
 // Internal coordinates have (x, y) where (0, 0) is at top left
 class Grid[Cell <: Grid.Cell](private val zorders: Map[(Int, Int), List[Cell]]) {
@@ -23,10 +26,10 @@ class Grid[Cell <: Grid.Cell](private val zorders: Map[(Int, Int), List[Cell]]) 
     }
   }
 
-  def readingOrder(p: (Cell) => Boolean = _ => true): Iterator[(Int, Int)] = {
+  def readingOrder(p: (Cell) => Boolean = _ => true): List[(Int, Int)] = {
     val all = for {
-      y <- (top to bottom).iterator
-      x <- (left to right).iterator
+      y <- (top to bottom).toList
+      x <- (left to right).toList
     } yield (x, y)
     all
       .filter{case (x, y) => zorders contains (x, y)}
@@ -36,18 +39,20 @@ class Grid[Cell <: Grid.Cell](private val zorders: Map[(Int, Int), List[Cell]]) 
   /**
    * Runs turn for every cell in the cellOrder, which order is recalculated at the end of every round.
    */
-  def rounds[A](turn: (Grid[Cell], (Int, Int)) => (Grid[Cell], A),
-                cellOrder: (Grid[Cell]) => Iterator[(Int, Int)] = _.readingOrder()): Iterator[(Grid[Cell], A)] = {
-    def recurse(grid: Grid[Cell], order: Iterator[(Int, Int)]): Iterator[(Grid[Cell], A)] = {
-      if (!order.hasNext) {
+  def rounds[F[_], A](turn: (Grid[Cell], (Int, Int)) => (Grid[Cell], A),
+                     cellOrder: (Grid[Cell]) => List[(Int, Int)] = _.readingOrder())(
+                     implicit F: Sync[F]
+                     ): Iterant[F, (Grid[Cell], A)] = {
+    def recurse(grid: Grid[Cell], order: List[(Int, Int)]): Iterant[F, (Grid[Cell], A)] = {
+      if (order.isEmpty) {
         recurse(grid, cellOrder(grid))
       } else {
-        val coords = order.next
+        val (coords :: remainingOrder) = order
         val (newGrid, result) = turn(grid, coords)
-        Iterator((newGrid, result)) flatMap {_ => recurse(newGrid, order)}
+        Iterant.pure((newGrid, result)) flatMap {_ => recurse(newGrid, remainingOrder)}
       }
     }
-    recurse(this, Iterator.empty)
+    recurse(this, List.empty)
   }
 
   def getCell(x: Int, y: Int): Option[Cell] = zorders.get(x, y) map {_.head}
