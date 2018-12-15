@@ -23,6 +23,14 @@ class Grid[Cell <: Grid.Cell](private val zorders: Map[(Int, Int), List[Cell]]) 
     }
   }
 
+  def readingOrder: Iterator[Cell] = {
+    val all = for {
+      y <- (top to bottom).iterator
+      x <- (left to right).iterator
+    } yield getCell(x, y)
+    all.flatten
+  }
+
   def getCell(x: Int, y: Int): Option[Cell] = zorders.get(x, y) map {_.head}
 
   def getLines(empty: Char = ' '): Iterator[String] = {

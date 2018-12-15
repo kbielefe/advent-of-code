@@ -41,5 +41,12 @@ class TestGrid extends UnitSpec {
         grid.move((4, 1), (4, 0)).move((4, 0), (4, 1)).getCell(4, 1) shouldBe Some(Elf(3, 200))
       }
     }
+
+    "reading order retrieved" should {
+      "skip empty cells" in {
+        grid.readingOrder.drop(10).next shouldBe Wall()
+        grid.readingOrder.drop(11).next shouldBe Elf(3, 200)
+      }
+    }
   }
 }
