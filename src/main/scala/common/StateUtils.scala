@@ -19,13 +19,10 @@ object StateUtils {
     }
   }
 
-  // S = Set[Cart]
-  // A = Option[(Int, Int)]
-  // B = Cart
-  def foreach[S,A,B](s: State[(S, B), A]): IndexedStateT[Eval, (S, List[B]), (S, Unit), List[A]] = {
-    State.get[(S, List[B])] flatMap {case (_, l) =>
+  def foreach[S,A,B](s: State[(S, B), A]): State[(S, List[B]), List[A]] = {
+    State.get flatMap {case (_, l) =>
       if (l.isEmpty) {
-        State.pure(List.empty[A]).modify((x: (S, List[B])) => (x._1, ()))
+        State.pure(List.empty[A]).modify(x => (x._1, List.empty[B]))
       } else {
         for {
           _ <- IndexedStateT.modify[Eval, (S, List[B]), (S, B)](x => (x._1, l.head))

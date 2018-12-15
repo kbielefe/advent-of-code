@@ -90,11 +90,21 @@ class TestStateUtils extends UnitSpec {
   }
 
   "foreach" when {
-    val sumState = State[(Int, Int), Int](s => ((s._1 + s._2, s._1 + s._2), s._1 + s._2))
+    val sumState = State[(Int, Int), Int](s => {val sum = s._1 + s._2; ((sum, sum), sum)})
+    val state = StateUtils.foreach(sumState)
     "given an empty list" should {
       "not modify the state" in {
-        val state = StateUtils.foreach(sumState)
-        state.runS((1234, List.empty[Int])).value shouldBe (1234, ())
+        state.runS((1234, List.empty[Int])).value shouldBe (1234, List.empty[Int])
+      }
+
+      "return an empty list" in {
+        state.runA((1234, List.empty[Int])).value shouldBe List.empty[Int]
+      }
+    }
+
+    "given a list of ints" should {
+      "return the sum" in {
+        state.run((5, List(1,2,3,4))).value shouldBe ((15, List.empty[Int]), List(6, 8, 11, 15))
       }
     }
   }
