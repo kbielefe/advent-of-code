@@ -23,12 +23,31 @@ class Grid[Cell <: Grid.Cell](private val zorders: Map[(Int, Int), List[Cell]]) 
     }
   }
 
-  def readingOrder: Iterator[Cell] = {
+  def readingOrder(p: (Cell) => Boolean = _ => true): Iterator[(Int, Int)] = {
     val all = for {
       y <- (top to bottom).iterator
       x <- (left to right).iterator
-    } yield getCell(x, y)
-    all.flatten
+    } yield (x, y)
+    all
+      .filter{case (x, y) => zorders contains (x, y)}
+      .filter{case (x, y) => p(getCell(x, y).get)}
+  }
+
+  /**
+   * Runs turn for every cell in the cellOrder, which order is recalculated at the end of every round.
+   */
+  def rounds[A](turn: (Grid[Cell], (Int, Int)) => (Grid[Cell], A),
+                cellOrder: (Grid[Cell]) => Iterator[(Int, Int)] = _.readingOrder()): Iterator[(Grid[Cell], A)] = {
+    def recurse(grid: Grid[Cell], order: Iterator[(Int, Int)]): Iterator[(Grid[Cell], A)] = {
+      if (!order.hasNext) {
+        recurse(grid, cellOrder(grid))
+      } else {
+        val coords = order.next
+        val (newGrid, result) = turn(grid, coords)
+        Iterator((newGrid, result)) flatMap {_ => recurse(newGrid, order)}
+      }
+    }
+    recurse(this, Iterator.empty)
   }
 
   def getCell(x: Int, y: Int): Option[Cell] = zorders.get(x, y) map {_.head}
