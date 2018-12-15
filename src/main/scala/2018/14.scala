@@ -67,5 +67,4 @@ class Day14(source: Source) extends Day {
 
   override def answer1: String = score10After(input.toInt)
   override def answer2: String = patternPosition(input).toString
-  // 10445031 is too low
 }
