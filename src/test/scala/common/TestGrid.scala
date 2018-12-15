@@ -22,7 +22,7 @@ class TestGrid extends UnitSpec {
     case 'E' => Elf(3, 200)
     case 'G' => Goblin(3, 200)
   }
-  val grid = Grid(0, 0, '.', gridString, x => if ("EG" contains x) Some('.') else None, charToCell _)
+  val grid = Grid(0, 0, '.', gridString, _ => None, charToCell _)
 
   "Grid" when {
     "cell retrieved" should {
@@ -31,6 +31,14 @@ class TestGrid extends UnitSpec {
         grid.getCell(0, 0) shouldBe Some(Wall())
         grid.getCell(4, 1) shouldBe Some(Elf(3, 200))
         grid.getCell(1, 2) shouldBe Some(Goblin(3, 200))
+      }
+    }
+
+    "cell moved" should {
+      "go on top of the 'to' cell" in {
+        grid.move((4, 1), (4, 0)).getCell(4, 0) shouldBe Some(Elf(3, 200))
+        grid.move((4, 1), (4, 0)).move((4, 0), (4, 1)).getCell(4, 0) shouldBe Some(Wall())
+        grid.move((4, 1), (4, 0)).move((4, 0), (4, 1)).getCell(4, 1) shouldBe Some(Elf(3, 200))
       }
     }
   }

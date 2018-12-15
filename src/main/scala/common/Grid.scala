@@ -8,6 +8,21 @@ class Grid[Cell <: Grid.Cell](private val zorders: Map[(Int, Int), List[Cell]]) 
   val left   = zorders.keySet.map{_._1}.min
   val right  = zorders.keySet.map{_._1}.max
 
+  def move(from: (Int, Int), to: (Int, Int)): Grid[Cell] = {
+    val fromZ = zorders.get(from)
+    if (fromZ.isEmpty) {
+      // Moving from empty onto something still allows that something to show through
+      this
+    } else {
+      val Some(x :: xs) = fromZ
+      val toZ = zorders.getOrElse(to, List.empty[Cell])
+      val newFromZ = xs
+      val newToZ = x :: toZ
+      val newZorders = zorders + ((from, newFromZ)) + ((to, newToZ))
+      new Grid(newZorders)
+    }
+  }
+
   def getCell(x: Int, y: Int): Option[Cell] = zorders.get(x, y) map {_.head}
 
   def getLines(empty: Char = ' '): Iterator[String] = {
