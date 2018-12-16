@@ -17,10 +17,11 @@ object Runner {
     def runIf(n: Int, answer: => String): Unit = {
       if (args.size < 3 || args(2).toInt == n) {
         val startTime = System.nanoTime()
-        println(answer)
+        val storedAnswer = answer
+        println(storedAnswer)
         val runtime = f"${(System.nanoTime() - startTime).toDouble / 1000000.0}%2.1f ms"
         println(runtime)
-        val cmd = Seq("/usr/bin/notify-send", "-t", "10000", s"$year/$day part $n<br/>$answer<br/>$runtime")
+        val cmd = Seq("/usr/bin/notify-send", "-t", "10000", s"$year/$day part $n<br/>$storedAnswer<br/>$runtime")
         cmd.lineStream
       }
     }
