@@ -6,6 +6,8 @@ import cats.effect.Sync
 
 // Internal coordinates have (x, y) where (0, 0) is at top left
 class Grid[Cell <: Grid.Cell](private val zorders: Map[(Int, Int), List[Cell]]) {
+  def size: Int = zorders.size
+
   def move(from: (Int, Int), to: (Int, Int)): Grid[Cell] = {
     val (x, y) = from
     getCell(x, y) map {c => delete(from).add(to, c)} getOrElse this
@@ -70,6 +72,8 @@ class Grid[Cell <: Grid.Cell](private val zorders: Map[(Int, Int), List[Cell]]) 
   }
 
   def getCell(x: Int, y: Int): Option[Cell] = zorders.get(x, y) map {_.head}
+
+  def getAllCoords: Set[(Int, Int)] = zorders.keySet
 
   def getStack(x: Int, y: Int): List[Cell] = zorders.getOrElse((x, y), List.empty[Cell])
 

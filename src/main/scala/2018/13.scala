@@ -47,7 +47,7 @@ class Day13(source: Source) extends Day {
       val gridAfterTurn = gridAfterMove.replace(newCoords, turnedCart)
       val stack = gridAfterTurn.getStack(newX, newY)
       val crash = if (stack.size > 1) Some(newCoords) else None
-      val gridAfterRemovingCrashes = if (crash.isDefined) gridAfterTurn.delete(newCoords).delete(newCoords) else gridAfterTurn
+      val gridAfterRemovingCrashes = if (crash.isDefined) gridAfterTurn.delete(newCoords).delete(newCoords).delete(newCoords).delete(newCoords) else gridAfterTurn
       (gridAfterRemovingCrashes, crash)
     }
   }
@@ -140,23 +140,32 @@ class Day13(source: Source) extends Day {
     cell.map{_.move(trackGrid, cartGrid, coords)}.getOrElse((cartGrid, None))
   }
 
-  def firstCrash(input: Source): (Int, Int) = {
-    val grid = parseGrid(input)
-    val cartGrid = grid filter isCart
-    val trackGrid = grid filter isTrack
+  lazy val grid = parseGrid(source)
+  lazy val cartGrid = grid filter isCart
+  lazy val trackGrid = grid filter isTrack
+
+  def firstCrash: (Int, Int) = {
     cartGrid.turns[Coeval, Option[(Int, Int)]](turn(trackGrid), _.readingOrder(isCart))
       .map{_._2}
       .findL{_.isDefined}
       .value.get.get
   }
 
-  def lastManStanding(input: Source): (Int, Int) = ???
+  def lastManStanding: (Int, Int) = {
+    val coords = cartGrid.turns[Coeval, Option[(Int, Int)]](turn(trackGrid), _.readingOrder(isCart))
+      .map{_._1}
+      //.take(50001)
+      .dropWhile{_.size > 1}
+      .drop(1)
+      .headOptionL
+      .value.get.getAllCoords
 
-  override def answer1: String = firstCrash(source).toString
+    coords.head
+  }
+
+
+  override def answer1: String = firstCrash.toString
   // 74,87 is correct
-  override def answer2: String = ???
-  // 24, 57 is wrong
-  // 148, 109 is wrong
-  // 149, 109 is wrong
-  // 147, 109 is wrong
+  override def answer2: String = lastManStanding.toString
+  // 29,74 is correct
 }
