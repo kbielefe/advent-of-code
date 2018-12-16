@@ -12,16 +12,26 @@ class Grid[Cell <: Grid.Cell](private val zorders: Map[(Int, Int), List[Cell]]) 
   val right  = zorders.keySet.map{_._1}.max
 
   def move(from: (Int, Int), to: (Int, Int)): Grid[Cell] = {
-    val fromZ = zorders.get(from)
-    if (fromZ.isEmpty) {
-      // Moving from empty onto something still allows that something to show through
+    val (x, y) = from
+    getCell(x, y) map {c => delete(from).add(to, c)} getOrElse this
+  }
+
+  def replace(coords: (Int, Int), cell: Cell): Grid[Cell] = {
+    delete(coords).add(coords, cell)
+  }
+
+  def add(coords: (Int, Int), cell: Cell): Grid[Cell] = {
+    val z = zorders.getOrElse(coords, List.empty[Cell])
+    val newZorders = zorders + ((coords, cell :: z))
+    new Grid(newZorders)
+  }
+
+  def delete(coords: (Int, Int)): Grid[Cell] = {
+    val z = zorders.getOrElse(coords, List.empty[Cell])
+    if (z.isEmpty) {
       this
     } else {
-      val Some(x :: xs) = fromZ
-      val toZ = zorders.getOrElse(to, List.empty[Cell])
-      val newFromZ = xs
-      val newToZ = x :: toZ
-      val newZorders = zorders + ((from, newFromZ)) + ((to, newToZ))
+      val newZorders = zorders + ((coords, z.tail))
       new Grid(newZorders)
     }
   }
@@ -49,13 +59,15 @@ class Grid[Cell <: Grid.Cell](private val zorders: Map[(Int, Int), List[Cell]]) 
       } else {
         val (coords :: remainingOrder) = order
         val (newGrid, result) = turn(grid, coords)
-        Iterant.pure((newGrid, result)) flatMap {_ => recurse(newGrid, remainingOrder)}
+        Iterant.pure((newGrid, result)) ++ recurse(newGrid, remainingOrder)
       }
     }
     recurse(this, List.empty)
   }
 
   def getCell(x: Int, y: Int): Option[Cell] = zorders.get(x, y) map {_.head}
+
+  def getStack(x: Int, y: Int): List[Cell] = zorders.getOrElse((x, y), List.empty[Cell])
 
   def getLines(empty: Char = ' '): Iterator[String] = {
     def getChar(x: Int, y: Int) = getCell(x, y) map {_.char} getOrElse empty

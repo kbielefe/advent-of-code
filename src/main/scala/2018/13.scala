@@ -10,22 +10,96 @@ class Day13(source: Source) extends Day {
   }
 
   abstract class Track(gridChar: Char) extends Cell(gridChar)
-  abstract class Cart(gridChar: Char)  extends Cell(gridChar) {
-    def move(grid: Grid[Cell]) = {
-      ???
+  abstract class TurnTrack(gridChar: Char) extends Track(gridChar)
+  abstract class Cart(gridChar: Char, lastTurn: Char = 'R') extends Cell(gridChar) {
+    def moveForward: (Int, Int)
+    def turn(track: TurnTrack): Cart
+    def turnLeft: Cart
+    def turnRight: Cart
+    def setLastTurn(newLastTurn: Char): Cart
+
+    def turnAtIntersection: Cart = {
+      val nextTurn = lastTurn match {
+        case 'L' => 'S'
+        case 'S' => 'R'
+        case 'R' => 'L'
+      }
+      val turnedCart = nextTurn match {
+        case 'L' => turnLeft
+        case 'S' => this
+        case 'R' => turnRight
+      }
+      turnedCart.setLastTurn(nextTurn)
+    }
+
+    override def move(grid: Grid[Cell], coords: (Int, Int)): (Grid[Cell], Option[(Int, Int)]) = {
+      val (x, y) = coords
+      val (xOffset, yOffset) = moveForward
+      val newCoords@(newX, newY) = (x + xOffset, y + yOffset)
+      val cellAtDestOption = grid.getCell(newX, newY)
+      val cellAtDest = cellAtDestOption.get
+      val turnedCart: Cart = cellAtDest match {
+        case Intersection() => turnAtIntersection
+        case t: TurnTrack   => turn(t)
+        case _              => this
+      }
+      val gridAfterMove = grid.move(coords, newCoords)
+      val gridAfterTurn = gridAfterMove.replace(newCoords, turnedCart)
+      val stack = gridAfterTurn.getStack(newX, newY)
+      val crash = if (stack.size > 2) Some(newCoords) else None
+      (gridAfterTurn, crash)
     }
   }
 
-  case class Intersection()   extends Track('+')
+  case class Intersection()    extends Track('+')
   case class HorizontalTrack() extends Track('-')
   case class VerticalTrack()   extends Track('|')
-  case class SlashTrack()      extends Track('/')
-  case class BackslashTrack()  extends Track('\\')
+  case class SlashTrack()      extends TurnTrack('/')
+  case class BackslashTrack()  extends TurnTrack('\\')
 
-  case class UpCart()    extends Cart('^')
-  case class DownCart()  extends Cart('v')
-  case class LeftCart()  extends Cart('<')
-  case class RightCart() extends Cart('>')
+  case class UpCart(lastTurn: Char = 'R') extends Cart('^', lastTurn) {
+    override def moveForward = (0, -1)
+    override def turn(track: TurnTrack) = track match {
+      case SlashTrack()      => turnRight
+      case BackslashTrack()  => turnLeft
+    }
+    override def turnLeft  = LeftCart(lastTurn)
+    override def turnRight = RightCart(lastTurn)
+    override def setLastTurn(newLastTurn: Char) = UpCart(newLastTurn)
+  }
+  
+  case class DownCart(lastTurn: Char = 'R')  extends Cart('v', lastTurn) {
+    override def moveForward = (0, 1)
+    override def turn(track: TurnTrack) = track match {
+      case SlashTrack()      => turnRight
+      case BackslashTrack()  => turnLeft
+    }
+    override def turnLeft  = RightCart(lastTurn)
+    override def turnRight = LeftCart(lastTurn)
+    override def setLastTurn(newLastTurn: Char) = DownCart(newLastTurn)
+  }
+
+  case class LeftCart(lastTurn: Char = 'R')  extends Cart('<', lastTurn) {
+    override def moveForward = (-1, 0)
+    override def turn(track: TurnTrack) = track match {
+      case SlashTrack()      => turnLeft
+      case BackslashTrack()  => turnRight
+    }
+    override def turnLeft  = DownCart(lastTurn)
+    override def turnRight = UpCart(lastTurn)
+    override def setLastTurn(newLastTurn: Char) = LeftCart(newLastTurn)
+  }
+
+  case class RightCart(lastTurn: Char = 'R') extends Cart('>', lastTurn) {
+    override def moveForward = (1, 0)
+    override def turn(track: TurnTrack) = track match {
+      case SlashTrack()      => turnLeft
+      case BackslashTrack()  => turnRight
+    }
+    override def turnLeft  = UpCart(lastTurn)
+    override def turnRight = DownCart(lastTurn)
+    override def setLastTurn(newLastTurn: Char) = RightCart(newLastTurn)
+  }
 
   def charToCell(char: Char): Cell = char match {
     case '^'  => UpCart()
@@ -71,7 +145,7 @@ class Day13(source: Source) extends Day {
 
   def lastManStanding(input: Source): (Int, Int) = ???
 
-  override def answer1: String = ???
+  override def answer1: String = firstCrash(source).toString
   // 74,87 is correct
   override def answer2: String = ???
   // 24, 57 is wrong
