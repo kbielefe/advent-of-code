@@ -6,11 +6,6 @@ import cats.effect.Sync
 
 // Internal coordinates have (x, y) where (0, 0) is at top left
 class Grid[Cell <: Grid.Cell](private val zorders: Map[(Int, Int), List[Cell]]) {
-  val top    = zorders.keySet.map{_._2}.min
-  val bottom = zorders.keySet.map{_._2}.max
-  val left   = zorders.keySet.map{_._1}.min
-  val right  = zorders.keySet.map{_._1}.max
-
   def move(from: (Int, Int), to: (Int, Int)): Grid[Cell] = {
     val (x, y) = from
     getCell(x, y) map {c => delete(from).add(to, c)} getOrElse this
@@ -30,26 +25,35 @@ class Grid[Cell <: Grid.Cell](private val zorders: Map[(Int, Int), List[Cell]]) 
     val z = zorders.getOrElse(coords, List.empty[Cell])
     if (z.isEmpty) {
       this
+    } else if (z.tail.isEmpty) {
+      val newZorders = zorders - coords
+      new Grid(newZorders)
     } else {
       val newZorders = zorders + ((coords, z.tail))
       new Grid(newZorders)
     }
   }
 
+  // return a new grid with just the top of the zorder that matches the predicate
+  // and the next layer down for elements that are deleted
+  def filter(p: (Cell) => Boolean): Grid[Cell] = {
+    val (keepZorders, deleteZorders) = zorders.partition(x => p(x._2.head))
+    val toKeep = keepZorders.mapValues{_.head :: Nil}
+    val (toTail, toDelete) = deleteZorders.partition{_._2.size > 1}
+    val tailed = toTail.mapValues{_.tail}
+    val deleted = toDelete.keySet
+    val newZorders = toKeep -- deleted ++ tailed
+    new Grid(newZorders)
+  }
+
   def readingOrder(p: (Cell) => Boolean = _ => true): List[(Int, Int)] = {
-    val all = for {
-      y <- (top to bottom).toList
-      x <- (left to right).toList
-    } yield (x, y)
-    all
-      .filter{case (x, y) => zorders contains (x, y)}
-      .filter{case (x, y) => p(getCell(x, y).get)}
+    zorders.toList.filter{order => p(order._2.head)}.map{_._1}.sortBy{case (x, y) => (y, x)}
   }
 
   /**
    * Runs turn for every cell in the cellOrder, which order is recalculated at the end of every round.
    */
-  def rounds[F[_], A](turn: (Grid[Cell], (Int, Int)) => (Grid[Cell], A),
+  def turns[F[_], A](turn: (Grid[Cell], (Int, Int)) => (Grid[Cell], A),
                      cellOrder: (Grid[Cell]) => List[(Int, Int)] = _.readingOrder())(
                      implicit F: Sync[F]
                      ): Iterant[F, (Grid[Cell], A)] = {
@@ -69,10 +73,20 @@ class Grid[Cell <: Grid.Cell](private val zorders: Map[(Int, Int), List[Cell]]) 
 
   def getStack(x: Int, y: Int): List[Cell] = zorders.getOrElse((x, y), List.empty[Cell])
 
+  //TODO: print coordinates
   def getLines(empty: Char = ' '): Iterator[String] = {
-    def getChar(x: Int, y: Int) = getCell(x, y) map {_.char} getOrElse empty
-    def getLine(y: Int) = (left to right).map(getChar(_, y)).mkString
-    (top to bottom).iterator map getLine
+    if (zorders.isEmpty) {
+      Iterator.empty
+    } else {
+      val top    = zorders.keySet.map{_._2}.min
+      val bottom = zorders.keySet.map{_._2}.max
+      val left   = zorders.keySet.map{_._1}.min
+      val right  = zorders.keySet.map{_._1}.max
+
+      def getChar(x: Int, y: Int) = getCell(x, y) map {_.char} getOrElse empty
+      def getLine(y: Int) = (left to right).map(getChar(_, y)).mkString
+      (top to bottom).iterator map getLine
+    }
   }
 }
 

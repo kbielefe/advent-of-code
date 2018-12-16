@@ -6,7 +6,7 @@ import monix.eval.Coeval
 class Day13(source: Source) extends Day {
   sealed abstract class Cell(gridChar: Char) extends Grid.Cell {
     override def char = gridChar
-    def move(grid: Grid[Cell], coords: (Int, Int)): (Grid[Cell], Option[(Int, Int)]) = (grid, None)
+    def move(trackGrid: Grid[Cell], cartGrid: Grid[Cell], coords: (Int, Int)): (Grid[Cell], Option[(Int, Int)]) = (cartGrid, None)
   }
 
   abstract class Track(gridChar: Char) extends Cell(gridChar)
@@ -32,22 +32,23 @@ class Day13(source: Source) extends Day {
       turnedCart.setLastTurn(nextTurn)
     }
 
-    override def move(grid: Grid[Cell], coords: (Int, Int)): (Grid[Cell], Option[(Int, Int)]) = {
+    override def move(trackGrid: Grid[Cell], cartGrid: Grid[Cell], coords: (Int, Int)): (Grid[Cell], Option[(Int, Int)]) = {
       val (x, y) = coords
       val (xOffset, yOffset) = moveForward
       val newCoords@(newX, newY) = (x + xOffset, y + yOffset)
-      val cellAtDestOption = grid.getCell(newX, newY)
+      val cellAtDestOption = trackGrid.getCell(newX, newY)
       val cellAtDest = cellAtDestOption.get
       val turnedCart: Cart = cellAtDest match {
         case Intersection() => turnAtIntersection
         case t: TurnTrack   => turn(t)
         case _              => this
       }
-      val gridAfterMove = grid.move(coords, newCoords)
+      val gridAfterMove = cartGrid.move(coords, newCoords)
       val gridAfterTurn = gridAfterMove.replace(newCoords, turnedCart)
       val stack = gridAfterTurn.getStack(newX, newY)
-      val crash = if (stack.size > 2) Some(newCoords) else None
-      (gridAfterTurn, crash)
+      val crash = if (stack.size > 1) Some(newCoords) else None
+      val gridAfterRemovingCrashes = if (crash.isDefined) gridAfterTurn.delete(newCoords).delete(newCoords) else gridAfterTurn
+      (gridAfterRemovingCrashes, crash)
     }
   }
 
@@ -123,21 +124,27 @@ class Day13(source: Source) extends Day {
 
   def parseGrid(input: Source): Grid[Cell] = Grid(0, 0, ' ', input, under _, charToCell _)
 
-  def order(grid: Grid[Cell]): List[(Int, Int)] =
-    grid.readingOrder{
-      case c: Cart => true
-      case _       => false
-    }
+  def isCart(cell: Cell): Boolean = cell match {
+    case c: Cart => true
+    case _       => false
+  }
+
+  def isTrack(cell: Cell): Boolean = cell match {
+    case c: Track => true
+    case _        => false
+  }
 
   // Output is optional crash location
-  def turn(grid: Grid[Cell], coords: (Int, Int)): (Grid[Cell], Option[(Int, Int)]) = {
-    val cell = grid.getCell(coords._1, coords._2)
-    cell.map{_.move(grid, coords)}.getOrElse((grid, None))
+  def turn(trackGrid: Grid[Cell])(cartGrid: Grid[Cell], coords: (Int, Int)): (Grid[Cell], Option[(Int, Int)]) = {
+    val cell = cartGrid.getCell(coords._1, coords._2)
+    cell.map{_.move(trackGrid, cartGrid, coords)}.getOrElse((cartGrid, None))
   }
 
   def firstCrash(input: Source): (Int, Int) = {
     val grid = parseGrid(input)
-    grid.rounds[Coeval, Option[(Int, Int)]](turn, order)
+    val cartGrid = grid filter isCart
+    val trackGrid = grid filter isTrack
+    cartGrid.turns[Coeval, Option[(Int, Int)]](turn(trackGrid), _.readingOrder(isCart))
       .map{_._2}
       .findL{_.isDefined}
       .value.get.get
