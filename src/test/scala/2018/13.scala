@@ -25,7 +25,7 @@ class TestDay13 extends UnitSpec {
     "given example path" should {
       "detect a crash at 7, 3" in {
         val day = new Day13(example)
-        day.firstCrash(example) shouldBe (7, 3)
+        day.firstCrash shouldBe (7, 3)
       }
     }
   }
@@ -33,8 +33,8 @@ class TestDay13 extends UnitSpec {
   "lastManStanding" when {
     "given second example path" should {
       "detect the last man standing at 6, 4" in {
-        val day = new Day13(example)
-        day.lastManStanding(example2) shouldBe (6, 4)
+        val day = new Day13(example2)
+        day.lastManStanding shouldBe (6, 4)
       }
     }
   }

@@ -154,7 +154,6 @@ class Day13(source: Source) extends Day {
   def lastManStanding: (Int, Int) = {
     val coords = cartGrid.turns[Coeval, Option[(Int, Int)]](turn(trackGrid), _.readingOrder(isCart))
       .map{_._1}
-      //.take(50001)
       .dropWhile{_.size > 1}
       .drop(1)
       .headOptionL
