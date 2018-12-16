@@ -4,6 +4,7 @@ import monix.tail.Iterant
 import cats.Applicative
 import cats.effect.Sync
 import scala.language.higherKinds
+import scala.collection.immutable.Queue
 
 // Internal coordinates have (x, y) where (0, 0) is at top left
 class Grid[Cell <: Grid.Cell](private val zorders: Map[(Int, Int), List[Cell]]) {
@@ -140,6 +141,43 @@ object Grid {
         }
       }
     }
+
+  /*
+   * Take a start point and a function that computes the reachable neighbors of a point.
+   * Return an Iterant of points as well as a Map containing links from child to parent
+   */
+  def breadthFirstTraverse[F[_], A](
+      start: A,
+      neighbors: A => Queue[A])(
+      implicit F: Sync[F]): Iterant[F, (Map[A, A], A)] = {
+    def recurse(queue: Queue[A], visited: Set[A], paths: Map[A, A]): Iterant[F, (Map[A, A], A)] = {
+      if (queue.isEmpty) {
+        Iterant.empty
+      } else {
+        val (node, tail) = queue.dequeue
+        val newNeighbors = neighbors(node) filterNot {visited contains _}
+        val newPaths = paths ++ (newNeighbors map {n => (n, node)})
+        Iterant.pure((paths, node)) ++ recurse(tail ++ newNeighbors, visited + node, newPaths)
+      }
+    }
+    recurse(Queue(start), Set.empty[A], Map.empty[A, A])
+  }
+
+  /*
+   * Given paths returned from breadthFirstTraverse, return a path
+   * from the start of the search to the specified node
+   */
+  def calculatePath[A](paths: Map[A, A], from: A): List[A] = {
+    @scala.annotation.tailrec
+    def recurse(from: A, accum: List[A]): List[A] = {
+      val next = paths.get(from)
+      next match {
+        case Some(next) => recurse(next, from :: accum)
+        case None       => from :: accum
+      }
+    }
+    recurse(from, List.empty[A])
+  }
 
   trait Cell {
     def char: Char
