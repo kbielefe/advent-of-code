@@ -3,6 +3,7 @@ import scalax.collection.Graph
 import scalax.collection.GraphPredef._
 import scalax.collection.GraphEdge._
 import scala.util.Try
+import scala.language.higherKinds
 
 object GraphUtils {
   // Assumes a single successor for every node within n

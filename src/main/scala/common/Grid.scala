@@ -3,6 +3,7 @@ import scala.io.Source
 import monix.tail.Iterant
 import cats.Applicative
 import cats.effect.Sync
+import scala.language.higherKinds
 
 // Internal coordinates have (x, y) where (0, 0) is at top left
 class Grid[Cell <: Grid.Cell](private val zorders: Map[(Int, Int), List[Cell]]) {

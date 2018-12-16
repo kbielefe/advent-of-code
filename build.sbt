@@ -1,9 +1,7 @@
-scalacOptions += "-Ypartial-unification"
-libraryDependencies += "org.scalactic" %% "scalactic" % "3.0.5"
-libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.5" % "test"
-libraryDependencies += "org.scala-graph" %% "graph-core" % "1.12.5"
-libraryDependencies += "org.typelevel" %% "cats-core" % "1.5.0"
-libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.27"
-libraryDependencies += "io.monix" %% "monix" % "3.0.0-RC2"
+scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-Ypartial-unification")
 coverageEnabled := true
-// cancelable in Global := true
+libraryDependencies ++= Seq("org.scalactic" %% "scalactic" % "3.0.5",
+                            "org.scalatest" %% "scalatest" % "3.0.5" % "test",
+                            "org.scala-graph" %% "graph-core" % "1.12.5",
+                            "org.scalaz" %% "scalaz-core" % "7.2.27",
+                            "io.monix" %% "monix" % "3.0.0-RC2")
