@@ -79,6 +79,14 @@ class Grid[Cell](private val zorders: Map[(Int, Int), List[Cell]]) {
 
   def getStack(x: Int, y: Int): List[Cell] = zorders.getOrElse((x, y), List.empty[Cell])
 
+  override def equals(other: Any): Boolean = {
+    if (!other.isInstanceOf[Grid[Cell]]) {
+      false
+    } else {
+      other.asInstanceOf[Grid[Cell]].zorders == zorders
+    }
+  }
+
   //TODO: print coordinates
   def getLines(empty: Char = ' ', cellToChar: (Cell) => Char = _ => '+'): Iterator[String] = {
     if (zorders.isEmpty) {
