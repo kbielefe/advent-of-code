@@ -4,8 +4,7 @@ import scala.io.Source
 import monix.eval.Coeval
 
 class Day13(source: Source) extends Day {
-  sealed abstract class Cell(gridChar: Char) extends Grid.Cell {
-    override def char = gridChar
+  sealed abstract class Cell(char: Char) {
     def move(trackGrid: Grid[Cell], cartGrid: Grid[Cell], coords: (Int, Int)): (Grid[Cell], Option[(Int, Int)]) = (cartGrid, None)
   }
 

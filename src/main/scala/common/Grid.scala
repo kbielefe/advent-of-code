@@ -7,7 +7,7 @@ import scala.language.higherKinds
 import scala.collection.immutable.Queue
 
 // Internal coordinates have (x, y) where (0, 0) is at top left
-class Grid[Cell <: Grid.Cell](private val zorders: Map[(Int, Int), List[Cell]]) {
+class Grid[Cell](private val zorders: Map[(Int, Int), List[Cell]]) {
   def size: Int = zorders.size
 
   def move(from: (Int, Int), to: (Int, Int)): Grid[Cell] = {
@@ -80,7 +80,7 @@ class Grid[Cell <: Grid.Cell](private val zorders: Map[(Int, Int), List[Cell]]) 
   def getStack(x: Int, y: Int): List[Cell] = zorders.getOrElse((x, y), List.empty[Cell])
 
   //TODO: print coordinates
-  def getLines(empty: Char = ' '): Iterator[String] = {
+  def getLines(empty: Char = ' ', cellToChar: (Cell) => Char = _ => '+'): Iterator[String] = {
     if (zorders.isEmpty) {
       Iterator.empty
     } else {
@@ -89,7 +89,7 @@ class Grid[Cell <: Grid.Cell](private val zorders: Map[(Int, Int), List[Cell]]) 
       val left   = zorders.keySet.map{_._1}.min
       val right  = zorders.keySet.map{_._1}.max
 
-      def getChar(x: Int, y: Int) = getCell(x, y) map {_.char} getOrElse empty
+      def getChar(x: Int, y: Int) = getCell(x, y) map {cellToChar(_)} getOrElse empty
       def getLine(y: Int) = (left to right).map(getChar(_, y)).mkString
       (top to bottom).iterator map getLine
     }
@@ -97,7 +97,7 @@ class Grid[Cell <: Grid.Cell](private val zorders: Map[(Int, Int), List[Cell]]) 
 }
 
 object Grid {
-  def apply[C <: Cell](
+  def apply[C](
     top:    Int,
     left:   Int,
     empty:  Char,
@@ -110,7 +110,7 @@ object Grid {
       new Grid(zorders)
     }
 
-  def apply[C <: Cell](
+  def apply[C](
     top:    Int,
     left:   Int,
     empty:  Char,
@@ -118,7 +118,7 @@ object Grid {
     under:  Char => Option[Char],
     toCell: Char => C): Grid[C] = apply(top, left, empty, Source.fromString(string), under, toCell)
 
-  private def parseRow[C <: Cell](
+  private def parseRow[C](
     y:      Int,
     left:   Int,
     empty:  Char,
@@ -177,9 +177,5 @@ object Grid {
       }
     }
     recurse(from, List.empty[A])
-  }
-
-  trait Cell {
-    def char: Char
   }
 }

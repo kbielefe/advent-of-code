@@ -11,9 +11,7 @@ class TestGrid extends UnitSpec {
   |##########
   """.trim.stripMargin
 
-  abstract class Cell(gridChar: Char) extends Grid.Cell {
-    override def char = gridChar
-  }
+  abstract class Cell(char: Char)
   case class Wall() extends Cell('#')
   abstract class Creature(attackPower: Int, hitPoints: Int, gridChar: Char) extends Cell(gridChar)
   case class Elf(attackPower: Int, hitPoints: Int) extends Creature(attackPower, hitPoints, 'E')

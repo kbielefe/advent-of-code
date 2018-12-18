@@ -3,9 +3,7 @@ import common.{Day, Grid}
 import scala.io.Source
 
 class Day15(source: Source) extends Day {
-  abstract class Cell(gridChar: Char) extends Grid.Cell {
-    override def char = gridChar
-  }
+  abstract class Cell(char: Char)
   abstract class Creature(char: Char, attack: Int, hitPoints: Int) extends Cell(char)
 
   case class Wall() extends Cell('#')
