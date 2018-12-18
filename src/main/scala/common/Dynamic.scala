@@ -1,5 +1,8 @@
 package common
 import scala.annotation.tailrec
+import monix.tail.Iterant
+import scala.language.higherKinds
+import cats.effect.Sync
 
 object Dynamic {
   /**
@@ -39,6 +42,16 @@ object Dynamic {
 
     detectSeen(it, Map.empty[A, Int], 0)
   }
+
+ def detectCycle[F[_], A](it: Iterant[F, A])(implicit F: Sync[F]): F[Option[(Long, Long, A)]] = {
+   val seen = it.zipWithIndex.scan0(Map.empty[A, Long]){case (seen, (curr, index)) =>
+     seen + (curr -> index)
+   }
+   val cycle = it.zipWithIndex.zipMap(seen){case ((curr, index), seen) => seen.get(curr) map {start =>
+     (start, index - start, curr)
+   }}
+   cycle.dropWhile(!_.isDefined).map{_.get}.headOptionL
+ }
 
  def frequency[A](xs: TraversableOnce[A]): Map[A, Int] =
    xs.foldLeft(Map.empty[A, Int]){case (freq, next) => freq + (next -> (freq.getOrElse(next, 0) + 1))}

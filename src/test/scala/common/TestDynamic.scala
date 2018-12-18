@@ -1,6 +1,8 @@
 package common
 import org.scalatest._
 import scala.io.Source
+import monix.tail.Iterant
+import monix.eval.Coeval
 
 class TestDynamic extends UnitSpec {
   "cumulativeSums" when {
@@ -97,6 +99,12 @@ class TestDynamic extends UnitSpec {
     "given a cycling iterator" should {
       "detect the period and time of first repeat" in {
         Dynamic.detectCycle(Iterator(1,2,3,4,5) ++ Iterator.continually(List(6, 7, 8)).flatten) shouldBe Some((5, 3, 6))
+      }
+    }
+
+    "given a cycling iterant" should {
+      "detect the period and time of first repeat" in {
+        Dynamic.detectCycle(Iterant[Coeval].of(1,2,3,4,5) ++ Iterant[Coeval].repeat(6, 7, 8)).value shouldBe Some((5, 3, 6))
       }
     }
   }
