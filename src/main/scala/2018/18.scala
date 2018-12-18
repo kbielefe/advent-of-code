@@ -1,5 +1,5 @@
 package advent2018
-import common.{Day, Grid}
+import common.{Day, Grid, Dynamic}
 import scala.io.Source
 import monix.tail.Iterant
 import monix.eval.Coeval
@@ -69,6 +69,19 @@ class Day18(source: Source) extends Day {
     lumberyardCount * treesCount
   }
 
+  def printGrid(grid: Grid[Cell]): Unit = {
+    grid.getLines('.', toChar _) foreach println
+    println("")
+  }
+
+  def detectCycle(grid: Grid[Cell]): (Long, Long, Grid[Cell]) = {
+    Dynamic.detectCycle[Coeval, Grid[Cell]](moves(grid)).value.get
+  }
+
   override def answer1: String = totalValue(moves(grid).drop(10).headOptionL.value.get).toString
-  override def answer2: String = ???
+  override def answer2: String = {
+    val (start, cycle, _) = detectCycle(grid)
+    val cycles = Dynamic.cycledEquivalent(start, cycle, 1000000000)
+    totalValue(moves(grid).drop(cycles.toInt).headOptionL.value.get).toString
+  }
 }

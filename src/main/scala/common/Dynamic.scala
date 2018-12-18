@@ -53,6 +53,14 @@ object Dynamic {
    cycle.dropWhile(!_.isDefined).map{_.get}.headOptionL
  }
 
+ /* Given the number of iterations before a cycle starts, the length of the cycle,
+  * as returned by detectCycle, and the huge target you want to hit, return the
+  * smaller equivalent number of iterations.
+  */
+ def cycledEquivalent(start: Long, cycle: Long, target: Long): Long = {
+   (target - start) % cycle + start
+ }
+
  def frequency[A](xs: TraversableOnce[A]): Map[A, Int] =
    xs.foldLeft(Map.empty[A, Int]){case (freq, next) => freq + (next -> (freq.getOrElse(next, 0) + 1))}
 }

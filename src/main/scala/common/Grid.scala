@@ -87,6 +87,8 @@ class Grid[Cell](private val zorders: Map[(Int, Int), List[Cell]]) {
     }
   }
 
+  override def hashCode(): Int = zorders.hashCode()
+
   //TODO: print coordinates
   def getLines(empty: Char = ' ', cellToChar: (Cell) => Char = _ => '+'): Iterator[String] = {
     if (zorders.isEmpty) {
