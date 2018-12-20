@@ -96,6 +96,11 @@ class Day20(source: Source) extends Day {
     map.map(_._2._2).max
   }
 
+  def roomsFartherThan(regex: String, distance: Int): Int = {
+    val map = parseRegex(regex).traverse(Set((0, 0)), Map.empty)._2
+    map.toList.map(_._2._2).count(_ >= distance)
+  }
+
   override def answer1: String = furthestRoomDistance(source.mkString.trim).toString
-  override def answer2: String = ???
+  override def answer2: String = roomsFartherThan(source.mkString.trim, 1000).toString
 }
