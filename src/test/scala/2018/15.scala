@@ -127,13 +127,28 @@ class TestDay15 extends UnitSpec {
 
   "battleOutcome" when {
     "given example" should {
-      "return example result" in {
-        //battleOutcome(exampleGrid2) shouldBe 27730
+      "return example result for example 2" in {
+        battleOutcome(exampleGrid2) shouldBe 27730
+      }
+
+      "return example result for example 4" in {
         battleOutcome(exampleGrid4) shouldBe 36334
-        // battleOutcome(exampleGrid5) shouldBe 39514
-        // battleOutcome(exampleGrid6) shouldBe 27755
-        // battleOutcome(exampleGrid7) shouldBe 28944
-        // battleOutcome(exampleGrid8) shouldBe 18740
+      }
+
+      "return example result for example 5" in {
+        battleOutcome(exampleGrid5) shouldBe 39514
+      }
+
+      "return example result for example 6" in {
+        battleOutcome(exampleGrid6) shouldBe 27755
+      }
+
+      "return example result for example 7" in {
+        battleOutcome(exampleGrid7) shouldBe 28944
+      }
+
+      "return example result for example 8" in {
+        battleOutcome(exampleGrid8) shouldBe 18740
       }
     }
   }
