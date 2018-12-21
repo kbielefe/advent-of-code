@@ -4,14 +4,21 @@ import scala.io.Source
 import java.util.UUID
 import monix.eval.Coeval
 import monix.tail.Iterant
+import scala.collection.immutable.Queue
 
 class Day15(source: Source) extends Day {
   abstract class Cell
-  abstract class Creature(val attack: Int, val hitPoints: Int, val id: UUID = UUID.randomUUID()) extends Cell
+  abstract class Creature(val attack: Int, val hitPoints: Int, val id: UUID) extends Cell {
+    def setHitPoints(newHitPoints: Int): Creature
+  }
 
   case class Wall() extends Cell
-  case class Elf(override val attack:    Int = 3, override val hitPoints: Int = 200) extends Creature(attack, hitPoints)
-  case class Goblin(override val attack: Int = 3, override val hitPoints: Int = 200) extends Creature(attack, hitPoints)
+  case class Elf(override val attack:    Int = 3, override val hitPoints: Int = 200, override val id: UUID = UUID.randomUUID()) extends Creature(attack, hitPoints, id) {
+    override def setHitPoints(newHitPoints: Int): Elf = copy(hitPoints = newHitPoints)
+  }
+  case class Goblin(override val attack: Int = 3, override val hitPoints: Int = 200, override val id: UUID = UUID.randomUUID()) extends Creature(attack, hitPoints, id) {
+    override def setHitPoints(newHitPoints: Int): Goblin = copy(hitPoints = newHitPoints)
+  }
 
   def charToCell(char: Char): Cell = char match {
     case '#' => Wall()
@@ -22,48 +29,83 @@ class Day15(source: Source) extends Day {
   lazy val grid = Grid(0, 0, '.', source, _ => None, charToCell _)
 
   def isEnemy(of: Creature)(potentialEnemy: Cell): Boolean = (of, potentialEnemy) match {
-    case (Elf(_, _),    Goblin(_, _)) => true
-    case (Goblin(_, _), Elf(_, _))    => true
+    case (Elf(_, _, _),    Goblin(_, _, _)) => true
+    case (Goblin(_, _, _), Elf(_, _, _))    => true
     case _                            => false
   }
 
   def targetInRange(c: Creature, grid: Grid[Cell], x: Int, y: Int): Option[(Int, Int, Creature)] = {
     val squares = List((x, y - 1), (x - 1, y), (x + 1, y), (x, y + 1))
     val cells = squares.map{case (x, y) => grid.getCell(x, y).map{c => (x, y, c)}}.flatten
-    cells.find{case (_, _, e) => isEnemy(c)(e)}.map{case (x, y, c) => (x, y, c.asInstanceOf[Creature])}
+    val enemies = cells.filter{case (_, _, e) => isEnemy(c)(e)}.map{case (x, y, c) => (x, y, c.asInstanceOf[Creature])}
+    val sorted = enemies.sortBy{case (x, y, c) => (c.hitPoints, y, x)}
+    sorted.headOption
   }
 
   def allTargets(c: Creature, grid: Grid[Cell]): List[(Int, Int)] = {
     grid.readingOrder(isEnemy(c))
   }
 
-  def adjacentOpenSquares(grid: Grid[Cell], targets: List[(Int, Int)]): Set[(Int, Int)] = {
-    val adjacentSquares = targets.flatMap{case (x, y) => Set((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1))}.toSet
-    adjacentSquares.filter{case (x, y) => !grid.getCell(x, y).isDefined}
+  def adjacentOpenSquares(grid: Grid[Cell], targets: List[(Int, Int)]): Queue[(Int, Int)] = {
+    val adjacentSquares = targets.flatMap{case (x, y) => List((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1))}
+    Queue(adjacentSquares.filter{case (x, y) => !grid.getCell(x, y).isDefined}:_*)
   }
 
-  def closestTargetSquares(x: Int, y: Int, targets: Set[(Int, Int)]): List[(Int, Int)] = {
-    ???
+  def closestTargetSquares(x: Int, y: Int, grid: Grid[Cell], targets: Set[(Int, Int)]): List[List[(Int, Int)]] = {
+    def neighbors(p: (Int, Int)): Queue[(Int, Int)] = adjacentOpenSquares(grid, List(p))
+    val search = Grid.breadthFirstTraverse[Coeval, (Int, Int)]((x, y), neighbors)
+    val dropNonTargets = search.dropWhile{x => !(targets contains x._3)}
+    val depth: Option[Int] = dropNonTargets.map{_._2}.headOptionL.value
+    if (depth.isDefined) {
+      val targetsAtSameDepth = dropNonTargets.takeWhile{_._2 == depth.get}.toListL.value.sortBy{case (_, _, (tx, ty)) => (ty, tx)}
+      targetsAtSameDepth.map{case (paths, _, (tx, ty)) => Grid.calculatePath(paths, (tx, ty))}
+    } else {
+      List.empty
+    }
+  }
+
+  def possiblyMove(grid: Grid[Cell], attackerCell: Creature, x: Int, y: Int): (Grid[Cell], Int, Int) = {
+    val inRange = targetInRange(attackerCell, grid, x, y)
+    if (inRange.isDefined) {
+      (grid, x, y)
+    } else {
+      val targets = allTargets(attackerCell, grid)
+      val squares = adjacentOpenSquares(grid, targets)
+      val closest = closestTargetSquares(x, y, grid, squares.toSet)
+      if (closest.isEmpty) {
+        (grid, x, y)
+      } else {
+        val (moveX, moveY) = closest.head.drop(1).head
+        val movedGrid = grid.move((x, y), (moveX, moveY))
+        (movedGrid, moveX, moveY)
+      }
+    }
+  }
+
+  def possiblyAttack(grid: Grid[Cell], attackerCell: Creature, x: Int, y: Int): Grid[Cell] = {
+    val target = targetInRange(attackerCell, grid, x, y)
+    target map {case (tx, ty, t) =>
+      val newHitPoints = t.hitPoints - attackerCell.attack
+      if (newHitPoints <= 0) {
+        grid.delete((tx, ty))
+      } else {
+        grid.replace((tx, ty), t.setHitPoints(newHitPoints))
+      }
+    } getOrElse grid
+  }
+
+  def battleOver(grid: Grid[Cell]): Boolean = {
+    !(grid.contains(_.isInstanceOf[Elf]) && grid.contains(_.isInstanceOf[Goblin]))
   }
 
   def turn(grid: Grid[Cell], player: (Int, Int, UUID)): (Grid[Cell], Boolean) = {
-    val attacker = grid.getCell(player._1, player._2).filter(_.isInstanceOf[Creature]).filter(_.asInstanceOf[Creature].id == player._3)
+    val (x, y, uuid) = player
+    val attacker = grid.getCell(x, y).filter(_.isInstanceOf[Creature]).map{_.asInstanceOf[Creature]}.filter(_.id == uuid)
     attacker map {a =>
-      /*
-       * if not in range of a target
-       *   Identify all possible targets
-       *   Identify open squares adjacent to targets
-       *   move
-       *     get closest reachable target squares
-       *     choose first in reading order
-       *     take one step toward target
-       * if in range of a target
-       *   attack
-       * if no enemies left
-       *   return false
-       */
-      (grid, true)
-    } getOrElse ((grid, true))
+      val (possiblyMovedGrid, xAfterMove, yAfterMove) = possiblyMove(grid, a, x, y)
+      val possiblyAttackedGrid = possiblyAttack(possiblyMovedGrid, a, xAfterMove, yAfterMove)
+      (possiblyAttackedGrid, battleOver(possiblyAttackedGrid))
+    } getOrElse ((grid, false))
   }
 
   def cellOrder(grid: Grid[Cell]): List[(Int, Int, UUID)] = {
@@ -73,10 +115,13 @@ class Day15(source: Source) extends Day {
 
   def battleOutcome: Int = {
     val turns: Iterant[Coeval, (Grid[Cell], Boolean, Int)] = grid.turns[Coeval, Boolean, (Int, Int, UUID)](turn, cellOrder)
-    val (finalGrid, _, rounds) = turns.dropWhile(_._2).headOptionL.value.get
-    val hitPoints = finalGrid.readingOrder(_.isInstanceOf[Creature]).map(_.asInstanceOf[Creature].hitPoints).sum
+    val (finalGrid, _, rounds) = turns.dropWhile(!_._2).headOptionL.value.get
+    val allCreatures = finalGrid.readingOrder(_.isInstanceOf[Creature]).map{case (x, y) => finalGrid.getCell(x, y).get.asInstanceOf[Creature]}
+    val hitPoints = allCreatures.map{_.hitPoints}.sum
     rounds * hitPoints
   }
-  override def answer1: String = grid.getLines().mkString("\n")
+  override def answer1: String = battleOutcome.toString
+  // 754740 is too high
+  // 366210 is too high
   override def answer2: String = ???
 }

@@ -55,7 +55,7 @@ class Grid[Cell](private val zorders: Map[(Int, Int), List[Cell]]) {
   }
 
   def contains(p: (Cell) => Boolean): Boolean = {
-    zorders.valuesIterator.map{_.head}.contains(p)
+    zorders.valuesIterator.map{_.head}.exists(p)
   }
 
   /**
