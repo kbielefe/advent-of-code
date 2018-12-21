@@ -144,14 +144,14 @@ class Day13(source: Source) extends Day {
   lazy val trackGrid = grid filter isTrack
 
   def firstCrash: (Int, Int) = {
-    cartGrid.turns[Coeval, Option[(Int, Int)]](turn(trackGrid), _.readingOrder(isCart))
+    cartGrid.turns[Coeval, Option[(Int, Int)], (Int, Int)](turn(trackGrid), _.readingOrder(isCart))
       .map{_._2}
       .findL{_.isDefined}
       .value.get.get
   }
 
   def lastManStanding: (Int, Int) = {
-    val coords = cartGrid.turns[Coeval, Option[(Int, Int)]](turn(trackGrid), _.readingOrder(isCart))
+    val coords = cartGrid.turns[Coeval, Option[(Int, Int)], (Int, Int)](turn(trackGrid), _.readingOrder(isCart))
       .map{_._1}
       .dropWhile{_.size > 1}
       .drop(1)

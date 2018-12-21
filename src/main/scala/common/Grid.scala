@@ -57,20 +57,20 @@ class Grid[Cell](private val zorders: Map[(Int, Int), List[Cell]]) {
   /**
    * Runs turn for every cell in the cellOrder, which order is recalculated at the end of every round.
    */
-  def turns[F[_], A](turn: (Grid[Cell], (Int, Int)) => (Grid[Cell], A),
-                     cellOrder: (Grid[Cell]) => List[(Int, Int)] = _.readingOrder())(
+  def turns[F[_], A, B](turn: (Grid[Cell], B) => (Grid[Cell], A),
+                     cellOrder: (Grid[Cell]) => List[B])(
                      implicit F: Sync[F]
-                     ): Iterant[F, (Grid[Cell], A)] = {
-    def recurse(grid: Grid[Cell], order: List[(Int, Int)]): Iterant[F, (Grid[Cell], A)] = {
+                     ): Iterant[F, (Grid[Cell], A, Int)] = {
+    def recurse(grid: Grid[Cell], order: List[B], rounds: Int): Iterant[F, (Grid[Cell], A, Int)] = {
       if (order.isEmpty) {
-        recurse(grid, cellOrder(grid))
+        recurse(grid, cellOrder(grid), rounds + 1)
       } else {
         val (coords :: remainingOrder) = order
         val (newGrid, result) = turn(grid, coords)
-        Iterant.pure((newGrid, result)) ++ recurse(newGrid, remainingOrder)
+        Iterant.pure((newGrid, result, rounds)) ++ recurse(newGrid, remainingOrder, rounds)
       }
     }
-    recurse(this, List.empty)
+    recurse(this, List.empty, -1)
   }
 
   def getCell(x: Int, y: Int): Option[Cell] = zorders.get(x, y) map {_.head}
