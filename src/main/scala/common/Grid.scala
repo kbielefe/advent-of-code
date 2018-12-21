@@ -54,6 +54,10 @@ class Grid[Cell](private val zorders: Map[(Int, Int), List[Cell]]) {
     zorders.toList.filter{order => p(order._2.head)}.map{_._1}.sortBy{case (x, y) => (y, x)}
   }
 
+  def contains(p: (Cell) => Boolean): Boolean = {
+    zorders.valuesIterator.map{_.head}.contains(p)
+  }
+
   /**
    * Runs turn for every cell in the cellOrder, which order is recalculated at the end of every round.
    */
