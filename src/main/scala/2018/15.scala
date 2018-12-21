@@ -26,6 +26,17 @@ class Day15(source: Source) extends Day {
     case 'G' => Goblin()
   }
 
+  def cellToChar(cell: Cell): Char = cell match {
+    case c: Wall   => '#'
+    case c: Elf    => 'E'
+    case c: Goblin => 'G'
+  }
+
+  def printGrid(grid: Grid[Cell]): Unit = {
+    grid.getLines('.', cellToChar) foreach println
+    println("")
+  }
+
   lazy val grid = Grid(0, 0, '.', source, _ => None, charToCell _)
 
   def isEnemy(of: Creature)(potentialEnemy: Cell): Boolean = (of, potentialEnemy) match {
@@ -57,7 +68,13 @@ class Day15(source: Source) extends Day {
     val dropNonTargets = search.dropWhile{x => !(targets contains x._3)}
     val depth: Option[Int] = dropNonTargets.map{_._2}.headOptionL.value
     if (depth.isDefined) {
-      val targetsAtSameDepth = dropNonTargets.takeWhile{_._2 == depth.get}.toListL.value.sortBy{case (_, _, (tx, ty)) => (ty, tx)}
+      val targetsAtSameDepth = dropNonTargets
+        .takeWhile{_._2 == depth.get}
+        .toListL
+        .value
+        .sortBy{case (_, _, (tx, ty)) => (ty, tx)}
+        .filter{case (_, _, (tx, ty)) => targets contains (tx, ty)}
+
       targetsAtSameDepth.map{case (paths, _, (tx, ty)) => Grid.calculatePath(paths, (tx, ty))}
     } else {
       List.empty
@@ -113,15 +130,21 @@ class Day15(source: Source) extends Day {
     readingOrder.map{case (x, y) => (x, y, grid.getCell(x, y).get.asInstanceOf[Creature].id)}
   }
 
-  def battleOutcome: Int = {
+  def battleOutcome(grid: Grid[Cell]): Int = {
     val turns: Iterant[Coeval, (Grid[Cell], Boolean, Int)] = grid.turns[Coeval, Boolean, (Int, Int, UUID)](turn, cellOrder)
     val (finalGrid, _, rounds) = turns.dropWhile(!_._2).headOptionL.value.get
     val allCreatures = finalGrid.readingOrder(_.isInstanceOf[Creature]).map{case (x, y) => finalGrid.getCell(x, y).get.asInstanceOf[Creature]}
     val hitPoints = allCreatures.map{_.hitPoints}.sum
-    rounds * hitPoints
+    turns.takeWhile(!_._2).foreach{ x => println(x._3); printGrid(x._1) }.value
+    println(s"${rounds + 1} rounds, $hitPoints hit points")
+    (rounds + 1) * hitPoints
   }
-  override def answer1: String = battleOutcome.toString
+  override def answer1: String = battleOutcome(grid).toString
   // 754740 is too high
   // 366210 is too high
+  // 364332 is too high (rounds - 1)
+  // 216713 is incorrect
+  // 214102 is incorrect
+  // 195160 is incorrect
   override def answer2: String = ???
 }
