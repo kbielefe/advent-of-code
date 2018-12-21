@@ -166,10 +166,14 @@ object Grid {
         Iterant.empty
       } else {
         val ((depth, node), tail) = queue.dequeue
-        val newNeighbors = neighbors(node) filterNot {visited contains _}
-        val newPaths = paths ++ (newNeighbors map {n => (n, node)})
-        val newNeighborsWithDepth = newNeighbors map {n => (depth + 1, n)}
-        Iterant.pure((paths, depth, node)) ++ recurse(tail ++ newNeighborsWithDepth, visited + node, newPaths)
+        if (visited contains node) {// Could be visited after placed in queue
+          recurse(tail, visited, paths)
+        } else {
+          val newNeighbors = neighbors(node) filterNot {visited contains _}
+          val newPaths = paths ++ (newNeighbors map {n => (n, node)})
+          val newNeighborsWithDepth = newNeighbors map {n => (depth + 1, n)}
+          Iterant.pure((paths, depth, node)) ++ recurse(tail ++ newNeighborsWithDepth, visited + node, newPaths)
+        }
       }
     }
     recurse(Queue((0, start)), Set.empty[A], Map.empty[A, A])
