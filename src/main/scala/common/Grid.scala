@@ -154,23 +154,25 @@ object Grid {
 
   /*
    * Take a start point and a function that computes the reachable neighbors of a point.
-   * Return an Iterant of points as well as a Map containing links from child to parent
+   * Return an Iterant of points as well as a Map containing links from child to parent,
+   * and the depth of the node.
    */
   def breadthFirstTraverse[F[_], A](
       start: A,
       neighbors: A => Queue[A])(
-      implicit F: Sync[F]): Iterant[F, (Map[A, A], A)] = {
-    def recurse(queue: Queue[A], visited: Set[A], paths: Map[A, A]): Iterant[F, (Map[A, A], A)] = {
+      implicit F: Sync[F]): Iterant[F, (Map[A, A], Int, A)] = {
+    def recurse(queue: Queue[(Int, A)], visited: Set[A], paths: Map[A, A]): Iterant[F, (Map[A, A], Int, A)] = {
       if (queue.isEmpty) {
         Iterant.empty
       } else {
-        val (node, tail) = queue.dequeue
+        val ((depth, node), tail) = queue.dequeue
         val newNeighbors = neighbors(node) filterNot {visited contains _}
         val newPaths = paths ++ (newNeighbors map {n => (n, node)})
-        Iterant.pure((paths, node)) ++ recurse(tail ++ newNeighbors, visited + node, newPaths)
+        val newNeighborsWithDepth = newNeighbors map {n => (depth + 1, n)}
+        Iterant.pure((paths, depth, node)) ++ recurse(tail ++ newNeighborsWithDepth, visited + node, newPaths)
       }
     }
-    recurse(Queue(start), Set.empty[A], Map.empty[A, A])
+    recurse(Queue((0, start)), Set.empty[A], Map.empty[A, A])
   }
 
   /*
