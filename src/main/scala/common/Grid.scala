@@ -173,7 +173,7 @@ object Grid {
         if (visited contains node) {// Could be visited after placed in queue
           recurse(tail, visited, paths)
         } else {
-          val newNeighbors = neighbors(node).reverse filterNot {visited contains _}
+          val newNeighbors = neighbors(node) filterNot {visited contains _}
           val newPaths = paths ++ (newNeighbors map {n => (n, node)})
           val newNeighborsWithDepth = newNeighbors map {n => (depth + 1, n)}
           Iterant.pure((paths, depth, node)) ++ recurse(tail ++ newNeighborsWithDepth, visited + node, newPaths)
@@ -181,6 +181,25 @@ object Grid {
       }
     }
     recurse(Queue((0, start)), Set.empty[A], Map.empty[A, A])
+  }
+
+  // preorder
+  // path is returned in reverse (head of list is destination)
+  def depthFirstTraverse[F[_], A](
+      start: A,
+      neighbors: A => List[A],
+      maxDepth: Option[Int] = None)(
+      implicit F: Sync[F]): Iterant[F, (List[A], A)] = {
+    def recurse(node: A, visited: Set[A], path: List[A], depth: Int): Iterant[F, (List[A], A)] = {
+      val reachedMax = maxDepth map {depth > _} getOrElse false
+      if (reachedMax) {
+        Iterant.empty
+      } else {
+        val newNeighbors = neighbors(node) filterNot {visited contains _}
+        Iterant.pure((node :: path, node)) ++ Iterant.fromList(newNeighbors).flatMap{n => recurse(n, visited + node, node :: path, depth + 1)}
+      }
+    }
+    recurse(start, Set.empty, List.empty, 0)
   }
 
   /*

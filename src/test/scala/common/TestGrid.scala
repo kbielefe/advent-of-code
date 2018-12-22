@@ -83,4 +83,41 @@ class TestGrid extends UnitSpec {
       }
     }
   }
+
+  "Depth first traverse" when {
+    "no neighbors" should {
+      "return just the root" in {
+        Grid.depthFirstTraverse[Coeval, Int](1, _ => List.empty[Int]).map{_._2}.toListL.value shouldBe List(1)
+      }
+    }
+
+    "given neighbors" should {
+      def neighbors(n: Int): List[Int] = List(n * 2, n * 2 + 1)
+      "return those neighbors in order first" in {
+        Grid.depthFirstTraverse[Coeval, Int](1, neighbors, Some(1)).take(3).map{_._2}.toListL.value shouldBe List(1, 2, 3)
+      }
+
+      "return the next level of neighbors in order" in {
+        Grid.depthFirstTraverse[Coeval, Int](1, neighbors, Some(2)).take(7).map{_._2}.toListL.value shouldBe List(1, 2, 4, 5, 3, 6, 7)
+      }
+
+      "return the correct path back" in {
+        val paths = Grid.depthFirstTraverse[Coeval, Int](1, neighbors, Some(2)).take(7).map{_._1}.lastOptionL.value.get
+        paths shouldBe List(7, 3, 1)
+      }
+
+      "return the correct path back for a looping function" in {
+        def neighbors(n: Int): List[Int] = List((n + 1) % 3)
+        val paths = Grid.depthFirstTraverse[Coeval, Int](0, neighbors, Some(3)).take(10).map{_._1}.lastOptionL.value.get
+        paths shouldBe List(2, 1, 0)
+      }
+    }
+
+    "given a looping neighbors function" should {
+      def neighbors(n: Int): List[Int] = List((n + 1) % 3)
+      "not revisit the same neighbor in an infinite loop" in {
+        Grid.depthFirstTraverse[Coeval, Int](0, neighbors, Some(3)).take(10).map{_._2}.toListL.value shouldBe List(0, 1, 2)
+      }
+    }
+  }
 }
