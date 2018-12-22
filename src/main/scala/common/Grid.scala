@@ -160,26 +160,11 @@ object Grid {
    * Take a start point and a function that computes the reachable neighbors of a point.
    * Return an Iterant of points as well as a Map containing links from child to parent,
    * and the depth of the node.
-   * preferredParent takes (child, parent1, parent2) and returns the preferred parent path
    */
   def breadthFirstTraverse[F[_], A](
       start: A,
-      neighbors: A => Queue[A],
-      preferredParent: (A, A, A) => A)(
+      neighbors: A => Queue[A])(
       implicit F: Sync[F]): Iterant[F, (Map[A, A], Int, A)] = {
-
-    // Paths point from children to parents
-    // if a mapping already exists from a certain child,
-    // prefer the mapping with reverse reading order
-    // May be able to change queue to set if merging works
-    def mergePaths(oldPaths: Map[A, A], newNeighbors: Queue[A], parent: A): Map[A, A] = {
-      //oldPaths ++ (newNeighbors map {child => (child, parent)})
-      val newPaths = newNeighbors.map{child => (child, parent)}.toMap
-      val overlappingChildren = oldPaths.keySet & newPaths.keySet
-      val overlappingPaths = overlappingChildren.map{child => (child, preferredParent(child, oldPaths(child), newPaths(child)))}.toMap
-      oldPaths ++ newPaths ++ overlappingPaths
-    }
-
     def recurse(queue: Queue[(Int, A)], visited: Set[A], paths: Map[A, A]): Iterant[F, (Map[A, A], Int, A)] = {
       if (queue.isEmpty) {
         Iterant.empty
@@ -189,7 +174,7 @@ object Grid {
           recurse(tail, visited, paths)
         } else {
           val newNeighbors = neighbors(node).reverse filterNot {visited contains _}
-          val newPaths = mergePaths(paths, newNeighbors, node)
+          val newPaths = paths ++ (newNeighbors map {n => (n, node)})
           val newNeighborsWithDepth = newNeighbors map {n => (depth + 1, n)}
           Iterant.pure((paths, depth, node)) ++ recurse(tail ++ newNeighborsWithDepth, visited + node, newPaths)
         }

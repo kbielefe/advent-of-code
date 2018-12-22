@@ -24,8 +24,6 @@ class TestGrid extends UnitSpec {
   }
   val grid = Grid(0, 0, '.', gridString, _ => None, charToCell _)
 
-  def preferredParent[A](child: A, parent1: A, parent2: A): A = parent2
-
   "Grid" when {
     "cell retrieved" should {
       "retrieve the same cell" in {
@@ -48,32 +46,32 @@ class TestGrid extends UnitSpec {
   "Breadth first traverse" when {
     "no neighbors" should {
       "return just the root" in {
-        Grid.breadthFirstTraverse[Coeval, Int](1, _ => Queue.empty[Int], preferredParent).map{_._3}.toListL.value shouldBe List(1)
+        Grid.breadthFirstTraverse[Coeval, Int](1, _ => Queue.empty[Int]).map{_._3}.toListL.value shouldBe List(1)
       }
     }
 
     "given neighbors" should {
       def neighbors(n: Int): Queue[Int] = Queue(n * 2, n * 2 + 1)
       "return those neighbors in order first" in {
-        Grid.breadthFirstTraverse[Coeval, Int](1, neighbors, preferredParent).take(3).map{_._3}.toListL.value shouldBe List(1, 2, 3)
+        Grid.breadthFirstTraverse[Coeval, Int](1, neighbors).take(3).map{_._3}.toListL.value shouldBe List(1, 2, 3)
       }
 
       "return the next level of neighbors in order" in {
-        Grid.breadthFirstTraverse[Coeval, Int](1, neighbors, preferredParent).take(7).map{_._3}.toListL.value shouldBe List(1, 2, 3, 4, 5, 6, 7)
+        Grid.breadthFirstTraverse[Coeval, Int](1, neighbors).take(7).map{_._3}.toListL.value shouldBe List(1, 2, 3, 4, 5, 6, 7)
       }
 
       "calculate the proper depth" in {
-        Grid.breadthFirstTraverse[Coeval, Int](1, neighbors, preferredParent).take(7).map{_._2}.toListL.value shouldBe List(0, 1, 1, 2, 2, 2, 2)
+        Grid.breadthFirstTraverse[Coeval, Int](1, neighbors).take(7).map{_._2}.toListL.value shouldBe List(0, 1, 1, 2, 2, 2, 2)
       }
 
       "return the correct path back" in {
-        val paths = Grid.breadthFirstTraverse[Coeval, Int](1, neighbors, preferredParent).take(7).map{_._1}.lastOptionL.value.get
+        val paths = Grid.breadthFirstTraverse[Coeval, Int](1, neighbors).take(7).map{_._1}.lastOptionL.value.get
         Grid.calculatePath(paths, 4) shouldBe List(1, 2, 4)
       }
 
       "return the correct path back for a looping function" in {
         def neighbors(n: Int): Queue[Int] = Queue((n + 1) % 3)
-        val paths = Grid.breadthFirstTraverse[Coeval, Int](0, neighbors, preferredParent).take(10).map{_._1}.lastOptionL.value.get
+        val paths = Grid.breadthFirstTraverse[Coeval, Int](0, neighbors).take(10).map{_._1}.lastOptionL.value.get
         Grid.calculatePath(paths, 2) shouldBe List(0, 1, 2)
       }
     }
@@ -81,7 +79,7 @@ class TestGrid extends UnitSpec {
     "given a looping neighbors function" should {
       def neighbors(n: Int): Queue[Int] = Queue((n + 1) % 3)
       "not revisit the same neighbor in an infinite loop" in {
-        Grid.breadthFirstTraverse[Coeval, Int](0, neighbors, preferredParent).take(10).map{_._3}.toListL.value shouldBe List(0, 1, 2)
+        Grid.breadthFirstTraverse[Coeval, Int](0, neighbors).take(10).map{_._3}.toListL.value shouldBe List(0, 1, 2)
       }
     }
   }

@@ -62,13 +62,9 @@ class Day15(source: Source) extends Day {
     Queue(adjacentSquares.filter{case (x, y) => !grid.getCell(x, y).isDefined}:_*)
   }
 
-  def preferredParent(child: (Int, Int), parent1: (Int, Int), parent2: (Int, Int)): (Int, Int) = {
-    List(parent1, parent2).sortBy{case (x, y) => (y, x)}.head
-  }
-
   def closestTargetSquares(x: Int, y: Int, grid: Grid[Cell], targets: Set[(Int, Int)]): List[List[(Int, Int)]] = {
     def neighbors(p: (Int, Int)): Queue[(Int, Int)] = adjacentOpenSquares(grid, List(p))
-    val search = Grid.breadthFirstTraverse[Coeval, (Int, Int)]((x, y), neighbors, preferredParent)
+    val search = Grid.breadthFirstTraverse[Coeval, (Int, Int)]((x, y), neighbors)
     val dropNonTargets = search.dropWhile{x => !(targets contains x._3)}
     val depth: Option[Int] = dropNonTargets.map{_._2}.headOptionL.value
     if (depth.isDefined) {
@@ -139,7 +135,7 @@ class Day15(source: Source) extends Day {
     val (finalGrid, _, rounds) = turns.dropWhile(!_._2).headOptionL.value.get
     val allCreatures = finalGrid.readingOrder(_.isInstanceOf[Creature]).map{case (x, y) => finalGrid.getCell(x, y).get.asInstanceOf[Creature]}
     val hitPoints = allCreatures.map{_.hitPoints}.sum
-    //turns.takeWhile(!_._2).foreach{ x => println(x._3); printGrid(x._1) }.value
+    turns.takeWhile(!_._2).foreach{ x => println(x._3); printGrid(x._1) }.value
     println(s"${rounds + 1} rounds, $hitPoints hit points")
     (rounds + 1) * hitPoints
   }
