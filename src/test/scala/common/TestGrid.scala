@@ -65,14 +65,14 @@ class TestGrid extends UnitSpec {
       }
 
       "return the correct path back" in {
-        val paths = Grid.breadthFirstTraverse[Coeval, Int](1, neighbors).take(7).map{_._1}.lastOptionL.value.get
-        Grid.calculatePath(paths, 4) shouldBe List(1, 2, 4)
+        val path = Grid.breadthFirstTraverse[Coeval, Int](1, neighbors).take(7).map{_._1}.lastOptionL.value.get
+        path shouldBe List(7, 3, 1)
       }
 
       "return the correct path back for a looping function" in {
         def neighbors(n: Int): Queue[Int] = Queue((n + 1) % 3)
-        val paths = Grid.breadthFirstTraverse[Coeval, Int](0, neighbors).take(10).map{_._1}.lastOptionL.value.get
-        Grid.calculatePath(paths, 2) shouldBe List(0, 1, 2)
+        val path = Grid.breadthFirstTraverse[Coeval, Int](0, neighbors).take(10).map{_._1}.lastOptionL.value.get
+        path shouldBe List(2, 1, 0)
       }
     }
 

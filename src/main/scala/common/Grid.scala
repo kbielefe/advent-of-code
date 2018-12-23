@@ -164,23 +164,22 @@ object Grid {
   def breadthFirstTraverse[F[_], A](
       start: A,
       neighbors: A => Queue[A])(
-      implicit F: Sync[F]): Iterant[F, (Map[A, A], Int, A)] = {
-    def recurse(queue: Queue[(Int, A)], visited: Set[A], paths: Map[A, A]): Iterant[F, (Map[A, A], Int, A)] = {
+      implicit F: Sync[F]): Iterant[F, (List[A], Int, A)] = {
+    def recurse(queue: Queue[(List[A], Int, A)], visited: Set[A]): Iterant[F, (List[A], Int, A)] = {
       if (queue.isEmpty) {
         Iterant.empty
       } else {
-        val ((depth, node), tail) = queue.dequeue
+        val ((path, depth, node), tail) = queue.dequeue
         if (visited contains node) {// Could be visited after placed in queue
-          recurse(tail, visited, paths)
+          recurse(tail, visited)
         } else {
           val newNeighbors = neighbors(node) filterNot {visited contains _}
-          val newPaths = paths ++ (newNeighbors map {n => (n, node)})
-          val newNeighborsWithDepth = newNeighbors map {n => (depth + 1, n)}
-          Iterant.pure((paths, depth, node)) ++ recurse(tail ++ newNeighborsWithDepth, visited + node, newPaths)
+          val newNeighborsWithPathAndDepth = newNeighbors map {n => (node :: path, depth + 1, n)}
+          Iterant.pure((node :: path, depth, node)) ++ recurse(tail ++ newNeighborsWithPathAndDepth, visited + node)
         }
       }
     }
-    recurse(Queue((0, start)), Set.empty[A], Map.empty[A, A])
+    recurse(Queue((List.empty, 0, start)), Set.empty[A])
   }
 
   // preorder
