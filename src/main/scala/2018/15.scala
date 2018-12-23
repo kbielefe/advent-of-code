@@ -10,14 +10,17 @@ class Day15(source: Source) extends Day {
   abstract class Cell
   abstract class Creature(val attack: Int, val hitPoints: Int, val id: UUID) extends Cell {
     def setHitPoints(newHitPoints: Int): Creature
+    def getAttack(extra: Int): Int
   }
 
   case class Wall() extends Cell
   case class Elf(override val attack:    Int = 3, override val hitPoints: Int = 200, override val id: UUID = UUID.randomUUID()) extends Creature(attack, hitPoints, id) {
     override def setHitPoints(newHitPoints: Int): Elf = copy(hitPoints = newHitPoints)
+    override def getAttack(extra: Int) = attack + extra
   }
   case class Goblin(override val attack: Int = 3, override val hitPoints: Int = 200, override val id: UUID = UUID.randomUUID()) extends Creature(attack, hitPoints, id) {
     override def setHitPoints(newHitPoints: Int): Goblin = copy(hitPoints = newHitPoints)
+    override def getAttack(extra: Int) = attack
   }
 
   def charToCell(char: Char): Cell = char match {
@@ -98,10 +101,10 @@ class Day15(source: Source) extends Day {
     }
   }
 
-  def possiblyAttack(grid: Grid[Cell], attackerCell: Creature, x: Int, y: Int): Grid[Cell] = {
+  def possiblyAttack(grid: Grid[Cell], attackerCell: Creature, x: Int, y: Int, extraAttack: Int = 0): Grid[Cell] = {
     val target = targetInRange(attackerCell, grid, x, y)
     target map {case (tx, ty, t) =>
-      val newHitPoints = t.hitPoints - attackerCell.attack
+      val newHitPoints = t.hitPoints - attackerCell.getAttack(extraAttack)
       if (newHitPoints <= 0) {
         grid.delete((tx, ty))
       } else {
@@ -114,12 +117,12 @@ class Day15(source: Source) extends Day {
     !(grid.contains(_.isInstanceOf[Elf]) && grid.contains(_.isInstanceOf[Goblin]))
   }
 
-  def turn(grid: Grid[Cell], player: (Int, Int, UUID)): (Grid[Cell], Boolean) = {
+  def turn(extraAttack: Int)(grid: Grid[Cell], player: (Int, Int, UUID)): (Grid[Cell], Boolean) = {
     val (x, y, uuid) = player
     val attacker = grid.getCell(x, y).filter(_.isInstanceOf[Creature]).map{_.asInstanceOf[Creature]}.filter(_.id == uuid)
     attacker map {a =>
       val (possiblyMovedGrid, xAfterMove, yAfterMove) = possiblyMove(grid, a, x, y)
-      val possiblyAttackedGrid = possiblyAttack(possiblyMovedGrid, a, xAfterMove, yAfterMove)
+      val possiblyAttackedGrid = possiblyAttack(possiblyMovedGrid, a, xAfterMove, yAfterMove, extraAttack)
       (possiblyAttackedGrid, battleOver(possiblyAttackedGrid))
     } getOrElse ((grid, false))
   }
@@ -129,12 +132,12 @@ class Day15(source: Source) extends Day {
     readingOrder.map{case (x, y) => (x, y, grid.getCell(x, y).get.asInstanceOf[Creature].id)}
   }
 
-  def battleOutcome(grid: Grid[Cell]): Int = {
-    val turns: Iterant[Coeval, (Grid[Cell], Boolean, Int)] = grid.turns[Coeval, Boolean, (Int, Int, UUID)](turn, cellOrder)
-    val (finalGrid, _, rounds) = turns.dropWhile(!_._2).headOptionL.value.get
+  def battleOutcome(grid: Grid[Cell], extraAttack: Int = 0): Int = {
+    val turns: Iterant[Coeval, (Grid[Cell], Boolean, Int)] = grid.turns[Coeval, Boolean, (Int, Int, UUID)](turn(extraAttack), cellOrder)
+    val (finalGrid, _, rounds) = turns.dropWhile(!_._2).drop(1).headOptionL.value.get
     val allCreatures = finalGrid.readingOrder(_.isInstanceOf[Creature]).map{case (x, y) => finalGrid.getCell(x, y).get.asInstanceOf[Creature]}
     val hitPoints = allCreatures.map{_.hitPoints}.sum
-    (rounds + 0) * hitPoints
+    rounds * hitPoints
   }
   override def answer1: String = battleOutcome(grid).toString
   override def answer2: String = ???
