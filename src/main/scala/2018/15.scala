@@ -62,7 +62,7 @@ class Day15(source: Source) extends Day {
     Queue(adjacentSquares.filter{case (x, y) => !grid.getCell(x, y).isDefined}:_*)
   }
 
-  def closestTargetSquares(x: Int, y: Int, grid: Grid[Cell], targets: Set[(Int, Int)]): Option[(Int, Int, Int)] = {
+  def closestTargetSquares(x: Int, y: Int, grid: Grid[Cell], targets: Set[(Int, Int)]): Option[(List[(Int, Int)], Int, Int)] = {
     def neighbors(p: (Int, Int)): Queue[(Int, Int)] = adjacentOpenSquares(grid, List(p))
     val search = Grid.breadthFirstTraverse[Coeval, (Int, Int)]((x, y), neighbors)
     val dropNonTargets = search.dropWhile{x => !(targets contains x._3)}
@@ -75,7 +75,7 @@ class Day15(source: Source) extends Day {
         .sortBy{case (_, _, (tx, ty)) => (ty, tx)}
         .filter{case (_, _, (tx, ty)) => targets contains (tx, ty)}
 
-      targetsAtSameDepth.map{case (_, depth, (tx, ty)) => (depth, tx, ty)}.headOption
+      targetsAtSameDepth.map{case (path, _, (tx, ty)) => (path, tx, ty)}.headOption
     } else {
       None
     }
@@ -90,9 +90,7 @@ class Day15(source: Source) extends Day {
       val targets = allTargets(attackerCell, grid)
       val squares = adjacentOpenSquares(grid, targets)
       val closest = closestTargetSquares(x, y, grid, squares.toSet)
-      closest map {case (depth, cx, cy) =>
-        val dfs = Grid.depthFirstTraverse[Coeval, (Int, Int)]((x, y), neighbors, Some(depth))
-        val path: List[(Int, Int)] = dfs.findL{case (path, (tx, ty)) => (tx, ty) == (cx, cy)}.value.get._1
+      closest map {case (path, cx, cy) =>
         val (moveX, moveY) = path.reverse.drop(1).head
         val movedGrid = grid.move((x, y), (moveX, moveY))
         (movedGrid, moveX, moveY)
@@ -102,14 +100,11 @@ class Day15(source: Source) extends Day {
 
   def possiblyAttack(grid: Grid[Cell], attackerCell: Creature, x: Int, y: Int): Grid[Cell] = {
     val target = targetInRange(attackerCell, grid, x, y)
-    println(s"$x $y attacking")
     target map {case (tx, ty, t) =>
       val newHitPoints = t.hitPoints - attackerCell.attack
       if (newHitPoints <= 0) {
-        println(s"deleting $tx $ty")
         grid.delete((tx, ty))
       } else {
-        println(s"setting $tx $ty to $newHitPoints")
         grid.replace((tx, ty), t.setHitPoints(newHitPoints))
       }
     } getOrElse grid
@@ -139,16 +134,8 @@ class Day15(source: Source) extends Day {
     val (finalGrid, _, rounds) = turns.dropWhile(!_._2).headOptionL.value.get
     val allCreatures = finalGrid.readingOrder(_.isInstanceOf[Creature]).map{case (x, y) => finalGrid.getCell(x, y).get.asInstanceOf[Creature]}
     val hitPoints = allCreatures.map{_.hitPoints}.sum
-    turns.takeWhile(!_._2).foreach{ x => println(x._3); printGrid(x._1) }.value
-    println(s"${rounds + 0} rounds, $hitPoints hit points")
     (rounds + 0) * hitPoints
   }
   override def answer1: String = battleOutcome(grid).toString
-  // 754740 is too high
-  // 366210 is too high
-  // 364332 is too high (rounds - 1)
-  // 216713 is incorrect
-  // 214102 is incorrect
-  // 195160 is incorrect
   override def answer2: String = ???
 }

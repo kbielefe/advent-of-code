@@ -115,7 +115,7 @@ class TestDay15 extends UnitSpec {
       "give the best path to the targets" in {
         val goblins = List((4, 1), (5, 3), (2, 3))
         val openSquares = adjacentOpenSquares(exampleGrid1, goblins)
-        closestTargetSquares(1, 1, exampleGrid1, openSquares.toSet) shouldBe Some((2, 3, 1))
+        closestTargetSquares(1, 1, exampleGrid1, openSquares.toSet) shouldBe Some((List((3,1), (2,1), (1,1)), 3, 1))
       }
     }
     "given an unreachable target" should {
@@ -164,7 +164,7 @@ class TestDay15 extends UnitSpec {
 
     "getting closest target squares" should {
       "not return the path to the far elf" in {
-        closestTargetSquares(3, 1, exampleGrid3, Set((3,2), (4,1), (5,5))) shouldBe  Some((1, 4, 1))
+        closestTargetSquares(3, 1, exampleGrid3, Set((3,2), (4,1), (5,5))) shouldBe  Some((List((4,1), (3,1)), 4, 1))
       }
     }
   }
@@ -180,7 +180,7 @@ class TestDay15 extends UnitSpec {
 
     "getting closest target squares" should {
       "return the path to the far elf" in {
-        closestTargetSquares(3, 1, exampleGrid9, Set((5,5))) shouldBe Some((10, 5, 5))
+        closestTargetSquares(3, 1, exampleGrid9, Set((5,5))) shouldBe Some((List((5,5), (4,5), (3,5), (3,4), (2,4), (1,4), (1,3), (1,2), (1,1), (2,1), (3,1)), 5, 5))
       }
     }
   }
@@ -196,7 +196,7 @@ class TestDay15 extends UnitSpec {
 
     "getting closest target squares" should {
       "return the reading order path" in {
-        closestTargetSquares(3, 5, exampleGrid10, Set((2, 3), (1, 4))) shouldBe Some((3, 2, 3))
+        closestTargetSquares(3, 5, exampleGrid10, Set((2, 3), (1, 4))) shouldBe Some((List((2,3), (2,4), (3,4), (3,5)), 2, 3))
       }
     }
   }
