@@ -1,5 +1,5 @@
 package advent2018
-import common.{Day, Grid}
+import common.{Day, Dynamic, Grid}
 import scala.io.Source
 import java.util.UUID
 import monix.eval.Coeval
@@ -132,13 +132,29 @@ class Day15(source: Source) extends Day {
     readingOrder.map{case (x, y) => (x, y, grid.getCell(x, y).get.asInstanceOf[Creature].id)}
   }
 
-  def battleOutcome(grid: Grid[Cell], extraAttack: Int = 0): Int = {
+  def battle(grid: Grid[Cell], extraAttack: Int = 0): (Grid[Cell], Int) = {
     val turns: Iterant[Coeval, (Grid[Cell], Boolean, Int)] = grid.turns[Coeval, Boolean, (Int, Int, UUID)](turn(extraAttack), cellOrder)
     val (finalGrid, _, rounds) = turns.dropWhile(!_._2).drop(1).headOptionL.value.get
+    (finalGrid, rounds)
+  }
+
+  def elfCount(grid: Grid[Cell]): Int = {
+    grid.readingOrder(_.isInstanceOf[Elf]).size
+  }
+
+  def battleOutcome(grid: Grid[Cell], extraAttack: Int = 0): Int = {
+    val (finalGrid, rounds) = battle(grid, extraAttack)
     val allCreatures = finalGrid.readingOrder(_.isInstanceOf[Creature]).map{case (x, y) => finalGrid.getCell(x, y).get.asInstanceOf[Creature]}
     val hitPoints = allCreatures.map{_.hitPoints}.sum
     rounds * hitPoints
   }
+
+  def opBattle(grid: Grid[Cell]): Int = {
+    val originalElfCount = elfCount(grid)
+    val (attack, _) = Dynamic.binarySearch[(Grid[Cell], Int)](3, 200, {n => battle(grid, n)}, {x => elfCount(x._1) == originalElfCount})
+    battleOutcome(grid, attack)
+  }
+
   override def answer1: String = battleOutcome(grid).toString
-  override def answer2: String = ???
+  override def answer2: String = opBattle(grid).toString
 }

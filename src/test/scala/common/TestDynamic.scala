@@ -108,4 +108,18 @@ class TestDynamic extends UnitSpec {
       }
     }
   }
+
+  "binarySearch" when {
+    "given a start = end + 1" should {
+      "return the existing end" in {
+        Dynamic.binarySearch[Char](1, 2, _.toString.head, _.asDigit >= 2) shouldBe (2, '2')
+      }
+    }
+
+    "given a start = end + 2" should {
+      "return the correct result" in {
+        Dynamic.binarySearch[Char](1, 3, _.toString.head, _.asDigit >= 2) shouldBe (2, '2')
+      }
+    }
+  }
 }

@@ -1,6 +1,7 @@
 package common
 import scala.annotation.tailrec
 import monix.tail.Iterant
+import monix.eval.Coeval
 import scala.language.higherKinds
 import cats.effect.Sync
 
@@ -63,4 +64,20 @@ object Dynamic {
 
  def frequency[A](xs: TraversableOnce[A]): Map[A, Int] =
    xs.foldLeft(Map.empty[A, Int]){case (freq, next) => freq + (next -> (freq.getOrElse(next, 0) + 1))}
+
+ // Find the value x where p(x) is true and p(x - 1) is false
+ // given start must be false and given end must be true
+ def binarySearch[A](start: Int, end: Int, result: Int => A, p: A => Boolean): (Int, A) = {
+   if (end == start + 1) {
+     (end, result(end))
+   } else {
+     val half = (start + end) / 2
+     val halfResult = result(half)
+     if (p(halfResult)) {
+       binarySearch(start, half, result, p)
+     } else {
+       binarySearch(half, end, result, p)
+     }
+   }
+ }
 }
