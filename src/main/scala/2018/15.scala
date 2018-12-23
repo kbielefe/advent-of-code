@@ -58,11 +58,11 @@ class Day15(source: Source) extends Day {
   }
 
   def adjacentOpenSquares(grid: Grid[Cell], targets: List[(Int, Int)]): Queue[(Int, Int)] = {
-    val adjacentSquares = targets.flatMap{case (x, y) => List((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1))}
+    val adjacentSquares = targets.flatMap{case (x, y) => List((x, y - 1), (x - 1, y), (x + 1, y), (x, y + 1))}
     Queue(adjacentSquares.filter{case (x, y) => !grid.getCell(x, y).isDefined}:_*)
   }
 
-  def closestTargetSquares(x: Int, y: Int, grid: Grid[Cell], targets: Set[(Int, Int)]): List[List[(Int, Int)]] = {
+  def closestTargetSquares(x: Int, y: Int, grid: Grid[Cell], targets: Set[(Int, Int)]): Option[(Int, Int, Int)] = {
     def neighbors(p: (Int, Int)): Queue[(Int, Int)] = adjacentOpenSquares(grid, List(p))
     val search = Grid.breadthFirstTraverse[Coeval, (Int, Int)]((x, y), neighbors)
     val dropNonTargets = search.dropWhile{x => !(targets contains x._3)}
@@ -75,13 +75,14 @@ class Day15(source: Source) extends Day {
         .sortBy{case (_, _, (tx, ty)) => (ty, tx)}
         .filter{case (_, _, (tx, ty)) => targets contains (tx, ty)}
 
-      targetsAtSameDepth.map{case (paths, _, (tx, ty)) => Grid.calculatePath(paths, (tx, ty))}
+      targetsAtSameDepth.map{case (_, depth, (tx, ty)) => (depth, tx, ty)}.headOption
     } else {
-      List.empty
+      None
     }
   }
 
   def possiblyMove(grid: Grid[Cell], attackerCell: Creature, x: Int, y: Int): (Grid[Cell], Int, Int) = {
+    def neighbors(p: (Int, Int)): List[(Int, Int)] = adjacentOpenSquares(grid, List(p)).toList
     val inRange = targetInRange(attackerCell, grid, x, y)
     if (inRange.isDefined) {
       (grid, x, y)
@@ -89,23 +90,26 @@ class Day15(source: Source) extends Day {
       val targets = allTargets(attackerCell, grid)
       val squares = adjacentOpenSquares(grid, targets)
       val closest = closestTargetSquares(x, y, grid, squares.toSet)
-      if (closest.isEmpty) {
-        (grid, x, y)
-      } else {
-        val (moveX, moveY) = closest.head.drop(1).head
+      closest map {case (depth, cx, cy) =>
+        val dfs = Grid.depthFirstTraverse[Coeval, (Int, Int)]((x, y), neighbors, Some(depth))
+        val path: List[(Int, Int)] = dfs.findL{case (path, (tx, ty)) => (tx, ty) == (cx, cy)}.value.get._1
+        val (moveX, moveY) = path.reverse.drop(1).head
         val movedGrid = grid.move((x, y), (moveX, moveY))
         (movedGrid, moveX, moveY)
-      }
+      } getOrElse (grid, x, y)
     }
   }
 
   def possiblyAttack(grid: Grid[Cell], attackerCell: Creature, x: Int, y: Int): Grid[Cell] = {
     val target = targetInRange(attackerCell, grid, x, y)
+    println(s"$x $y attacking")
     target map {case (tx, ty, t) =>
       val newHitPoints = t.hitPoints - attackerCell.attack
       if (newHitPoints <= 0) {
+        println(s"deleting $tx $ty")
         grid.delete((tx, ty))
       } else {
+        println(s"setting $tx $ty to $newHitPoints")
         grid.replace((tx, ty), t.setHitPoints(newHitPoints))
       }
     } getOrElse grid
@@ -136,8 +140,8 @@ class Day15(source: Source) extends Day {
     val allCreatures = finalGrid.readingOrder(_.isInstanceOf[Creature]).map{case (x, y) => finalGrid.getCell(x, y).get.asInstanceOf[Creature]}
     val hitPoints = allCreatures.map{_.hitPoints}.sum
     turns.takeWhile(!_._2).foreach{ x => println(x._3); printGrid(x._1) }.value
-    println(s"${rounds + 1} rounds, $hitPoints hit points")
-    (rounds + 1) * hitPoints
+    println(s"${rounds + 0} rounds, $hitPoints hit points")
+    (rounds + 0) * hitPoints
   }
   override def answer1: String = battleOutcome(grid).toString
   // 754740 is too high

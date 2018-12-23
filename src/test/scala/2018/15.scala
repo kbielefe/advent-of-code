@@ -115,12 +115,12 @@ class TestDay15 extends UnitSpec {
       "give the best path to the targets" in {
         val goblins = List((4, 1), (5, 3), (2, 3))
         val openSquares = adjacentOpenSquares(exampleGrid1, goblins)
-        closestTargetSquares(1, 1, exampleGrid1, openSquares.toSet) shouldBe List(List((1,1), (2,1), (3,1)), List((1,1), (2,1), (2,2)), List((1,1), (1,2), (1,3)))
+        closestTargetSquares(1, 1, exampleGrid1, openSquares.toSet) shouldBe Some((2, 3, 1))
       }
     }
     "given an unreachable target" should {
       "return an empty list" in {
-        closestTargetSquares(1, 1, exampleGrid1, Set((5, 1))) shouldBe empty
+        closestTargetSquares(1, 1, exampleGrid1, Set((5, 1))) shouldBe None
       }
     }
   }
@@ -164,7 +164,7 @@ class TestDay15 extends UnitSpec {
 
     "getting closest target squares" should {
       "not return the path to the far elf" in {
-        closestTargetSquares(3, 1, exampleGrid3, Set((3,2), (4,1), (5,5))) shouldBe List(List((3,1), (4,1)), List((3,1), (3,2)))
+        closestTargetSquares(3, 1, exampleGrid3, Set((3,2), (4,1), (5,5))) shouldBe  Some((1, 4, 1))
       }
     }
   }
@@ -180,8 +180,7 @@ class TestDay15 extends UnitSpec {
 
     "getting closest target squares" should {
       "return the path to the far elf" in {
-        closestTargetSquares(3, 1, exampleGrid9, Set((5,5))) shouldBe
-          List(List((3, 1), (2, 1), (1, 1), (1, 2), (1, 3), (1, 4), (2, 4), (3, 4), (3, 5), (4, 5), (5, 5)))
+        closestTargetSquares(3, 1, exampleGrid9, Set((5,5))) shouldBe Some((10, 5, 5))
       }
     }
   }
@@ -197,8 +196,7 @@ class TestDay15 extends UnitSpec {
 
     "getting closest target squares" should {
       "return the reading order path" in {
-        closestTargetSquares(3, 5, exampleGrid10, Set((2, 3), (1, 4))) shouldBe
-          List(List((3, 5), (3, 4), (2, 4), (2, 3)), List((3, 5), (3, 4), (2, 4), (1, 4)))
+        closestTargetSquares(3, 5, exampleGrid10, Set((2, 3), (1, 4))) shouldBe Some((3, 2, 3))
       }
     }
   }
