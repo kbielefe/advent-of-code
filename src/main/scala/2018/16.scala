@@ -1,5 +1,6 @@
 package advent2018
 import common.{Day, ElfCode}
+import common.ElfCode.Instruction
 import scala.io.Source
 import scala.annotation.tailrec
 import scala.util.matching.Regex.Match
@@ -46,9 +47,9 @@ class Day16(source: Source) extends Day {
     }
   }
 
-  lazy val (tests, instructions) = parseInput(List.empty, List.empty, Vector.empty, Vector.empty)
+  lazy val (tests, program) = parseInput(List.empty, List.empty, Vector.empty, Vector.empty)
 
-  def matchesInstruction(test: Test)(instruction: (Vector[Int], Vector[Int]) => Vector[Int]): Boolean = {
+  def matchesInstruction(test: Test)(instruction: Instruction): Boolean = {
     instruction(test.instruction, test.before) == test.after
   }
 
@@ -57,5 +58,5 @@ class Day16(source: Source) extends Day {
   }
 
   override def answer1: String = tests.count(matchesThreeInstructions).toString
-  override def answer2: String = ???
+  override def answer2: String = ElfCode.execute(program)(0).toString
 }

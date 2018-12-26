@@ -42,5 +42,10 @@ object ElfCode {
   val eqri = immediateB{compare{_ == _}} _
   val eqrr = registerAB{compare{_ == _}} _
 
-  val instructions = Set(addr, addi, mulr, muli, banr, bani, borr, bori, setr, seti, gtir, gtri, gtrr, eqir, eqri, eqrr)
+  type Instruction = (Vector[Int], Vector[Int]) => Vector[Int]
+  val instructions = Vector(eqir, borr, addr, gtri, muli, gtir, mulr, banr, bori, eqri, eqrr, bani, setr, gtrr, addi, seti)
+
+  def execute(program: List[Vector[Int]]): Vector[Int] = {
+    program.foldLeft(Vector(0, 0, 0, 0)){case (registers, instruction) => instructions(instruction.head)(instruction, registers)}
+  }
 }
