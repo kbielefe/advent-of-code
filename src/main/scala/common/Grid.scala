@@ -93,7 +93,6 @@ class Grid[Cell](private val zorders: Map[(Int, Int), List[Cell]]) {
 
   override def hashCode(): Int = zorders.hashCode()
 
-  //TODO: print coordinates
   def getLines(empty: Char = ' ', cellToChar: (Cell) => Char = _ => '+'): Iterator[String] = {
     if (zorders.isEmpty) {
       Iterator.empty
@@ -103,9 +102,18 @@ class Grid[Cell](private val zorders: Map[(Int, Int), List[Cell]]) {
       val left   = zorders.keySet.map{_._1}.min
       val right  = zorders.keySet.map{_._1}.max
 
+      val headerHeight = right.toString.size
+      val marginWidth = bottom.toString.size
+      def rightJustify(string: String, size: Int): String = (" " * (size - string.size)) + string
+      def headerLine(n: Int): String = {
+        val margin = " " * marginWidth
+        val numbers = (left to right).map{_.toString}.map{rightJustify(_, headerHeight).apply(n)}.mkString
+        margin + numbers
+      }
+      val header: Iterator[String] = (0 until headerHeight).toIterator map headerLine
       def getChar(x: Int, y: Int) = getCell(x, y) map {cellToChar(_)} getOrElse empty
-      def getLine(y: Int) = (left to right).map(getChar(_, y)).mkString
-      (top to bottom).iterator map getLine
+      def getLine(y: Int) = rightJustify(y.toString, marginWidth) + (left to right).map(getChar(_, y)).mkString
+      header ++ (top to bottom).iterator.map(getLine)
     }
   }
 }
