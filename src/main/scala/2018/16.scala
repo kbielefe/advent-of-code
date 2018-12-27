@@ -15,6 +15,7 @@ class Day16(source: Source) extends Day {
 
   lazy val lines = source.getLines()
 
+  //TODO: Make some sort of generic multiline regex parser or state machine parser
   @tailrec
   final def parseInput(tests: List[Test],
                  instructions: List[Vector[Int]],
