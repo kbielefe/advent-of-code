@@ -93,14 +93,20 @@ class Grid[Cell](private val zorders: Map[(Int, Int), List[Cell]]) {
 
   override def hashCode(): Int = zorders.hashCode()
 
-  def getLines(empty: Char = ' ', cellToChar: (Cell) => Char = _ => '+'): Iterator[String] = {
+  def getLines(empty: Char = ' ',
+               cellToChar: (Cell) => Char = _ => '+',
+               userTop:    Option[Int] = None,
+               userBottom: Option[Int] = None,
+               userLeft:   Option[Int] = None,
+               userRight:  Option[Int] = None
+               ): Iterator[String] = {
     if (zorders.isEmpty) {
       Iterator.empty
     } else {
-      val top    = zorders.keySet.map{_._2}.min
-      val bottom = zorders.keySet.map{_._2}.max
-      val left   = zorders.keySet.map{_._1}.min
-      val right  = zorders.keySet.map{_._1}.max
+      val top    = userTop    getOrElse zorders.keySet.map{_._2}.min
+      val bottom = userBottom getOrElse zorders.keySet.map{_._2}.max
+      val left   = userLeft   getOrElse zorders.keySet.map{_._1}.min
+      val right  = userRight  getOrElse zorders.keySet.map{_._1}.max
 
       val headerHeight = right.toString.size
       val marginWidth = bottom.toString.size
