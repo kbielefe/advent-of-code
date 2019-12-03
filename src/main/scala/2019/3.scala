@@ -8,7 +8,7 @@ class Day3(source: Source) extends Day {
   @scala.annotation.tailrec
   private def path(directions: List[(Char, Int)], x: Int = 0, y: Int = 0, acc: List[(Int, Int)] = List.empty): List[(Int, Int)] = {
     if (directions.isEmpty) {
-      acc
+      acc.reverse
     } else {
       val ((direction, count) :: tail) = directions
       if (count == 0) {
@@ -24,10 +24,18 @@ class Day3(source: Source) extends Day {
     }
   }
 
-  val closestIntersection = (path(input(0)).toSet.intersect(path(input(1)).toSet) - ((0, 0))).map{case (x, y) => math.abs(x) + math.abs(y)}.min
+  val intersections = path(input(0)).toSet.intersect(path(input(1)).toSet) - ((0, 0))
+
+  val closestIntersection = intersections.map{case (x, y) => math.abs(x) + math.abs(y)}.min
+
+  def fewestSteps(input: Vector[List[(Char, Int)]]): Int =
+    (path(input(0)).zipWithIndex ++ path(input(1)).zipWithIndex)
+      .filter(intersections contains _._1)
+      .groupBy{_._1}
+      .map{_._2.map{_._2}.sum}
+      .min
 
   override def answer1 = closestIntersection.toString
 
-  override def answer2 = (path(input(0)).zipWithIndex.drop(1) ++ path(input(1)).zipWithIndex.drop(1)).groupBy{case ((x, y), index) => (x, y)}.filter(_._2.size > 1).map{_._2.map{_._2}.sum}.min.toString
-  // 4142 is too low
+  override def answer2 = fewestSteps(input).toString
 }
