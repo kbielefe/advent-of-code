@@ -12,7 +12,7 @@ class Day6(source: Source) extends Day {
   val orbitsByParent = orbits.groupBy(_._2).mapValues(_.map(_._1))
 
   def totalDepth(node: String, depth: Int): Int = {
-    val children = orbitsByParent.get(node).getOrElse(List.empty)
+    val children = orbitsByParent.getOrElse(node, List.empty)
     depth + children.map(child => totalDepth(child, depth + 1)).sum
   }
 
