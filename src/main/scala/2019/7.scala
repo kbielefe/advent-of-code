@@ -10,77 +10,107 @@ import scala.concurrent.duration._
 class Intcode(id: String, input: MVar[Task, Int], output: MVar[Task, Int]) {
   type Memory = Vector[Int]
 
-  def mode(memory: Memory, pc: Int, param: Int): Int = memory(pc).digits.reverse.drop(1).toVector.applyOrElse[Int, Int](param, _ => 0)
-
-  def read(memory: Memory, pc: Int, param: Int): Task[Int] = Task{
-    if (mode(memory, pc, param) == 0) // position
-      memory(memory(pc + param))
-    else // immediate
-      memory(pc + param)
-  }
-
-  def write(memory: Memory, pc: Int, param: Int)(value: Int): Task[Memory] = Task{memory.updated(memory(pc + param), value)}
-
-  def opcode(instruction: Int): Int = instruction % 100
 
   def run(memory: Memory, pc: Int): Task[Unit] = {
+    def mode(param: Int): Int =
+      memory(pc).digits.reverse.drop(1).toVector.applyOrElse[Int, Int](param, _ => 0)
+
+    def read(param: Int): Task[Int] = Task{
+      if (mode(param) == 0) // position
+        memory(memory(pc + param))
+      else // immediate
+        memory(pc + param)
+    }
+
+    def write(param: Int, value: Int): Task[Memory] =
+      Task{memory.updated(memory(pc + param), value)}
+
+    def opcode(instruction: Int): Int = instruction % 100
+
     def getParamString(param: Int): String = {
-      if (mode(memory, pc, param) == 0)
+      if (mode(param) == 0)
         s"*${memory(pc + param)}(${memory(memory(pc + param))})"
       else
         s"${memory(pc + param)}"
     }
 
-    def log(op: String, params: Int): Task[Unit] = Task{println(s"$id $pc $op ${memory(pc)} ${(1 to params).map(getParamString).mkString(" ")}")}
+    def log(op: String, params: Int): Task[Unit] =
+      Task{println(s"$id $pc $op ${memory(pc)} ${(1 to params).map(getParamString).mkString(" ")}")}
+
+    val add = for {
+      _   <- log("add", 3)
+      lhs <- read(1)
+      rhs <- read(2)
+      mem <- write(3, lhs + rhs)
+      _   <- run(mem, pc + 4)
+    } yield ()
+
+    val multiply = for {
+      _   <- log("add", 3)
+      lhs <- read(1)
+      rhs <- read(2)
+      mem <- write(3, lhs * rhs)
+      _   <- run(mem, pc + 4)
+    } yield ()
+
+    val readInput = for {
+      value <- input.take
+      _     <- log(s"input($value)", 1)
+      mem   <- write(1, value)
+      _     <- run(mem, pc + 2)
+    } yield ()
+
+    val writeOutput = for {
+      _     <- log("output", 1)
+      value <- read(1)
+      _     <- output.put(value)
+      _     <- run(memory, pc + 2)
+    } yield ()
+
+    val jumpIfTrue = for {
+      _      <- log("jumpIfTrue", 2)
+      cond   <- read(1)
+      target <- read(2)
+      _      <- if (cond != 0) run(memory, target) else run(memory, pc + 3)
+    } yield ()
+
+    def jumpIfFalse = for {
+      _      <- log("jumpIfFalse", 2)
+      cond   <- read(1)
+      target <- read(2)
+      _      <- if (cond == 0) run(memory, target) else run(memory, pc + 3)
+    } yield ()
+
+    def lessThan = for {
+      _   <- log("lessThan", 3)
+      lhs <- read(1)
+      rhs <- read(2)
+      mem <- write(3, if (lhs < rhs) 1 else 0)
+      _   <- run(mem, pc + 4)
+    } yield ()
+
+    def equalTo = for {
+      _   <- log("equalTo", 3)
+      lhs <- read(1)
+      rhs <- read(2)
+      mem <- write(3, if (lhs == rhs) 1 else 0)
+      _   <- run(mem, pc + 4)
+    } yield ()
+
+    val halt = log("halt", 0)
 
     opcode(memory(pc)) match {
-      case 99 => log("halt", 0)
-      case  1 => log("add", 3) flatMap {_ => add(memory, pc)} flatMap {newMemory => run(newMemory, pc + 4)}
-      case  2 => log("multiply", 3) flatMap {_ => multiply(memory, pc)} flatMap {newMemory => run(newMemory, pc + 4)}
-      case  3 => input.take flatMap {value => log(s"input($value)", 1) flatMap {_ => Task.pure(value)}} flatMap write(memory, pc, 1) flatMap {newMemory => run(newMemory, pc + 2)}
-      case  4 => log("output", 1) flatMap {_ => read(memory, pc, 1)} flatMap output.put flatMap {_ => run(memory, pc + 2)}
-      case  5 => log("jumpIfTrue", 2) flatMap {_ => jumpIfTrue(memory, pc)}
-      case  6 => log("jumpIfFalse", 2) flatMap {_ => jumpIfFalse(memory, pc)}
-      case  7 => log("lessThan", 3) flatMap {_ => lessThan(memory, pc)} flatMap {newMemory => run(newMemory, pc + 4)}
-      case  8 => log("equalTo", 3) flatMap {_ => equalTo(memory, pc)} flatMap {newMemory => run(newMemory, pc + 4)}
+      case  1 => add
+      case  2 => multiply
+      case  3 => readInput
+      case  4 => writeOutput
+      case  5 => jumpIfTrue
+      case  6 => jumpIfFalse
+      case  7 => lessThan
+      case  8 => equalTo
+      case 99 => halt
     }
   }
-
-  def add(memory: Memory, pc: Int): Task[Memory] = for {
-    lhs <- read(memory, pc, 1)
-    rhs <- read(memory, pc, 2)
-    mem <- write(memory, pc, 3)(lhs + rhs)
-  } yield mem
-
-  def multiply(memory: Memory, pc: Int): Task[Memory] = for {
-    lhs <- read(memory, pc, 1)
-    rhs <- read(memory, pc, 2)
-    mem <- write(memory, pc, 3)(lhs * rhs)
-  } yield mem
-
-  def jumpIfTrue(memory: Memory, pc: Int): Task[Unit] = for {
-    cond   <- read(memory, pc, 1)
-    target <- read(memory, pc, 2)
-    _      <- if (cond != 0) run(memory, target) else run(memory, pc + 3)
-  } yield ()
-
-  def jumpIfFalse(memory: Memory, pc: Int): Task[Unit] = for {
-    cond   <- read(memory, pc, 1)
-    target <- read(memory, pc, 2)
-    _      <- if (cond == 0) run(memory, target) else run(memory, pc + 3)
-  } yield ()
-
-  def lessThan(memory: Memory, pc: Int): Task[Memory] = for {
-    lhs <- read(memory, pc, 1)
-    rhs <- read(memory, pc, 2)
-    mem <- write(memory, pc, 3)(if (lhs < rhs) 1 else 0)
-  } yield mem
-
-  def equalTo(memory: Memory, pc: Int): Task[Memory] = for {
-    lhs <- read(memory, pc, 1)
-    rhs <- read(memory, pc, 2)
-    mem <- write(memory, pc, 3)(if (lhs == rhs) 1 else 0)
-  } yield mem
 }
 
 class Day7(source: Source) extends Day {
