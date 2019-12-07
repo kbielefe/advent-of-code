@@ -4,90 +4,108 @@ import common.Numeric._
 import scala.io.Source
 import monix.eval.Task
 import cats.effect.concurrent.MVar
+import monix.execution.Scheduler.Implicits.global
+import scala.concurrent.duration._
 
-class Day7(source: Source) extends Day {
-  val initialProgram = source.getLines.next.split(",").map(_.toInt).toVector
+class Intcode(id: String, input: MVar[Task, Int], output: MVar[Task, Int]) {
+  type Memory = Vector[Int]
 
-  def getParameter(program: Vector[Int], pc: Int, param: Int): Int = {
-    val mode = program(pc).digits.reverse.drop(1).toVector.applyOrElse[Int, Int](param, _ => 0)
+  def read(memory: Memory, pc: Int, param: Int): Task[Int] = Task{
+    val mode = memory(pc).digits.reverse.drop(1).toVector.applyOrElse[Int, Int](param, _ => 0)
     if (mode == 0) // position
-      program(program(pc + param))
+      memory(memory(pc + param))
     else // immediate
-      program(pc + param)
+      memory(pc + param)
   }
 
-  def binaryOp(op: (Int, Int) => Int)(program: Vector[Int], pc: Int): Vector[Int] = {
-    val result = op(getParameter(program, pc, 1), getParameter(program, pc, 2))
-    program.updated(program(pc + 3), result)
-  }
-
-  val add = binaryOp(_ + _) _
-  val multiply = binaryOp(_ * _) _
-
-  def jumpIfTrue(program: Vector[Int], pc: Int): Int = {
-    if (getParameter(program, pc, 1) != 0)
-      getParameter(program, pc, 2)
-    else
-      pc + 3
-  }
-
-  def jumpIfFalse(program: Vector[Int], pc: Int): Int = {
-    if (getParameter(program, pc, 1) == 0)
-      getParameter(program, pc, 2)
-    else
-      pc + 3
-  }
-
-  def lessThan(program: Vector[Int], pc: Int): Vector[Int] = {
-    if (getParameter(program, pc, 1) < getParameter(program, pc, 2))
-      program.updated(program(pc + 3), 1)
-    else
-      program.updated(program(pc + 3), 0)
-  }
-
-  def equalTo(program: Vector[Int], pc: Int): Vector[Int] = {
-    if (getParameter(program, pc, 1) == getParameter(program, pc, 2))
-      program.updated(program(pc + 3), 1)
-    else
-      program.updated(program(pc + 3), 0)
-  }
-
-  def getInput(program: Vector[Int], pc: Int, inputs: List[Int]): Vector[Int] =
-    program.updated(program(pc + 1), inputs.head)
-
-  // Outputs are added to list in reverse order, so the head is the last value output
-  def addOutput(program: Vector[Int], pc: Int, outputs: List[Int]): List[Int] =
-    getParameter(program, pc, 1) :: outputs
+  def write(memory: Memory, pc: Int, param: Int)(value: Int): Task[Memory] = Task{memory.updated(memory(pc + param), value)}
 
   def opcode(instruction: Int): Int = instruction % 100
 
-  @scala.annotation.tailrec
-  final def run(program: Vector[Int], pc: Int, inputs: List[Int], outputs: List[Int]): List[Int] = opcode(program(pc)) match {
-    case 99 => outputs
-    case  1 => run(add(program, pc), pc + 4, inputs, outputs)
-    case  2 => run(multiply(program, pc), pc + 4, inputs, outputs)
-    case  3 => run(getInput(program, pc, inputs), pc + 2, inputs.tail, outputs)
-    case  4 => run(program, pc + 2, inputs, addOutput(program, pc, outputs))
-    case  5 => run(program, jumpIfTrue(program, pc), inputs, outputs)
-    case  6 => run(program, jumpIfFalse(program, pc), inputs, outputs)
-    case  7 => run(lessThan(program, pc), pc + 4, inputs, outputs)
-    case  8 => run(equalTo(program, pc), pc + 4, inputs, outputs)
-  }
+  def run(memory: Memory, pc: Int): Task[Unit] = {
+    def getParamString(param: Int): String = {
+      val mode = memory(pc).digits.reverse.drop(1).toVector.applyOrElse[Int, Int](param, _ => 0)
+      if (mode == 0)
+        s"*${memory(pc + param)}(${memory(memory(pc + param))})"
+      else
+        s"${memory(pc + param)}"
+    }
 
-  def interpreterTask(program: Vector[Int], pc: Int, input: MVar[Task, Int], output: MVar[Task, Int]): Task[Unit] = ???
+    def log(op: String, params: Int): Task[Unit] = Task{println(s"$id $pc $op ${memory(pc)} ${(1 to params).map(getParamString).mkString(" ")}")}
 
-  def runAmplifiers(program: Vector[Int], phases: List[Int]): Int = {
-    phases.foldLeft(0){case (input, phase) =>
-      run(program, 0, List(phase, input), List.empty).head
+    opcode(memory(pc)) match {
+      case 99 => log("halt", 0)
+      case  1 => log("add", 3) flatMap {_ => add(memory, pc)} flatMap {newMemory => run(newMemory, pc + 4)}
+      case  2 => log("multiply", 3) flatMap {_ => multiply(memory, pc)} flatMap {newMemory => run(newMemory, pc + 4)}
+      case  3 => input.take flatMap {value => Task{println(s"$id read $value"); value}} flatMap write(memory, pc, 1) flatMap {newMemory => run(newMemory, pc + 2)}
+      case  4 => log("output", 1) flatMap {_ => read(memory, pc, 1)} flatMap output.put flatMap {_ => run(memory, pc + 2)}
+      case  5 => log("jumpIfTrue", 2) flatMap {_ => jumpIfTrue(memory, pc)}
+      case  6 => log("jumpIfFalse", 2) flatMap {_ => jumpIfFalse(memory, pc)}
+      case  7 => log("lessThan", 3) flatMap {_ => lessThan(memory, pc)} flatMap {newMemory => run(newMemory, pc + 4)}
+      case  8 => log("equalTo", 3) flatMap {_ => equalTo(memory, pc)} flatMap {newMemory => run(newMemory, pc + 4)}
     }
   }
 
-  def highestSignal(program: Vector[Int], f: (Vector[Int], List[Int]) => Int): Int = {
-    (0 to 4).toList.permutations.map(phases => f(program, phases)).max
-  }
+  def add(memory: Memory, pc: Int): Task[Memory] = for {
+    lhs <- read(memory, pc, 1)
+    rhs <- read(memory, pc, 2)
+    mem   <- write(memory, pc, 3)(lhs + rhs)
+  } yield mem
+
+  def multiply(memory: Memory, pc: Int): Task[Memory] = for {
+    lhs <- read(memory, pc, 1)
+    rhs <- read(memory, pc, 2)
+    mem <- write(memory, pc, 3)(lhs * rhs)
+  } yield mem
+
+  def jumpIfTrue(memory: Memory, pc: Int): Task[Unit] = for {
+    cond   <- read(memory, pc, 1)
+    target <- read(memory, pc, 2)
+    _ <- if (cond != 0) run(memory, target) else run(memory, pc + 3)
+  } yield ()
+
+  def jumpIfFalse(memory: Memory, pc: Int): Task[Unit] = for {
+    cond   <- read(memory, pc, 1)
+    target <- read(memory, pc, 2)
+    _ <- if (cond == 0) run(memory, target) else run(memory, pc + 3)
+  } yield ()
+
+  def lessThan(memory: Memory, pc: Int): Task[Memory] = for {
+    lhs <- read(memory, pc, 1)
+    rhs <- read(memory, pc, 2)
+    mem <- write(memory, pc, 3)(if (lhs < rhs) 1 else 0)
+  } yield mem
+
+  def equalTo(memory: Memory, pc: Int): Task[Memory] = for {
+    lhs <- read(memory, pc, 1)
+    rhs <- read(memory, pc, 2)
+    mem <- write(memory, pc, 3)(if (lhs == rhs) 1 else 0)
+  } yield mem
+}
+
+class Day7(source: Source) extends Day {
+  val initialMemory = source.getLines.next.split(",").map(_.toInt).toVector
+
+  def runNonFeedback(memory: Vector[Int])(phases: List[Int]): Task[Int] = for {
+    _ <- Task{println(phases)}
+    inA  <- MVar.of[Task, Int](phases(0))
+    aToB <- MVar.of[Task, Int](phases(1))
+    bToC <- MVar.of[Task, Int](phases(2))
+    cToD <- MVar.of[Task, Int](phases(3))
+    dToE <- MVar.of[Task, Int](phases(4))
+    outE <- MVar.empty[Task, Int]
+    a <- new Intcode("a", inA,  aToB).run(memory, 0).start
+    b <- new Intcode("b", aToB, bToC).run(memory, 0).start
+    c <- new Intcode("c", bToC, cToD).run(memory, 0).start
+    d <- new Intcode("d", cToD, dToE).run(memory, 0).start
+    e <- new Intcode("e", dToE, outE).run(memory, 0).start
+    _ <- inA.put(0)
+    _ <- Task.gatherUnordered(List(a.join, b.join, c.join, d.join, e.join))
+    result <- outE.take
+  } yield result
 
   // 18812
-  override def answer1 = highestSignal(initialProgram, runAmplifiers).toString
+  override def answer1 = Task.gatherUnordered((0 to 4).toList.permutations.toList.map(runNonFeedback(initialMemory))).map(_.max).runSyncUnsafe(5 seconds).toString
 
-  override def answer2 = run(initialProgram, 0, List(5), List.empty).head.toString
+  override def answer2 = "unimplemented"
 }
