@@ -10,17 +10,15 @@ import scala.concurrent.duration._
 class Intcode(id: String, input: MVar[Task, Int], output: MVar[Task, Int]) {
   type Memory = Vector[Int]
 
-
   def run(memory: Memory, pc: Int): Task[Unit] = {
     def mode(param: Int): Int =
       memory(pc).digits.reverse.drop(1).toVector.applyOrElse[Int, Int](param, _ => 0)
 
-    def read(param: Int): Task[Int] = Task{
+    def read(param: Int): Int =
       if (mode(param) == 0) // position
         memory(memory(pc + param))
       else // immediate
         memory(pc + param)
-    }
 
     def write(param: Int, value: Int): Task[Memory] =
       Task{memory.updated(memory(pc + param), value)}
@@ -37,21 +35,19 @@ class Intcode(id: String, input: MVar[Task, Int], output: MVar[Task, Int]) {
     def log(op: String, params: Int): Task[Unit] =
       Task{println(s"$id $pc $op ${memory(pc)} ${(1 to params).map(getParamString).mkString(" ")}")}
 
-    val add = for {
-      _   <- log("add", 3)
-      lhs <- read(1)
-      rhs <- read(2)
-      mem <- write(3, lhs + rhs)
+    def binaryOp(op: String, f: (Int, Int) => Int): Task[Unit] = for {
+      _   <- log(op, 3)
+      mem <- write(3, f(read(1), read(2)))
       _   <- run(mem, pc + 4)
     } yield ()
 
-    val multiply = for {
-      _   <- log("add", 3)
-      lhs <- read(1)
-      rhs <- read(2)
-      mem <- write(3, lhs * rhs)
-      _   <- run(mem, pc + 4)
-    } yield ()
+    def compareOp(op: String, f: (Int, Int) => Boolean): Task[Unit] =
+      binaryOp(op, (a, b) => if (f(a, b)) 1 else 0)
+
+    val add      =  binaryOp("add",      _ + _)
+    val multiply =  binaryOp("multiply", _ * _)
+    val lessThan = compareOp("lessThan", _ < _)
+    val equalTo  = compareOp("equalTo",  _ == _)
 
     val readInput = for {
       value <- input.take
@@ -61,40 +57,19 @@ class Intcode(id: String, input: MVar[Task, Int], output: MVar[Task, Int]) {
     } yield ()
 
     val writeOutput = for {
-      _     <- log("output", 1)
-      value <- read(1)
-      _     <- output.put(value)
-      _     <- run(memory, pc + 2)
+      _ <- log("output", 1)
+      _ <- output.put(read(1))
+      _ <- run(memory, pc + 2)
     } yield ()
 
     val jumpIfTrue = for {
-      _      <- log("jumpIfTrue", 2)
-      cond   <- read(1)
-      target <- read(2)
-      _      <- if (cond != 0) run(memory, target) else run(memory, pc + 3)
+      _ <- log("jumpIfTrue", 2)
+      _ <- if (read(1) != 0) run(memory, read(2)) else run(memory, pc + 3)
     } yield ()
 
     def jumpIfFalse = for {
-      _      <- log("jumpIfFalse", 2)
-      cond   <- read(1)
-      target <- read(2)
-      _      <- if (cond == 0) run(memory, target) else run(memory, pc + 3)
-    } yield ()
-
-    def lessThan = for {
-      _   <- log("lessThan", 3)
-      lhs <- read(1)
-      rhs <- read(2)
-      mem <- write(3, if (lhs < rhs) 1 else 0)
-      _   <- run(mem, pc + 4)
-    } yield ()
-
-    def equalTo = for {
-      _   <- log("equalTo", 3)
-      lhs <- read(1)
-      rhs <- read(2)
-      mem <- write(3, if (lhs == rhs) 1 else 0)
-      _   <- run(mem, pc + 4)
+      _ <- log("jumpIfFalse", 2)
+      _ <- if (read(1) == 0) run(memory, read(2)) else run(memory, pc + 3)
     } yield ()
 
     val halt = log("halt", 0)
