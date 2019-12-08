@@ -23,5 +23,5 @@ class Day8(source: Source) extends Day {
     (ones * twos).toString
   }
 
-  override def answer2 = mergedLayers.map{x => if (x == '0') ' ' else '*'}.grouped(width).mkString("\n")
+  override def answer2 = mergedLayers.map{x => if (x == '0') ' ' else '█'}.grouped(width).mkString("\n")
 }
