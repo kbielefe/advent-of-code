@@ -8,32 +8,33 @@ import monix.execution.Scheduler.Implicits.global
 import scala.concurrent.duration._
 
 class Intcode(id: String, input: MVar[Task, Long], output: MVar[Task, Long]) {
-  type Memory = Vector[Long]
+  type Memory = Map[Long, Long]
 
-  def run(memory: Memory, pc: Int, relativeBase: Int): Task[Unit] = {
-    def mode(param: Long): Int =
-      memory(pc).digits.reverse.drop(1).toVector.applyOrElse[Int, Int](param.toInt, _ => 0)
+  def run(memory: Memory, pc: Long, relativeBase: Long): Task[Unit] = {
+    def mode(param: Int): Int =
+      memory(pc).digits.reverse.drop(1).toVector.applyOrElse[Int, Int](param, _ => 0)
 
     def read(param: Int): Long = mode(param) match {
-      case 0 /* position */  => memory.applyOrElse(memory.applyOrElse(pc + param, _ => 0).toInt, _ => 0)
-      case 1 /* immediate */ => memory.applyOrElse(pc + param, _ => 0)
-      case 2 /* relative */  => memory.applyOrElse(relativeBase + param, _ => 0)
+      case 0 /* position */  => memory.getOrElse(memory.getOrElse(pc + param, 0), 0)
+      case 1 /* immediate */ => memory.getOrElse(pc + param, 0)
+      case 2 /* relative */  => memory.getOrElse(relativeBase + memory.getOrElse(pc + param, 0L), 0)
     }
 
-    def write(param: Int, value: Long): Task[Memory] =
-      Task{memory.updated(memory.applyOrElse(pc + param, _ => 0).toInt, value)}
+    def write(param: Int, value: Long): Task[Memory] = mode(param) match {
+      case 0 => Task{memory.updated(memory.getOrElse(pc + param, 0), value)}
+      case 2 => Task{memory.updated(relativeBase + memory.getOrElse(pc + param, 0L), value)}
+    }
 
     def opcode(instruction: Long): Long = instruction % 100
 
-    def getParamString(param: Int): String = {
-      if (mode(param) == 0)
-        s"*${memory.applyOrElse(pc + param, _ => 0)}(${memory.applyOrElse(memory.applyOrElse(pc + param, _ => 0).toInt, _ => 0)})"
-      else
-        s"${memory.applyOrElse(pc + param, _ => 0)}"
+    def getParamString(param: Int): String = mode(param) match {
+      case 0 => s"p${memory.getOrElse(pc + param, 0)}(${memory.getOrElse(memory.getOrElse(pc + param, 0), 0)})"
+      case 1 => s"i${memory.getOrElse(pc + param, 0)}"
+      case 2 => s"r$relativeBase+${memory.getOrElse(pc + param, 0)}(${memory.getOrElse(relativeBase + memory.getOrElse(pc + param, 0L), 0)})"
     }
 
     def log(op: String, params: Int): Task[Unit] =
-      Task{println(s"$id $pc $op ${memory(pc)} ${(1 to params).map(getParamString).mkString(" ")}")}
+      Task{println(s"$id pc:$pc r:$relativeBase $op(${memory(pc)}) ${(1 to params).map(getParamString).mkString(" ")}")}
 
     def binaryOp(op: String, f: (Long, Long) => Long): Task[Unit] = for {
       _   <- log(op, 3)
@@ -95,16 +96,16 @@ class Intcode(id: String, input: MVar[Task, Long], output: MVar[Task, Long]) {
 }
 
 class Day9(source: Source) extends Day {
-  val initialMemory = source.getLines.next.split(",").map(_.toLong).toVector
+  val initialMemory = source.getLines.next.split(",").zipWithIndex.map{case (value, index) => ((index.toLong, value.toLong))}.toMap
 
-  val runBoost = for {
-    in     <- MVar.of[Task, Long](1)
+  def runBoost(input: Long) = for {
+    in     <- MVar.of[Task, Long](input)
     out    <- MVar.empty[Task, Long]
     boost  <- new Intcode("boost", in, out).run(initialMemory, 0, 0)
     result <- out.take
   } yield result
 
-  override def answer1 = runBoost.runSyncUnsafe(5 seconds).toString
+  override def answer1 = runBoost(1).runSyncUnsafe(5 seconds).toString
 
-  override def answer2 = "unimplemented"
+  override def answer2 = runBoost(2).runSyncUnsafe(5 seconds).toString
 }

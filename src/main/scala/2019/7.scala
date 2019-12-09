@@ -8,9 +8,9 @@ import monix.execution.Scheduler.Implicits.global
 import scala.concurrent.duration._
 
 class Day7(source: Source) extends Day {
-  val initialMemory = source.getLines.next.split(",").map(_.toLong).toVector
+  val initialMemory = source.getLines.next.split(",").zipWithIndex.map{case (value, index) => ((index.toLong, value.toLong))}.toMap
 
-  def runNonFeedback(memory: Vector[Long])(phases: List[Long]): Task[Long] = for {
+  def runNonFeedback(memory: Map[Long, Long])(phases: List[Long]): Task[Long] = for {
     inA  <- MVar.of[Task, Long](phases(0))
     aToB <- MVar.of[Task, Long](phases(1))
     bToC <- MVar.of[Task, Long](phases(2))
@@ -27,7 +27,7 @@ class Day7(source: Source) extends Day {
     result <- outE.take
   } yield result
 
-  def runWithFeedback(memory: Vector[Long])(phases: List[Long]): Task[Long] = for {
+  def runWithFeedback(memory: Map[Long, Long])(phases: List[Long]): Task[Long] = for {
     eToA <- MVar.of[Task, Long](phases(0))
     aToB <- MVar.of[Task, Long](phases(1))
     bToC <- MVar.of[Task, Long](phases(2))
