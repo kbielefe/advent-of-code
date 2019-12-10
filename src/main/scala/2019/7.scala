@@ -1,6 +1,7 @@
 package advent2019
 import common.Day
 import common.Numeric._
+import common.Intcode
 import scala.io.Source
 import monix.eval.Task
 import cats.effect.concurrent.MVar
