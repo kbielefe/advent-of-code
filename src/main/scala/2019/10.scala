@@ -34,7 +34,36 @@ class Day10(source: Source) extends Day {
     }
   }
 
-  override def answer1 = grid.map(asteroid => visibility(asteroid, grid)).max.toString
+  lazy val maxVisibility = grid.map(asteroid => (asteroid, visibility(asteroid, grid))).maxBy(_._2)
+  lazy val (laserX, laserY) = maxVisibility._1
 
-  override def answer2 = "unimplemented"
+  def destructionOrder: List[(Int, Int)] = {
+    val withoutLaser = grid.filter(_ != (laserX, laserY)).toList
+
+    val groupedByExactAngles = withoutLaser.groupBy{case (x, y) =>
+      val factor = math.abs(gcd(laserX - x, laserY - y))
+      ((laserX - x) / factor, (laserY - y) / factor)
+    }.values
+
+    val sortedByDistance =
+      groupedByExactAngles.toList
+        .map{_.sortBy{case (x, y) => math.abs(laserX - x) + math.abs(laserY - y)}}
+
+    val sortedByApproxAngle = sortedByDistance.sortBy{group =>
+      val (x, y) = group.head
+      val angle = math.atan2((laserY - y).toDouble, (x - laserX).toDouble)
+      val rotated = math.Pi / 2.0 - angle
+      val normalized = (4.0 * math.Pi + rotated) % (2.0 * math.Pi)
+      normalized
+    }
+
+    val maxSize = sortedByApproxAngle.map(_.size).max
+    val padded = sortedByApproxAngle.map(_.padTo(maxSize, (-1, -1)))
+    val transposed = padded.transpose.map(_.filter(_ != (-1, -1)))
+    transposed.flatten
+  }
+
+  override def answer1 = maxVisibility._2.toString
+
+  override def answer2 = destructionOrder.drop(199).map{case (x, y) => x * 100 + y}.head.toString
 }
