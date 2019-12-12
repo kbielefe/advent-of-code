@@ -4,7 +4,12 @@ import monix.eval.Task
 import cats.effect.concurrent.MVar
 import Numeric._
 
-class Intcode(id: String, input: MVar[Task, Long], output: MVar[Task, Long]) {
+object Intcode {
+  def noLogger(msg: => String) = Task.unit
+  def printlnLogger(msg: => String) = Task{println(msg)}
+}
+
+class Intcode(id: String, input: MVar[Task, Long], output: MVar[Task, Long], logger: (=> String) => Task[Unit] = Intcode.noLogger) {
   type Memory = Map[Long, Long]
 
   def run(memory: Memory, pc: Long, relativeBase: Long): Task[Unit] = {
@@ -30,8 +35,10 @@ class Intcode(id: String, input: MVar[Task, Long], output: MVar[Task, Long]) {
       case 2 => s"r$relativeBase+${memory.getOrElse(pc + param, 0)}(${memory.getOrElse(relativeBase + memory.getOrElse(pc + param, 0L), 0)})"
     }
 
-    def log(op: String, params: Int): Task[Unit] =
-      Task{println(s"$id pc:$pc r:$relativeBase $op(${memory(pc)}) ${(1 to params).map(getParamString).mkString(" ")}")}
+    def log(op: String, params: Int): Task[Unit] = {
+      lazy val message = s"$id pc:$pc r:$relativeBase $op(${memory(pc)}) ${(1 to params).map(getParamString).mkString(" ")}"
+      logger(message).startAndForget
+    }
 
     def binaryOp(op: String, f: (Long, Long) => Long): Task[Unit] = for {
       _   <- log(op, 3)
