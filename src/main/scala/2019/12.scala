@@ -1,11 +1,15 @@
 package advent2019
 import common.Day
+import common.Numeric.gcd
+import common.Dynamic.detectCycle
 import scala.io.Source
 
 class Day12(source: Source) extends Day {
 
   type Coord = (Int, Int, Int)
 
+  val samplePositions = List((-1, 0, 2), (2, -10, -7), (4, -8, 8), (3, 5, -1))
+  val samplePositions2 = List((-8, -10, 0), (5, 5, 10), (2, -7, 3), (9, -8, -3))
   val initialPositions  = List((0, 6, 1), (4, 4, 19), (-11, 1, 8), (2, 19, 15))
   val initialVelocities = List((0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0))
 
@@ -50,10 +54,21 @@ class Day12(source: Source) extends Day {
     potentialEnergies.zip(kineticEnergies).map{case (p, k) => p * k}.sum
   }
 
+  def iterator = 
+    Iterator.iterate((initialPositions, initialVelocities)){case (pos, vel) => timeStep(pos, vel)}
+
+  def period(f: ((Int, Int, Int)) => Int) =
+    detectCycle(iterator.map{case (pos, vel) => (pos.map(f), vel.map(f))}).get._2
+
   override def answer1: String = {
-    val (pos, vel) = Iterator.iterate((initialPositions, initialVelocities)){case (pos, vel) => timeStep(pos, vel)}.drop(1000).next
+    val (pos, vel) = iterator.drop(1000).next
     totalEnergy(pos, vel).toString
   }
 
-  override def answer2: String = "unimplemented"
+  override def answer2: String = {
+    val cx = period(_._1)
+    val cy = period(_._2)
+    val cz = period(_._3)
+    s"LCM of $cx $cy $cz"
+  }
 }
