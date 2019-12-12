@@ -1,27 +1,30 @@
 package advent2019
-import common.Day
+import common.DayTask
 import common.Intcode
-import scala.io.Source
 import monix.eval.Task
+import monix.reactive.Observable
 import cats.effect.concurrent.{MVar, Ref}
-import monix.execution.Scheduler.Implicits.global
-import scala.concurrent.duration._
 
-class Day11(source: Source) extends Day {
-  val initialMemory = source.getLines.next.split(",").zipWithIndex.map{case (value, index) => ((index.toLong, value.toLong))}.toMap
+class Day11 extends DayTask[Map[Long, Long], Int, String] {
+  override def input(lines: Observable[String]) = lines.headL.map{line =>
+    line.split(",").zipWithIndex.map{case (value, index) => ((index.toLong, value.toLong))}.toMap
+  }
 
-  val black = 0L
-  val white = 1L
+  val Black = 0L
+  val White = 1L
+
+  val Left  = 0L
+  val Right = 1L
 
   def turn(direction: Char, turnDirection: Long): Char = (direction, turnDirection) match {
-    case ('^', 0L)  => '<'
-    case ('^', 1L) => '>'
-    case ('>', 0L)  => '^'
-    case ('>', 1L) => 'v'
-    case ('v', 0L)  => '>'
-    case ('v', 1L) => '<'
-    case ('<', 0L)  => 'v'
-    case ('<', 1L) => '^'
+    case ('^', Left)  => '<'
+    case ('^', Right) => '>'
+    case ('>', Left)  => '^'
+    case ('>', Right) => 'v'
+    case ('v', Left)  => '>'
+    case ('v', Right) => '<'
+    case ('<', Left)  => 'v'
+    case ('<', Right) => '^'
   }
 
   def move(position: (Int, Int), direction: Char): (Int, Int) = (position, direction) match {
@@ -38,7 +41,7 @@ class Day11(source: Source) extends Day {
       position: (Int, Int),
       direction: Char): Task[Unit] = for {
     painted       <- output.get
-    _             <- sensor.put(painted.getOrElse(position, black))
+    _             <- sensor.put(painted.getOrElse(position, Black))
     paintColor    <- command.take
     _             <- output.set(painted + (position -> paintColor))
     turnDirection <- command.take
@@ -47,12 +50,12 @@ class Day11(source: Source) extends Day {
     _             <- robot(sensor, command, output, newPosition, newDirection)
   } yield ()
 
-  def run(initialColor: Long) = for {
+  def run(initialMemory: Map[Long, Long], initialColor: Long) = for {
     in      <- MVar.empty[Task, Long]
     out     <- MVar.empty[Task, Long]
     painted <- Ref.of[Task, Map[(Int, Int), Long]](Map((0, 0) -> initialColor))
     _       <- robot(in, out, painted, (0, 0), '^').start
-    program <- new Intcode("robot", in, out).run(initialMemory, 0, 0)
+    program <- new Intcode(if (initialColor == Black) "black" else "white", in, out).run(initialMemory, 0, 0)
     result  <- painted.get
   } yield result
 
@@ -62,11 +65,11 @@ class Day11(source: Source) extends Day {
     val maxX = painted.keys.map(_._1).max
     val maxY = painted.keys.map(_._2).max
     (maxY to minY by -1).map(y =>
-      (minX to maxX).map(x => if (painted.getOrElse((x, y), black) == black) ' ' else '█').mkString
+      (minX to maxX).map(x => if (painted.getOrElse((x, y), Black) == Black) ' ' else '█').mkString
     ).mkString("\n")
   }
 
-  override def answer1 = run(black).runSyncUnsafe(5 seconds).size.toString
+  override def part1(initialMemory: Map[Long, Long]) = run(initialMemory, Black).map(_.size)
 
-  override def answer2 = draw(run(white).runSyncUnsafe(5 seconds))
+  override def part2(initialMemory: Map[Long, Long]) = run(initialMemory, White).map(draw)
 }

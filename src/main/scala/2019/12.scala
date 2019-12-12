@@ -1,16 +1,18 @@
 package advent2019
-import common.Day
-import common.Numeric.gcd
+import common.DayTask
 import common.Dynamic.detectCycle
-import scala.io.Source
+import common.Numeric.gcd
+import monix.eval.Task
+import monix.reactive.Observable
 
-class Day12(source: Source) extends Day {
+class Day12 extends DayTask[List[(Int, Int, Int)], Int, String] {
 
   type Coord = (Int, Int, Int)
 
-  val samplePositions = List((-1, 0, 2), (2, -10, -7), (4, -8, 8), (3, 5, -1))
-  val samplePositions2 = List((-8, -10, 0), (5, 5, 10), (2, -7, 3), (9, -8, -3))
-  val initialPositions  = List((0, 6, 1), (4, 4, 19), (-11, 1, 8), (2, 19, 15))
+  override def input(lines: Observable[String]): Task[List[(Int, Int, Int)]] = Task{
+    List((0, 6, 1), (4, 4, 19), (-11, 1, 8), (2, 19, 15))
+  }
+
   val initialVelocities = List((0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0))
 
   def applyGravity(positions: List[Coord], velocities: List[Coord]): List[Coord] = {
@@ -54,21 +56,22 @@ class Day12(source: Source) extends Day {
     potentialEnergies.zip(kineticEnergies).map{case (p, k) => p * k}.sum
   }
 
-  def iterator = 
+  def iterator(initialPositions: List[(Int, Int, Int)]) =
     Iterator.iterate((initialPositions, initialVelocities)){case (pos, vel) => timeStep(pos, vel)}
 
-  def period(f: ((Int, Int, Int)) => Int) =
-    detectCycle(iterator.map{case (pos, vel) => (pos.map(f), vel.map(f))}).get._2
-
-  override def answer1: String = {
-    val (pos, vel) = iterator.drop(1000).next
-    totalEnergy(pos, vel).toString
+  def period(initialPositions: List[(Int, Int, Int)], f: ((Int, Int, Int)) => Int) = Task{
+    detectCycle(iterator(initialPositions).map{case (pos, vel) => (pos.map(f), vel.map(f))}).get._2
   }
 
-  override def answer2: String = {
-    val cx = period(_._1)
-    val cy = period(_._2)
-    val cz = period(_._3)
-    s"LCM of $cx $cy $cz"
+  override def part1(input: List[(Int, Int, Int)]) = Task{
+    val (pos, vel) = iterator(input).drop(1000).next
+    totalEnergy(pos, vel)
   }
+
+  override def part2(input: List[(Int, Int, Int)]) = for {
+    cx <- period(input, _._1).start
+    cy <- period(input, _._2).start
+    cz <- period(input, _._3).start
+    result <- Task.gatherUnordered(Seq(cx.join, cy.join, cz.join))
+  } yield s"LCM of ${result.mkString(" ")}"
 }
