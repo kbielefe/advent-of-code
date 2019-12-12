@@ -62,7 +62,7 @@ class Day11(source: Source) extends Day {
     val maxX = painted.keys.map(_._1).max
     val maxY = painted.keys.map(_._2).max
     (maxY to minY by -1).map(y =>
-      (minX to maxX).map(x => painted.getOrElse((x, y), -1L)).map(color => if (color == black || color == -1) ' ' else '█').mkString
+      (minX to maxX).map(x => if (painted.getOrElse((x, y), black) == black) ' ' else '█').mkString
     ).mkString("\n")
   }
 
