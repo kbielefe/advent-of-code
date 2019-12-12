@@ -1,5 +1,4 @@
 package common
-import cats.implicits._
 
 object ElfCode {
   def registerAB(f: (Int, Int) => Int)(instruction: Vector[Int], registers: Vector[Int]): Vector[Int] = {
@@ -47,5 +46,18 @@ object ElfCode {
 
   def execute(program: List[Vector[Int]]): Vector[Int] = {
     program.foldLeft(Vector(0, 0, 0, 0)){case (registers, instruction) => instructions(instruction.head)(instruction, registers)}
+  }
+
+  @scala.annotation.tailrec
+  def executeWithJumps(ipReg: Int, program: Vector[Vector[Int]], registers: Vector[Int] = Vector(0, 0, 0, 0, 0, 0), ip: Int = 0): Vector[Int] = {
+    if (ip >= program.size || ip < 0) {
+      registers
+    } else {
+      println(ip)
+      val registersWithIp = registers.updated(ipReg, ip)
+      val registersAfterExecution = instructions(program(ip).head)(program(ip), registersWithIp)
+      val newIp = registersAfterExecution(ipReg) + 1
+      executeWithJumps(ipReg, program, registersAfterExecution, newIp)
+    }
   }
 }
