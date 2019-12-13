@@ -3,7 +3,7 @@ import common.{DayTask, ElfCode}
 import monix.eval.Task
 import monix.reactive.Observable
 
-class Day21 extends DayTask[(Int, Vector[Vector[Int]]), Int, String] {
+class Day21 extends DayTask[(Int, Vector[Vector[Int]]), Int, Int] {
 
   def stringToOpcode(string: String): Int = string match {
     case "eqir" => 0
@@ -72,6 +72,6 @@ class Day21 extends DayTask[(Int, Vector[Vector[Int]]), Int, String] {
   }
 
   override def part2(input: (Int, Vector[Vector[Int]])) = Task{
-    "unimplemented"
+    ElfCode.executeWithJumps(input._1, input._2)(0)
   }
 }

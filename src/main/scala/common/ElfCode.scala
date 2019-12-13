@@ -51,14 +51,18 @@ object ElfCode {
   }
 
   @scala.annotation.tailrec
-  def executeWithJumps(ipReg: Int, program: Vector[Vector[Int]], registers: Vector[Int] = Vector(0, 0, 0, 0, 0, 0), ip: Int = 0): Vector[Int] = {
-    if (ip >= program.size || ip < 0) {
+  def executeWithJumps(ipReg: Int, program: Vector[Vector[Int]], registers: Vector[Int] = Vector(0, 0, 0, 0, 0, 0), ip: Int = 0, registerHistory: Set[Vector[Int]] = Set.empty): Vector[Int] = {
+    if (ip >= program.size || ip < 0 || (ip == 28 && registerHistory.contains(registers))) {
       registers
     } else {
+      val newHistory = if (ip == 28) {
+        println(s"e = ${registers(5)}")
+        registerHistory + registers
+      } else {registerHistory}
       val registersWithIp = registers.updated(ipReg, ip)
       val registersAfterExecution = instructions(program(ip).head)(program(ip), registersWithIp)
       val newIp = registersAfterExecution(ipReg) + 1
-      executeWithJumps(ipReg, program, registersAfterExecution, newIp)
+      executeWithJumps(ipReg, program, registersAfterExecution, newIp, newHistory)
     }
   }
 }
