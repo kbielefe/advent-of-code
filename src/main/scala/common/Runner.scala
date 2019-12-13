@@ -1,84 +1,107 @@
 package common
-import scala.io.Source
-import scala.util.{Try, Success, Failure}
-import sys.process._
+
+import cats.effect._
 import cats.effect.{Clock, Resource}
-import monix.eval.Task
-import monix.reactive.Observable
+import cats.implicits._
+
+import java.lang.reflect.Constructor
+
+import monix.eval.{Task, TaskApp}
 import monix.execution.Scheduler
+import monix.reactive.Observable
+
 import scala.concurrent.duration.NANOSECONDS
+import scala.io.Source
+import scala.language.existentials
 
-object Runner {
-  def main(args: Array[String]): Unit = {
-    if (args.size < 2) {
-      println("Call using year and day, i.e. 2018 1")
-      println("Optionally, as a third argument, specify a single part to run")
-      return
+import sys.process._
+
+object Runner extends TaskApp {
+  case class ArgumentCountException() extends Exception
+
+  def run(args: List[String]): Task[ExitCode] = {
+    val main = for {
+      _      <- checkArgCount(args)
+      year   <- intArg(args, 0)
+      day    <- intArg(args, 1)
+      c      <- getClass(year, day)
+      legacy <- isLegacy(c)
+      constructor <- getConstructor(c)
+      input   = getInput(year, day)
+      run1   <- runPart(args, 1)
+      run2   <- runPart(args, 2)
+      task1   = if (legacy) legacyTask(constructor, input, 1) else newTask(constructor, input, 1)
+      task2   = if (legacy) legacyTask(constructor, input, 2) else newTask(constructor, input, 2)
+      fiber  <- if (run1) timeTask(year, day, 1, task1).start else Task.unit.start
+      _      <- if (run2) timeTask(year, day, 2, task2) else Task.unit
+      _      <- fiber.join
+    } yield ExitCode.Success
+
+    main.onErrorRecoverWith{
+      case e: ArgumentCountException => printError(usage)
+      case e: NumberFormatException  => printError(usage)
+      case e: ClassNotFoundException => printError(notFound)
+      case e: Throwable              => printError(s"${e.toString}:\n ${e.getStackTrace.mkString("\n")}")
+    }
+  }
+
+  def timeTask(year: Int, day: Int, part: Int, task: Task[String])(implicit clock: Clock[Task]): Task[Unit] = for {
+    start  <- clock.monotonic(NANOSECONDS)
+    result <- task
+    end    <- clock.monotonic(NANOSECONDS)
+    runtime = f"${(end - start).toDouble / 1000000.0}%2.1f ms"
+    _      <- Task{Seq("/usr/bin/notify-send", "-t", "10000", s"$year/$day part $part<br/>$result<br/>$runtime").run()}
+    _      <- Task{println(s"$year/$day part $part\n$result\n$runtime")}
+  } yield ()
+
+  def legacyTask(constructor: Constructor[_], input: Resource[Task, Source], part: Int): Task[String] = input.use{source =>
+    val puzzle = constructor.newInstance(source).asInstanceOf[Day]
+    if (part == 1)
+      Task{puzzle.answer1}
+    else
+      Task{puzzle.answer2}
+  }
+
+  def newTask[A, B, C](constructor: Constructor[_], input: Resource[Task, Source], part: Int) = for {
+    puzzle <- Task{constructor.newInstance().asInstanceOf[DayTask[A, B, C]]}
+    parsed <- puzzle.input(Observable.fromIterator(input.map(_.getLines)))
+    result <- if (part == 1) puzzle.part1(parsed).map(_.toString) else puzzle.part2(parsed).map(_.toString)
+  } yield result
+
+  private def checkArgCount(args: List[String]): Task[Unit] =
+    if (args.size < 2 || args.size > 3) {
+        Task.raiseError(ArgumentCountException())
+    } else {
+      Task.unit
     }
 
-    val year = args(0)
-    val day  = args(1)
+  private def intArg(args: List[String], position: Int): Task[Int] = Task{
+    args(position).toInt
+  }
 
-    def runIf(n: Int, answer: => String): Unit = {
-      if (args.size < 3 || args(2).toInt == n) {
-        val startTime = System.nanoTime()
-        val storedAnswer = answer
-        println(storedAnswer)
-        val runtime = f"${(System.nanoTime() - startTime).toDouble / 1000000.0}%2.1f ms"
-        println(runtime)
-        val cmd = Seq("/usr/bin/notify-send", "-t", "10000", s"$year/$day part $n<br/>$storedAnswer<br/>$runtime")
-        cmd.lineStream
-      }
-    }
+  private def runPart(args: List[String], part: Int) =
+    Task{args.size < 3 || args(2).toInt == part}
 
-    def runDay[T](c: Class[T]): Unit = {
-      val source = Source.fromResource(s"$year/$day.txt")
-      val constructor = c.getConstructors()(0)
-      val puzzle = constructor.newInstance(source).asInstanceOf[Day]
-      runIf(1, puzzle.answer1)
-      runIf(2, puzzle.answer2)
-    }
+  private def printError(msg: String) = Task{
+    println(msg)
+    Seq("/usr/bin/notify-send", "-t", "10000", msg).run()
+  }.as(ExitCode.Error)
 
-    def runDayTask[T, A, B, C](c: Class[T])(implicit clock: Clock[Task]): Unit = {
-      val constructor = c.getConstructors()(0)
-      val puzzle = constructor.newInstance().asInstanceOf[DayTask[A, B, C]]
-      val inputResource = Resource.make(Task{Source.fromResource(s"$year/$day.txt")})(source => Task{source.close()}).map(_.getLines)
-      val inputTask = puzzle.input(Observable.fromIterator(inputResource))
-      def runPart(part: Int) = args.size < 3 || args(2).toInt == part
+  private def usage = "Usage: <year> <day> [<part>]"
 
-      def runTask[D](part: Int, task: Task[D]): Task[Unit] = for {
-        start  <- clock.monotonic(NANOSECONDS)
-        result <- task.map(_.toString)
-        end    <- clock.monotonic(NANOSECONDS)
-        runtime = f"${(end - start).toDouble / 1000000.0}%2.1f ms"
-        cmd     = Seq("/usr/bin/notify-send", "-t", "10000", s"$year/$day part $part<br/>$result<br/>$runtime")
-        _      <- Task{println(s"$year/$day part $part\n$result\n$runtime")}
-        _      <- Task{cmd.run()}
-      } yield ()
+  private def notFound = "Specified puzzle not found."
 
-      val task = for {
-        input <- inputTask
-        part1 <- if (runPart(1)) runTask(1, puzzle.part1(input)).start else Task.unit.start
-        part2 <- if (runPart(2)) runTask(2, puzzle.part2(input)).start else Task.unit.start
-        _     <- Task.gatherUnordered(Seq(part1.join, part2.join))
-      } yield ()
-      implicit val scheduler = Scheduler.computation()
-      task.runSyncUnsafe()
-    }
+  private def getClass(year: Int, day: Int) = Task{
+    Class.forName(s"advent$year.Day$day")
+  }
 
+  private def isLegacy(c: Class[_]) =
+    Task{c.getInterfaces.map(_.getSimpleName).head == "Day"}
 
-    val className = s"advent$year.Day$day"
-    Try(Class.forName(className)) map {c =>
-      val traitName = c.getInterfaces.map(_.getSimpleName).head
-      if (traitName == "Day") {
-        runDay(c)
-      } else if (traitName == "DayTask") {
-        runDayTask(c)
-      } else {
-        println(s"Puzzle implements unknown trait $traitName")
-      }
-    } recover {case e =>
-      println(s"Error constructing class $className:\n${e.toString}")
-    }
+  private def getConstructor(c: Class[_]) = Task{c.getConstructors()(0)}
+
+  private def getInput(year: Int, day: Int): Resource[Task, Source] = {
+    val path = new java.io.File(s"./src/main/resources/$year/$day.txt").getCanonicalPath
+    Resource.make(Task{Source.fromFile(path)}.onErrorFallbackTo(Task{Source.fromString("")}))(source => Task{source.close()})
   }
 }
