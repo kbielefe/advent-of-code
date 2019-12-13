@@ -3,7 +3,7 @@ import common.{DayTask, ElfCode}
 import monix.eval.Task
 import monix.reactive.Observable
 
-class Day19 extends DayTask[(Int, Vector[Vector[Int]]), Int, Int] {
+class Day19 extends DayTask[(Int, Vector[Vector[Int]]), Int, String] {
 
   def stringToOpcode(string: String): Int = string match {
     case "eqir" => 0
@@ -42,6 +42,7 @@ class Day19 extends DayTask[(Int, Vector[Vector[Int]]), Int, Int] {
   }
 
   override def part2(input: (Int, Vector[Vector[Int]])) = Task{
-    ElfCode.executeWithJumps(input._1, input._2, Vector(1, 0, 0, 0, 0, 0))(0)
+    "Manually calculate all factors of register 2 when pc = 35, and sum"
+    //ElfCode.executeWithJumps(input._1, input._2, Vector(1, 0, 0, 0, 0, 0))(0)
   }
 }
