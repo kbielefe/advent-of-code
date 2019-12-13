@@ -3,14 +3,16 @@ package common
 object ElfCode {
   def registerAB(f: (Int, Int) => Int)(instruction: Vector[Int], registers: Vector[Int]): Vector[Int] = {
     val a = registers(instruction(1))
-    val b = registers(instruction(2))
+    val i = instruction(2)
+    val b = if (i >= 0 && i < registers.size) registers(i) else 0
     val c = f(a, b)
     registers.updated(instruction(3), c)
   }
 
   def immediateA(f: (Int, Int) => Int)(instruction: Vector[Int], registers: Vector[Int]): Vector[Int] = {
     val a = instruction(1)
-    val b = registers(instruction(2))
+    val i = instruction(2)
+    val b = if (i >= 0 && i < registers.size) registers(i) else 0
     val c = f(a, b)
     registers.updated(instruction(3), c)
   }
@@ -53,7 +55,6 @@ object ElfCode {
     if (ip >= program.size || ip < 0) {
       registers
     } else {
-      println(ip)
       val registersWithIp = registers.updated(ipReg, ip)
       val registersAfterExecution = instructions(program(ip).head)(program(ip), registersWithIp)
       val newIp = registersAfterExecution(ipReg) + 1
