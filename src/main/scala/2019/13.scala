@@ -20,9 +20,9 @@ class Day13 extends DayTask[Map[Long, Long], Int, Long] {
     newScore  = if (x == -1 && y == 0) block else score
     _ <- screenRef.put(newScreen)
     _ <- scoreRef.put(newScore)
-    _      <- draw(newScreen, newScore)
+    _ <- draw(newScreen, newScore)
     _ <- if (block == 4) readyToMove.put(true) else Task.unit
-    _      <- arcade(input, screenRef, scoreRef, readyToMove)
+    _ <- arcade(input, screenRef, scoreRef, readyToMove)
   } yield ()
 
   def draw(screen: Map[(Long, Long), Long], score: Long): Task[Unit] = {
