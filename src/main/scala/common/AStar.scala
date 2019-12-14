@@ -8,7 +8,7 @@ class AStar[Position](
 
   def getPath(start: Position, goal: Position) : List[Position] = {
     @tailrec
-    def helper(closed: Set[Position], open: Set[Position], cameFrom: Map[Position, Position],
+    def helper(open: Set[Position], cameFrom: Map[Position, Position],
       g: Map[Position, Double], f: Map[Position, Double]): List[Position] = {
 
       if (open.isEmpty)
@@ -20,27 +20,23 @@ class AStar[Position](
 
       def tentativeG(neighbor: Position) = g(current) + edgeWeight(current, neighbor)
 
-      val neighbors = getNeighbors(current) -- closed
-      val notOpenNeighbors = neighbors -- open
-      val betterNeighbors = (neighbors & open) filter {neighbor => tentativeG(neighbor) < g(neighbor)}
-      val newNeighbors = notOpenNeighbors ++ betterNeighbors
+      val neighbors = getNeighbors(current)
+      val betterNeighbors = neighbors filter {neighbor => g.get(neighbor).map(tentativeG(neighbor) < _).getOrElse(true)}
 
-      val newCameFrom = cameFrom ++ (newNeighbors map {(_, current)})
-      val newG = g ++ (newNeighbors map {neighbor => (neighbor, tentativeG(neighbor))})
-      val newF = f ++ (newNeighbors map {neighbor => (neighbor, tentativeG(neighbor) + heuristic(neighbor, goal))})
+      val newCameFrom = cameFrom ++ betterNeighbors.map{(_, current)}
+      val newG = g ++ betterNeighbors.map{neighbor => (neighbor, tentativeG(neighbor))}
+      val newF = f ++ betterNeighbors.map{neighbor => (neighbor, tentativeG(neighbor) + heuristic(neighbor, goal))}
 
-      val newClosed = closed + current
-      val newOpen = open ++ newNeighbors - current
+      val newOpen = open ++ betterNeighbors - current
 
-      helper(newClosed, newOpen, newCameFrom, newG, newF)
+      helper(newOpen, newCameFrom, newG, newF)
     }
 
-    val closed = Set[Position]()
     val open = Set(start)
     val cameFrom = Map[Position, Position]()
     val g = Map[Position, Double](start -> 0.0)
     val f = Map[Position, Double](start -> heuristic(start, goal))
-    helper(closed, open, cameFrom, g, f)
+    helper(open, cameFrom, g, f)
   }
 
   private def reconstructPath(start: Position, goal: Position, cameFrom: Map[Position, Position]): List[Position] = {
