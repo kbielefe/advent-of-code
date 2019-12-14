@@ -2,6 +2,7 @@ package common
 
 class AStar[Position](
     heuristic: (Position, Position) => Double,
+    edgeWeight: (Position, Position) => Double,
     getNeighbors: Position => Set[Position]) {
   import scala.annotation.tailrec
 
@@ -17,16 +18,16 @@ class AStar[Position](
       if (current == goal)
         return reconstructPath(start, goal, cameFrom)
 
-      val tentativeG = g(current) + 1.0 // Need to change 1.0 to use actual weight
+      def tentativeG(neighbor: Position) = g(current) + edgeWeight(current, neighbor)
 
       val neighbors = getNeighbors(current) -- closed
       val notOpenNeighbors = neighbors -- open
-      val betterNeighbors = (neighbors & open) filter {tentativeG < g(_)}
+      val betterNeighbors = (neighbors & open) filter {neighbor => tentativeG(neighbor) < g(neighbor)}
       val newNeighbors = notOpenNeighbors ++ betterNeighbors
 
       val newCameFrom = cameFrom ++ (newNeighbors map {(_, current)})
-      val newG = g ++ (newNeighbors map {(_, tentativeG)})
-      val newF = f ++ (newNeighbors map {neighbor => (neighbor, tentativeG + heuristic(neighbor, goal))})
+      val newG = g ++ (newNeighbors map {neighbor => (neighbor, tentativeG(neighbor))})
+      val newF = f ++ (newNeighbors map {neighbor => (neighbor, tentativeG(neighbor) + heuristic(neighbor, goal))})
 
       val newClosed = closed + current
       val newOpen = open ++ newNeighbors - current

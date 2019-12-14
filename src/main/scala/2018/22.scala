@@ -1,11 +1,12 @@
 package advent2018
-import common.DayTask
+import common.{AStar, DayTask}
 import monix.eval.Task
 import monix.reactive.Observable
 
 class Day22 extends DayTask[(Int, (Int, Int)), Int, Int] {
 
-  override def input(lines: Observable[String]) = Task{(10914, (9, 739))}
+  //override def input(lines: Observable[String]) = Task{(10914, (9, 739))}
+  override def input(lines: Observable[String]) = Task{(510, (10, 10))}
 
   val Rocky  = 0
   val Wet    = 1
@@ -32,13 +33,80 @@ class Day22 extends DayTask[(Int, (Int, Int)), Int, Int] {
   def regionTypes(erosion: Seq[Seq[Int]]): Seq[Seq[Int]] =
     erosion.map(_.map(_ % 3))
 
+  def getRegionsMap(regions: Seq[Seq[Int]]): Map[(Int, Int), Int] = {
+    regions.zipWithIndex.flatMap{case (row, y) =>
+      row.zipWithIndex.map{case (region, x) =>
+        ((x, y), region)
+      }
+    }.toMap
+  }
+
   override def part1(input: (Int, (Int, Int))) = Task{
     val (depth, (targetX, targetY)) = input
     regionTypes(erosion(depth, targetX, targetY)).map(_.sum).sum
   }
 
+  type Position = ((Int, Int), Int)
+  val ClimbingGear = 0
+  val Torch        = 1
+  val Neither      = 2
+
+  def heuristic(from: Position, to: Position): Double = {
+    val toolSwitchWeight = if (from._2 != to._2) 7.0 else 0.0
+    val manhattanDistance =
+      math.abs(from._1._1 - to._1._1) + math.abs(from._1._2 - to._1._2)
+    toolSwitchWeight + manhattanDistance.toDouble
+  }
+
+  def edgeWeight(from: Position, to: Position): Double = {
+    val toolSwitchWeight = if (from._2 != to._2) 7.0 else 0.0
+    val movementWeight   = if (from._1 != to._1) 1.0 else 0.0
+    toolSwitchWeight + movementWeight
+  }
+
+  def getNeighbors(regions: Map[(Int, Int), Int], maxX: Int, maxY: Int)(current: Position): Set[Position] = {
+    val (position, tool) = current
+    val switchedTool = (regions(position), tool) match {
+      case (Rocky,  ClimbingGear) => Torch
+      case (Rocky,  Torch)        => ClimbingGear
+      case (Wet,    ClimbingGear) => Neither
+      case (Wet,    Neither)      => ClimbingGear
+      case (Narrow, Torch)        => Neither
+      case (Narrow, Neither)      => Torch
+      case _                      => throw new Exception(s"Invalid current position: $current")
+    }
+    val (x, y) = position
+    val moves = Set((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1))
+    val inBounds = moves.filter{case (x, y) => x >= 0 && y >= 0 && x <= maxX && y <= maxY}
+    val valid = inBounds.filter(position => validRegionForTool(tool, regions(position)))
+    valid.map(position => (position, tool)) + ((position, switchedTool))
+  }
+
+  def validRegionForTool(tool: Int, region: Int): Boolean = region match {
+    case Rocky  => tool == ClimbingGear || tool == Torch
+    case Wet    => tool == ClimbingGear || tool == Neither
+    case Narrow => tool == Torch || tool == Neither
+  }
+
+  def totalMinutes(path: List[Position]): Int = {
+    path.sliding(2).map{case List(p1, p2) => (p1._2, p2._2)}.foreach(println)
+    path.sliding(2).map{case List(p1, p2) =>
+      if (p1._2 != p2._2) 7 else 1
+    }.sum
+  }
+
   override def part2(input: (Int, (Int, Int))) = Task{
     val (depth, (targetX, targetY)) = input
-    0
+    val maxX = targetX + 10
+    val maxY = targetY + 10
+    val regions = regionTypes(erosion(depth, maxX, maxY))
+    val regionsMap = getRegionsMap(regions)
+    val aStar = new AStar(heuristic, edgeWeight, getNeighbors(regionsMap, maxX, maxY))
+    val start = ((0, 0), Torch)
+    val goal  = ((targetX, targetY), Torch)
+    val path = aStar.getPath(start, goal)
+    path.map{case (position, tool) => (position, if (tool == Torch) "torch" else if (tool == ClimbingGear) "climbing gear" else "neither")} foreach println
+    totalMinutes(path)
   }
+  // 1052 is too high
 }
