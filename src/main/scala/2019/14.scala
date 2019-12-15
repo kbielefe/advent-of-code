@@ -2,20 +2,20 @@ package advent2019
 import common.DayTask
 import monix.eval.Task
 import monix.reactive.Observable
+import scala.annotation.tailrec
 
-// TODO: Properly report error parsing input
-class Day14 extends DayTask[Map[String, (Int, List[(Int, String)])], Int, String] {
+class Day14 extends DayTask[Map[String, (Long, List[(Long, String)])], Long, Long] {
 
-  type DAG = Map[String, (Int, List[(Int, String)])]
+  type DAG = Map[String, (Long, List[(Long, String)])]
 
   override def input(lines: Observable[String]) = lines.map{line =>
     val Array(sources, target) = line.split(" => ")
     val parsedSources = sources.split(", ").map{source =>
       val Array(sourceCountString, sourceName) = source.split(" ")
-      (sourceCountString.toInt, sourceName)
+      (sourceCountString.toLong, sourceName)
     }
     val Array(targetCountString, targetName) = target.split(" ")
-    (targetName -> (targetCountString.toInt, parsedSources.toList))
+    (targetName -> (targetCountString.toLong, parsedSources.toList))
   }.toListL.map(_.toMap)
 
   def noIncomingEdges(reactions: DAG): Set[String] = {
@@ -24,9 +24,9 @@ class Day14 extends DayTask[Map[String, (Int, List[(Int, String)])], Int, String
     allNodes -- haveIncoming
   }
 
-  def updateDemanded(demanded: Map[String, Int], reactants: List[(Int, String)], batches: Int): Map[String, Int] = {
+  def updateDemanded(demanded: Map[String, Long], reactants: List[(Long, String)], batches: Long): Map[String, Long] = {
     reactants.foldLeft(demanded){case (demanded, (count, name)) =>
-      val oldCount = demanded.getOrElse(name, 0)
+      val oldCount = demanded.getOrElse(name, 0L)
       demanded.updated(name, count * batches + oldCount)
     }
   }
@@ -35,8 +35,8 @@ class Day14 extends DayTask[Map[String, (Int, List[(Int, String)])], Int, String
     reactions - node
   }
 
-  @scala.annotation.tailrec
-  final def oreCount(reactions: DAG, demanded: Map[String, Int]): Int = {
+  @tailrec
+  final def oreCount(reactions: DAG, demanded: Map[String, Long]): Long = {
     val noIncoming = noIncomingEdges(reactions)
     if (noIncoming.isEmpty) {
       demanded("ORE")
@@ -50,7 +50,26 @@ class Day14 extends DayTask[Map[String, (Int, List[(Int, String)])], Int, String
     }
   }
 
+  @tailrec
+  final def binarySearch(f: Long => Long, target: Long, min: Long, max: Long): Long = {
+    if (min >= max) {
+      if (f(min) > target) {
+        min - 1
+      } else {
+        min
+      }
+    } else {
+      val current = (max - min) / 2L + min
+      val (newMin, newMax) = if (f(current) > target) {
+        (min, current - 1)
+      } else {
+        (current + 1, max)
+      }
+      binarySearch(f, target, newMin, newMax)
+    }
+  }
+
   override def part1(reactions: DAG) = Task{oreCount(reactions, Map("FUEL" -> 1))}
 
-  override def part2(reactions: DAG) = Task{"unimplemented"}
+  override def part2(reactions: DAG) = Task{binarySearch(fuel => oreCount(reactions, Map("FUEL" -> fuel)), 1000000000000L, 0L, 10000000L)}
 }
