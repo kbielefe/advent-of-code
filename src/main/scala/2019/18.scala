@@ -21,6 +21,29 @@ class Day18 extends DayTask[Day18.Maze, Int, String] {
     })
   }.toListL.map(_.toMap)
 
+  type DAG = Map[Key, Key]
+
+  def getNeighbors(maze: Maze, position: Position): Set[Position] = {
+    val (x, y) = position
+    Set((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)) filter {position =>
+      maze(position) match {
+        case Wall => false
+        case _    => true
+      }
+    }
+  }
+
+  def createDAG(maze: Maze, position: Position, visited: Set[Position] = Set.empty, previousDoors: Set[Door] = Set.empty, dag: DAG = Map.empty): DAG = {
+    val neighbors = getNeighbors(maze, position) -- visited
+    if (neighbors.isEmpty) {
+      dag
+    } else {
+      neighbors.foldLeft(dag){case (dag, neighbor) =>
+        createDAG(maze, neighbor, visited + position, previousDoors, dag)
+      }
+    }
+  }
+
   override def part1(maze: Maze) = Task{0}
 
   override def part2(maze: Maze) = Task{"unimplemented"}
@@ -34,5 +57,7 @@ object Day18 {
   case class  Key(name: Char)  extends Square
   case class  Door(name: Char) extends Square
 
-  type Maze = Map[(Int, Int), Square]
+  type Position = (Int, Int)
+
+  type Maze = Map[Position, Square]
 }
