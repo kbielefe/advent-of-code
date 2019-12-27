@@ -1,9 +1,12 @@
 package common
+import scalax.collection.edge.LDiEdge
 import scalax.collection.Graph
 import scalax.collection.GraphPredef._
 import scalax.collection.GraphEdge._
 import scala.util.Try
 import scala.language.higherKinds
+import monix.reactive.Observable
+import monix.eval.Task
 
 object GraphUtils {
   // Assumes a single successor for every node within n
@@ -34,5 +37,29 @@ object GraphUtils {
     val succ = Try(n.diSuccessors.head) getOrElse n
     val bridge: Param[N,DiEdge] = DiEdge(pred, succ)
     g - node + bridge
+  }
+
+  case class Square(x: Int, y: Int, char: Char)
+
+  def fromLines(lines: Observable[String]): Task[Graph[Square, LDiEdge]] = {
+    def edgeBetween(squares: (Square, Square)) = squares._1.char != '#' && squares._2.char != '#'
+
+    val squareLines = lines.zipWithIndex.map{case (line, y) =>
+      line.zipWithIndex.map{case (char, x) => Square(x.toInt, y.toInt, char) }
+    }
+
+    val verticalEdges = squareLines.zip(squareLines.drop(1)).flatMap{case (aboveRow, belowRow) =>
+      Observable.fromIterable(aboveRow.zip(belowRow))
+        .filter(edgeBetween)
+        .flatMap{case (above, below) => Observable(LDiEdge(above, below)("South"), LDiEdge(below, above)("North"))}
+    }
+
+    val horizontalEdges = squareLines.flatMap{row =>
+      Observable.fromIterable(row.zip(row.drop(1)))
+        .filter(edgeBetween)
+        .flatMap{case (left, right) => Observable(LDiEdge(left, right)("East"), LDiEdge(right, left)("West"))}
+    }
+
+    (verticalEdges ++ horizontalEdges).toListL.map{edges => Graph(edges:_*)}
   }
 }
