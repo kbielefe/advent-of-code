@@ -9,8 +9,12 @@ object Intcode {
   def printlnLogger(msg: => String) = Task{println(msg)}
 }
 
-class Intcode(id: String, input: MVar[Task, Long], output: MVar[Task, Long], logger: (=> String) => Task[Unit] = Intcode.noLogger) {
+class Intcode(id: String, input: Task[Long], output: Long => Task[Unit], logger: (=> String) => Task[Unit] = Intcode.noLogger) {
   type Memory = Map[Long, Long]
+
+  def this(id: String, inputVar: MVar[Task, Long], outputVar: MVar[Task, Long]) {
+    this(id, inputVar.take, outputVar.put _)
+  }
 
   def run(memory: Memory, pc: Long, relativeBase: Long): Task[Unit] = {
     def mode(param: Int): Int =
@@ -55,7 +59,7 @@ class Intcode(id: String, input: MVar[Task, Long], output: MVar[Task, Long], log
     val equalTo  = compareOp("equalTo",  _ == _)
 
     val readInput = for {
-      value <- input.take
+      value <- input
       _     <- log(s"input($value)", 1)
       mem   <- write(1, value)
       _     <- run(mem, pc + 2, relativeBase)
@@ -63,7 +67,7 @@ class Intcode(id: String, input: MVar[Task, Long], output: MVar[Task, Long], log
 
     val writeOutput = for {
       _ <- log("output", 1)
-      _ <- output.put(read(1))
+      _ <- output(read(1))
       _ <- run(memory, pc + 2, relativeBase)
     } yield ()
 
