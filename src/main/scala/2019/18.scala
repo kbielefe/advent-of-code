@@ -2,62 +2,46 @@ package advent2019
 import common.DayTask
 import monix.eval.Task
 import monix.reactive.Observable
+import scalax.collection.Graph
+import scalax.collection.GraphPredef._
+import scalax.collection.edge.LDiEdge
+import scalax.collection.GraphEdge.DiEdge
+import common.GraphUtils.{fromLines, Square}
+import scalax.collection.edge.Implicits._
 
-class Day18 extends DayTask[Day18.Maze, Int, String] {
+class Day18 extends DayTask[Graph[Square, LDiEdge], Int, String] {
 
-  import Day18._
+  override def input(lines: Observable[String]) = fromLines(lines)
 
-  // TODO: Make a common routine for doing this
-  override def input(lines: Observable[String]) = lines.zipWithIndex.flatMap{case (line, y) =>
-    Observable.fromIterable(line.zipWithIndex.map{case (char, x) =>
-      val square = char match {
-        case '#' => Wall
-        case '.' => Passage
-        case '@' => Entrance
-        case k if k.isLower => Key(k)
-        case d   => Door(d)
-      }
-      (x, y.toInt) -> square
-    })
-  }.toListL.map(_.toMap)
-
-  type DAG = Map[Key, Key]
-
-  def getNeighbors(maze: Maze, position: Position): Set[Position] = {
-    val (x, y) = position
-    Set((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)) filter {position =>
-      maze(position) match {
-        case Wall => false
-        case _    => true
-      }
-    }
-  }
-
-  def createDAG(maze: Maze, position: Position, visited: Set[Position] = Set.empty, previousDoors: Set[Door] = Set.empty, dag: DAG = Map.empty): DAG = {
-    val neighbors = getNeighbors(maze, position) -- visited
-    if (neighbors.isEmpty) {
-      dag
+  private def shortestPath(from: Square, graph: Graph[Square, LDiEdge], topoSort: List[List[Square]]): Int = {
+    val (thisLayer :: nextLayer) = topoSort
+    if (nextLayer == Nil) {
+      0
     } else {
-      neighbors.foldLeft(dag){case (dag, neighbor) =>
-        createDAG(maze, neighbor, visited + position, previousDoors, dag)
-      }
+      thisLayer.map{square =>
+        graph.get(from).shortestPathTo(graph.get(square)).get.nodes.size - 1 + shortestPath(square, graph, nextLayer)
+      }.min
     }
   }
 
-  override def part1(maze: Maze) = Task{0}
+  // 1900 is too low
+  override def part1(graph: Graph[Square, LDiEdge]) = Task{
+    def isKey(square: Square) = square.char >= 'a' && square.char <= 'z'
+    def isDoor(square: Square) = square.char >= 'A' && square.char <= 'Z'
+    def n(char: Char) = graph.get(graph.nodes.find(_.char == char).get)
+    val start = n('@')
+    val keys = graph.nodes.filter(isKey).map(node => graph.get(node))
+    val doors = graph.nodes.filter(isDoor).map(node => graph.get(node))
+    val edges = keys.flatMap{key => 
+      val (predKeys, predDoors) = start.shortestPathTo(key).get.nodes.filter(square => isKey(square) || isDoor(square)).init.partition(isKey)
+      val preds = predKeys ++ predDoors.map(door => n(door.char.toLower))
+      preds map {pred => DiEdge(pred.value, key.value)}
+    }
+    val predGraph = Graph[Square, DiEdge]((edges ++ keys).toSeq.asInstanceOf[Seq[Param[Square, DiEdge]]]:_*)
+    val topoSort = predGraph.topologicalSort.right.get.toLayered.map(_._2.toList.map(_.value)).toList
+    topoSort.mkString("\n")
+    shortestPath(n('@'), graph, topoSort)
+  }
 
-  override def part2(maze: Maze) = Task{"unimplemented"}
-}
-
-object Day18 {
-  sealed trait Square
-  case object Wall             extends Square
-  case object Entrance         extends Square
-  case object Passage          extends Square
-  case class  Key(name: Char)  extends Square
-  case class  Door(name: Char) extends Square
-
-  type Position = (Int, Int)
-
-  type Maze = Map[Position, Square]
+  override def part2(graph: Graph[Square, LDiEdge]) = Task{"unimplemented"}
 }

@@ -5,7 +5,7 @@ import scalax.collection.GraphPredef._
 import scalax.collection.GraphEdge._
 import scala.util.Try
 import scala.language.higherKinds
-import monix.reactive.Observable
+import monix.reactive.{Observable, Pipe}
 import monix.eval.Task
 
 object GraphUtils {
@@ -42,24 +42,28 @@ object GraphUtils {
   case class Square(x: Int, y: Int, char: Char)
 
   def fromLines(lines: Observable[String]): Task[Graph[Square, LDiEdge]] = {
-    def edgeBetween(squares: (Square, Square)) = squares._1.char != '#' && squares._2.char != '#'
+    implicit val os = monix.reactive.OverflowStrategy.Unbounded
 
-    val squareLines = lines.zipWithIndex.map{case (line, y) =>
-      line.zipWithIndex.map{case (char, x) => Square(x.toInt, y.toInt, char) }
-    }
+    def edgeBetween(squares: (Square, Square)) =
+      squares._1.char != '#' && squares._2.char != '#'
 
-    val verticalEdges = squareLines.zip(squareLines.drop(1)).flatMap{case (aboveRow, belowRow) =>
-      Observable.fromIterable(aboveRow.zip(belowRow))
+    def findEdges(label1: String, label2: String)(rows: (Seq[Square], Seq[Square])): Observable[LDiEdge[Square]] =
+      Observable.fromIterable(rows._1.zip(rows._2))
         .filter(edgeBetween)
-        .flatMap{case (above, below) => Observable(LDiEdge(above, below)("South"), LDiEdge(below, above)("North"))}
+        .flatMap{case (square1, square2) => Observable(LDiEdge(square1, square2)(label1), LDiEdge(square2, square1)(label2))}
+
+    val squareLines: Observable[Seq[Square]] = lines.zipWithIndex.map{case (line, y) =>
+      line.zipWithIndex.map{case (char, x) => Square(x.toInt, y.toInt, char)}
     }
 
-    val horizontalEdges = squareLines.flatMap{row =>
-      Observable.fromIterable(row.zip(row.drop(1)))
-        .filter(edgeBetween)
-        .flatMap{case (left, right) => Observable(LDiEdge(left, right)("East"), LDiEdge(right, left)("West"))}
+    val edges: Observable[LDiEdge[Square]] = squareLines.publishSelector{hot =>
+      val verticalEdges: Observable[LDiEdge[Square]] = hot.bufferSliding(2, 1).map{case Seq(a, b) => a -> b}.flatMap(findEdges("South", "North"))
+      val horizontalEdges = hot.map(row => row -> row.drop(1)).flatMap(findEdges("East", "West"))
+      Observable(verticalEdges, horizontalEdges).merge
     }
 
-    (verticalEdges ++ horizontalEdges).toListL.map{edges => Graph(edges:_*)}
+    edges.toListL.map{edges => Graph(edges:_*)}
   }
+
+  def allTopoSorts[N, E[X] <: EdgeLikeIn[X]](g: Graph[N,E]): Observable[Observable[N]] = ???
 }
