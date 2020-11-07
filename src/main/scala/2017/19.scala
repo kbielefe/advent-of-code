@@ -3,7 +3,7 @@ import common.Day
 import scala.io.Source
 
 class Day19(source: Source) extends Day {
-  val input = source.getLines.zipWithIndex.flatMap{case (line, row) =>
+  val input = source.getLines().zipWithIndex.flatMap{case (line, row) =>
     line.zipWithIndex.map{case (char, col) => (row, col) -> char}.filterNot{_._2 == ' '}
   }.toMap
 

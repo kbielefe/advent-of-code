@@ -3,7 +3,7 @@ import common.Day
 import scala.io.Source
 
 class Day6(source: Source) extends Day {
-  val input = source.getLines.map{_ split ", " map {_.toInt}}.map{x => (x(0), x(1))}.toList
+  val input = source.getLines().map{_ split ", " map {_.toInt}}.map{x => (x(0), x(1))}.toList
 
   type Point = (Int, Int)
 
@@ -35,7 +35,7 @@ class Day6(source: Source) extends Day {
 
   val infiniteRegions = pointsBorderingBoundingBox.map(nearestNeighbor).flatten.toSet
   val regions = pointsInsideBoundingBox.map(nearestNeighbor).flatten.filterNot{infiniteRegions contains _}
-  val regionSizes = regions.groupBy(identity).mapValues{_.size}
+  val regionSizes = regions.groupBy(identity).view.mapValues{_.size}
   val largestRegion = regionSizes.maxBy{_._2}
 
   override def answer1 = (largestRegion._2).toString

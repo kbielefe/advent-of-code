@@ -14,9 +14,9 @@ class Day17(source: Source) extends Day {
       case xRangeRegex(y, xMin, xMax) => (xMin.toInt to xMax.toInt) map {x => (x, y.toInt)}
       case yRangeRegex(x, yMin, yMax) => (yMin.toInt to yMax.toInt) map {y => (x.toInt, y)}
     }
-     source.getLines.flatMap(parseLine).toSet
+     source.getLines().flatMap(parseLine).toSet
   }
-  
+
   lazy val minY = clay.map(_._2).min
   lazy val maxY = clay.map(_._2).max
   lazy val minX = clay.map(_._1).min

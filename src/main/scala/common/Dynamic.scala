@@ -12,7 +12,7 @@ object Dynamic {
    */
   def cumulativeSums[A](input: List[List[A]])(implicit n: Numeric[A]): List[List[A]] = {
     def sumRow(above: List[A], row: List[A]): List[A] = {
-      val zipped: List[(A, A, A)] = (n.zero :: above, above, row).zipped.toList
+      val zipped: List[(A, A, A)] = (n.zero :: above).lazyZip(above).lazyZip(row).toList
       zipped.scanLeft(n.zero){case (prev, (aboveLeft, above, curr)) =>
         n.minus(n.plus(n.plus(above, prev), curr), aboveLeft)
       } drop 1
@@ -32,7 +32,7 @@ object Dynamic {
       if (!it.hasNext) {
         None
       } else {
-        val curr = it.next
+        val curr = it.next()
         val startOption = seen.get(curr)
         if (startOption.isDefined)
           startOption map {start => (start, count - start, curr)}
@@ -62,8 +62,8 @@ object Dynamic {
    (target - start) % cycle + start
  }
 
- def frequency[A](xs: TraversableOnce[A]): Map[A, Int] =
-   xs.foldLeft(Map.empty[A, Int]){case (freq, next) => freq + (next -> (freq.getOrElse(next, 0) + 1))}
+ def frequency[A](xs: IterableOnce[A]): Map[A, Int] =
+   xs.iterator.foldLeft(Map.empty[A, Int]){case (freq, next) => freq + (next -> (freq.getOrElse(next, 0) + 1))}
 
  // Find the value x where p(x) is true and p(x - 1) is false
  // given start must be false and given end must be true

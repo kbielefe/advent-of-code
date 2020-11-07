@@ -3,7 +3,7 @@ import common.Day
 import scala.io.Source
 
 class Day3(source: Source) extends Day {
-  val input = source.getLines.toList
+  val input = source.getLines().toList
 
   case class Claim(id: Int, left: Int, top: Int, width: Int, height: Int)
 

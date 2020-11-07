@@ -3,7 +3,7 @@ import common.{Day, Dynamic}
 import scala.io.Source
 
 class Day2(source: Source) extends Day {
-  val input = source.getLines.toList
+  val input = source.getLines().toList
   val counts = input.map{xs => Dynamic.frequency(xs).map{_._2}.toSet}
   def appearsN(n: Int): Int = counts count {_ contains n}
 

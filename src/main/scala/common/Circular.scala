@@ -1,6 +1,5 @@
 package common
 import Math.max
-import scala.collection.GenSeq
 
 final class Circular[A] (protected val v: Vector[A]) {
   def slice(from: Int, until: Int): Vector[A] = {
@@ -11,7 +10,7 @@ final class Circular[A] (protected val v: Vector[A]) {
     afterWrap take length
   }
 
-  def patch(from: Int, that: GenSeq[A], replaced: Int): Circular[A] = {
+  def patch(from: Int, that: Seq[A], replaced: Int): Circular[A] = {
     val (before, after) = v splitAt wrapI(from)
     val replacedAfter = after drop wrapI(replaced)
     val replacedBefore = before drop max(0, wrapI(replaced) - after.size)

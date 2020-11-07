@@ -3,9 +3,9 @@ import common.Day
 import scala.io.Source
 
 class Day5(source: Source) extends Day {
-  val input = source.getLines.map(_.toInt).toVector
+  val input = source.getLines().map(_.toInt).toVector
 
-  def results(f: Int => Int) = Stream.iterate((0, 0, input)){case (step, index, input) =>
+  def results(f: Int => Int) = LazyList.iterate((0, 0, input)){case (step, index, input) =>
     val offset = input(index)
     val newInput = input.updated(index, f(offset))
     (step + 1, index + offset, newInput)

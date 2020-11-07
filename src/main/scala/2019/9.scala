@@ -9,7 +9,7 @@ import monix.execution.Scheduler.Implicits.global
 import scala.concurrent.duration._
 
 class Day9(source: Source) extends Day {
-  val initialMemory = source.getLines.next.split(",").zipWithIndex.map{case (value, index) => ((index.toLong, value.toLong))}.toMap
+  val initialMemory = source.getLines().next().split(",").zipWithIndex.map{case (value, index) => ((index.toLong, value.toLong))}.toMap
 
   def runBoost(input: Long) = for {
     in     <- MVar.of[Task, Long](input)
@@ -18,7 +18,7 @@ class Day9(source: Source) extends Day {
     result <- out.take
   } yield result
 
-  override def answer1 = runBoost(1).runSyncUnsafe(5 seconds).toString
+  override def answer1 = runBoost(1).runSyncUnsafe(5.seconds).toString
 
-  override def answer2 = runBoost(2).runSyncUnsafe(5 seconds).toString
+  override def answer2 = runBoost(2).runSyncUnsafe(5.seconds).toString
 }

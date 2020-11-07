@@ -3,7 +3,7 @@ import common.Day
 import scala.io.Source
 
 class Day3(source: Source) extends Day {
-  val input = source.getLines.map(_.split(",").map(x => (x.head, x.tail.toInt)).toList).toVector
+  val input = source.getLines().map(_.split(",").map(x => (x.head, x.tail.toInt)).toList).toVector
 
   @scala.annotation.tailrec
   private def path(directions: List[(Char, Int)], x: Int = 0, y: Int = 0, acc: List[(Int, Int)] = List.empty): List[(Int, Int)] = {

@@ -3,7 +3,7 @@ import common.Day
 import scala.io.Source
 
 class Day1(source: Source) extends Day {
-  val masses = source.getLines.map(_.toLong).toList
+  val masses = source.getLines().map(_.toLong).toList
 
   private def fuel(mass: Long): Long = mass / 3 - 2
 

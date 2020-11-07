@@ -6,7 +6,7 @@ class Day8(source: Source) extends Day {
   val width = 25
   val height = 6
 
-  val layers = source.getLines.next.grouped(width * height).toList
+  val layers = source.getLines().next().grouped(width * height).toList
 
   def mergeLayers(top: String, bottom: String): String =
     top.zip(bottom).map{

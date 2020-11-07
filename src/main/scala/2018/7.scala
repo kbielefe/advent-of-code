@@ -4,7 +4,7 @@ import scala.io.Source
 import scala.annotation.tailrec
 
 class Day7(source: Source, offset: Int = 61, workerCount: Int = 5) extends Day {
-  val input = source.getLines.toList
+  val input = source.getLines().toList
 
   type Order = (Char, Char)
 

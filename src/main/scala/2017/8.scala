@@ -22,7 +22,7 @@ class Day8(source: Source) extends Day {
     }
   }
 
-  val instructions = input.getLines.map(Instruction(_)).toList
+  val instructions = input.getLines().map(Instruction(_)).toList
 
   def runInstructions = instructions.scanLeft(Map.empty[String, Int]){case (registers, instruction) =>
     if (instruction.compareOp(registers.getOrElse(instruction.compareReg, 0), instruction.compareAmount)) {

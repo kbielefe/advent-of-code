@@ -51,7 +51,7 @@ class Day24 extends DayTask[List[Army], Int, String] {
   }
 
   def battle(armies: List[Army]): List[Army] = {
-    Iterator.iterate(armies)(fight).dropWhile(bothTeamsSurvive).next
+    Iterator.iterate(armies)(fight).dropWhile(bothTeamsSurvive).next()
   }
 
   def bothTeamsSurvive(armies: List[Army]): Boolean = {

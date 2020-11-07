@@ -4,7 +4,7 @@ import scala.io.Source
 import scala.util.Try
 
 class Day23(source: Source) extends Day {
-  val input = source.getLines.map(_ split " ").toVector
+  val input = source.getLines().map(_ split " ").toVector
 
   class Assembly[S](
     instructions: Vector[Array[String]],
@@ -44,9 +44,9 @@ class Day23(source: Source) extends Day {
   )
   val assembly = new Assembly(input, regUpdate, pcUpdate, stateUpdate)
 
-  override def answer1 = assembly.execute(0).dropWhile{x => x._2 >= 0 && x._2 < input.size}.map(_._3).next.toString
+  override def answer1 = assembly.execute(0).dropWhile{x => x._2 >= 0 && x._2 < input.size}.map(_._3).next().toString
 
-  val primes = Source.fromResource("2017/primes.txt").getLines.map(_.toInt).toSet
+  val primes = Source.fromResource("2017/primes.txt").getLines().map(_.toInt).toSet
 
   override def answer2 = (105700 to 122700 by 17).filterNot(primes contains _).size.toString
 }

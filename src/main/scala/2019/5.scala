@@ -4,7 +4,7 @@ import common.Numeric._
 import scala.io.Source
 
 class Day5(source: Source) extends Day {
-  val initialProgram = source.getLines.next.split(",").map(_.toInt).toVector
+  val initialProgram = source.getLines().next().split(",").map(_.toInt).toVector
 
   def getParameter(program: Vector[Int], pc: Int, param: Int): Int = {
     val mode = program(pc).digits.reverse.drop(1).toVector.applyOrElse[Int, Int](param, _ => 0)

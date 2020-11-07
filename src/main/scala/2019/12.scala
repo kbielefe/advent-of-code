@@ -54,9 +54,9 @@ class Day12 extends DayTask[Vector[Vector[Int]], Int, String] {
   }
 
   override def part1(input: Vector[Vector[Int]]) = Task{
-    val (pos1, vel1) = iterator(input(0)).drop(1000).next
-    val (pos2, vel2) = iterator(input(1)).drop(1000).next
-    val (pos3, vel3) = iterator(input(2)).drop(1000).next
+    val (pos1, vel1) = iterator(input(0)).drop(1000).next()
+    val (pos2, vel2) = iterator(input(1)).drop(1000).next()
+    val (pos3, vel3) = iterator(input(2)).drop(1000).next()
     totalEnergy(Vector(pos1, pos2, pos3), Vector(vel1, vel2, vel3))
   }
 
@@ -65,6 +65,6 @@ class Day12 extends DayTask[Vector[Vector[Int]], Int, String] {
     cx <- period(input(0)).start
     cy <- period(input(1)).start
     cz <- period(input(2)).start
-    result <- Task.gatherUnordered(Seq(cx.join, cy.join, cz.join))
+    result <- Task.parSequenceUnordered(Seq(cx.join, cy.join, cz.join))
   } yield s"LCM of ${result.mkString(" ")}"
 }

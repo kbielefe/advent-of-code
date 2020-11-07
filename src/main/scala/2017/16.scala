@@ -35,5 +35,5 @@ class Day16(source: Source) extends Day {
 
   def loopLength = iterations.drop(1).takeWhile(_ != initial).size + 1
 
-  override def answer2 = iterations.drop(1000000000 % loopLength).next.toString
+  override def answer2 = iterations.drop(1000000000 % loopLength).next().toString
 }

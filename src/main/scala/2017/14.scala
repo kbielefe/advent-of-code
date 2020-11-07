@@ -20,7 +20,7 @@ class Day14(source: Source) extends Day {
   def knotHash(raw: String): String = {
     val input = raw.map(_.toInt).toVector ++ Vector(17, 31, 73, 47, 23)
     val initial = (0, 0, new Circular((0 to max).toVector))
-    val sparseHash = Stream.iterate(initial)(processInput(input)).drop(64).head._3
+    val sparseHash = LazyList.iterate(initial)(processInput(input)).drop(64).head._3
     val denseHash = sparseHash.grouped(16).map(_.reduceLeft(_ ^ _))
     denseHash.map{x => f"${x.toBinaryString.toInt}%08d"}.mkString
   }

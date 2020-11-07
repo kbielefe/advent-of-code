@@ -52,7 +52,7 @@ class Day21(source: Source) extends Day {
     in.map(parseLine).flatMap{x => allTransforms(offset)(x._1).map((_, x._2))}.toMap
   }
 
-  val input = source.getLines.toList
+  val input = source.getLines().toList
   val (twoByTwoRaw, threeByThreeRaw) = input.partition(_(2) == '/')
   val twoByTwo = parseMap(1, twoByTwoRaw)
   val threeByThree = parseMap(2, threeByThreeRaw)
@@ -107,12 +107,12 @@ class Day21(source: Source) extends Day {
   def printGrids(drop: Int): Unit =
     iterations(initial).drop(drop).take(2).map{case (size, grid) => gridToString(size, grid)} foreach println
 
-  override def answer1 = iterations(initial).drop(5).next._2.size.toString
+  override def answer1 = iterations(initial).drop(5).next()._2.size.toString
 
   def countIterMap: Map[Grid, List[(Grid, Int)]] = {
     threeByThree.keySet.toList.map{grid =>
-      val targetGrids = splitGrid(9, iterations(grid).drop(3).next._2).toList
-      val counts = targetGrids.groupBy(identity).mapValues(_.size).toList
+      val targetGrids = splitGrid(9, iterations(grid).drop(3).next()._2).toList
+      val counts = targetGrids.groupBy(identity).view.mapValues(_.size).toList
       (grid, counts)
     }.toMap
   }
@@ -121,8 +121,8 @@ class Day21(source: Source) extends Day {
     val unsummed: List[(Grid, Int)]= counts.flatMap{case (grid, count) =>
       countIterMap(grid).map{case (k,v) => (k, v * count)}
     }
-    unsummed.groupBy(_._1).mapValues(_.map(_._2).sum).toList
+    unsummed.groupBy(_._1).view.mapValues(_.map(_._2).sum).toList
   }
 
-  override def answer2 = gridCounts.drop(6).next.map{case (grid, count) => grid.size * count}.sum.toString
+  override def answer2 = gridCounts.drop(6).next().map{case (grid, count) => grid.size * count}.sum.toString
 }

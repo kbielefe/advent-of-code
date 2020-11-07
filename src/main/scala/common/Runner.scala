@@ -64,7 +64,7 @@ object Runner extends TaskApp {
 
   def newTask[A, B, C](constructor: Constructor[_], input: Resource[Task, Source], part: Int) = for {
     puzzle <- Task{constructor.newInstance().asInstanceOf[DayTask[A, B, C]]}
-    parsed <- puzzle.input(Observable.fromIterator(input.map(_.getLines)))
+    parsed <- puzzle.input(Observable.fromIterator(input.map(_.getLines())))
     result <- if (part == 1) puzzle.part1(parsed).map(_.toString) else puzzle.part2(parsed).map(_.toString)
   } yield result
 

@@ -4,7 +4,7 @@ import common.Numeric.gcd
 import scala.io.Source
 
 class Day10(source: Source) extends Day {
-  val grid = source.getLines.zipWithIndex.flatMap{case (line, y) => line.zipWithIndex.filter(_._1 == '#').map{case (_, x) => (x, y)}}.toSet
+  val grid = source.getLines().zipWithIndex.flatMap{case (line, y) => line.zipWithIndex.filter(_._1 == '#').map{case (_, x) => (x, y)}}.toSet
 
   final def visibility(from: (Int, Int), grid: Set[(Int, Int)]): Int = {
     val (x, y) = from

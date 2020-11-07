@@ -23,7 +23,7 @@ class Day20(source: Source) extends Day {
     }
   }
 
-  val input = source.getLines.zipWithIndex.map{case (line, index) => Particle(line, index)}.toList
+  val input = source.getLines().zipWithIndex.map{case (line, index) => Particle(line, index)}.toList
 
   override def answer1 = input.minBy{_.a.map(abs).sum}.i.toString
 
@@ -31,5 +31,5 @@ class Day20(source: Source) extends Day {
     input.map(_.step).groupBy(_.p).filter(_._2.size == 1).values.flatten.toList
   }
 
-  override def answer2 = steps.drop(100).next.size.toString
+  override def answer2 = steps.drop(100).next().size.toString
 }

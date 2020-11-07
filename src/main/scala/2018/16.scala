@@ -26,7 +26,7 @@ class Day16(source: Source) extends Day {
     if (!lines.hasNext) {
       (tests.reverse, instructions.reverse)
     } else if (instructions.isEmpty) {
-      val line = lines.next
+      val line = lines.next()
       val instructionMatch = instructionRegex.findFirstMatchIn(line)
       val beforeMatch = beforeRegex.findFirstMatchIn(line)
       val afterMatch = afterRegex.findFirstMatchIn(line)
@@ -43,7 +43,7 @@ class Day16(source: Source) extends Day {
         parseInput(tests, List.empty, Vector.empty, Vector.empty)
       }
     } else {
-      val newInstruction = matchToVector(instructionRegex.findFirstMatchIn(lines.next))
+      val newInstruction = matchToVector(instructionRegex.findFirstMatchIn(lines.next()))
       parseInput(tests, newInstruction :: instructions, Vector.empty, Vector.empty)
     }
   }

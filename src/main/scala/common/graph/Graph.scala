@@ -2,7 +2,7 @@ package common.graph
 import monix.eval.Task
 import monix.reactive.Observable
 
-/** 
+/**
  * This package contains a graph implementation with an API that is better
  * suited than scala-graph to the types of problems encountered in Advent of
  * Code.

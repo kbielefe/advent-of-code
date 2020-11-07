@@ -7,9 +7,9 @@ case class LinkedCircular[A](protected val g: Map[A, (A, A)]) {
     if (count == 0) {
       from
     } else if (count < 0) {
-      Iterator.iterate(from){g(_)._1}.drop(-1 * count).next
+      Iterator.iterate(from){g(_)._1}.drop(-1 * count).next()
     } else {
-      Iterator.iterate(from){g(_)._2}.drop(count).next
+      Iterator.iterate(from){g(_)._2}.drop(count).next()
     }
   }
 

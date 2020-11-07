@@ -4,10 +4,10 @@ import scala.io.Source
 
 class Day12(source: Source) extends Day {
 
-  val input = source.getLines
+  val input = source.getLines()
   val initialStateRegex = """initial state: ([#.]+)""".r
 
-  val initialState: Set[Int] = input.next match {
+  val initialState: Set[Int] = input.next() match {
     case initialStateRegex(state) => toState(state)
   }
 
@@ -15,7 +15,7 @@ class Day12(source: Source) extends Day {
 
   def toState(s: String): Set[Int] = toBooleanList(s).zipWithIndex.filter{_._1}.map{_._2}.toSet
 
-  input.next // skip blank line
+  input.next() // skip blank line
 
   val ruleRegex = """([#.]+)\s*=>\s*([#.])""".r
   def toRule(s: String): (List[Boolean], Boolean) = s match {
@@ -36,10 +36,10 @@ class Day12(source: Source) extends Day {
 
   def generationIterator: Iterator[Set[Int]] = Iterator.iterate(initialState)(growGeneration)
 
-  override def answer1: String = answer(generationIterator.drop(20).next)
+  override def answer1: String = answer(generationIterator.drop(20).next())
   override def answer2: String = {
     val (stableTime, _, _) = Dynamic.detectCycle(generationIterator.map{x => x.map{_ - x.min}}).get
-    val stablePositions = generationIterator.drop(stableTime).next
+    val stablePositions = generationIterator.drop(stableTime).next()
     stablePositions.map{50000000000L - stableTime + _}.sum.toString
   }
 }

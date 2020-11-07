@@ -25,6 +25,7 @@ class Day11 extends DayTask[Map[Long, Long], Int, String] {
     case ('v', Right) => '<'
     case ('<', Left)  => 'v'
     case ('<', Right) => '^'
+    case _ => throw new Exception("Invalid turn")
   }
 
   def move(position: (Int, Int), direction: Char): (Int, Int) = (position, direction) match {
@@ -32,6 +33,7 @@ class Day11 extends DayTask[Map[Long, Long], Int, String] {
     case ((x, y), 'v') => (x, y - 1)
     case ((x, y), '<') => (x - 1, y)
     case ((x, y), '>') => (x + 1, y)
+    case _ => throw new Exception("Invalid move")
   }
 
   def robot(

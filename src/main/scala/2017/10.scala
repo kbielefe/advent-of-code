@@ -25,7 +25,7 @@ class Day10(source: Source) extends Day {
 
   override def answer1 = (processed(0) * processed(1)).toString
 
-  val sparseHash = Stream.iterate(initial)(processInput(input2)).drop(64).head._3
+  val sparseHash = LazyList.iterate(initial)(processInput(input2)).drop(64).head._3
   val denseHash = sparseHash.grouped(16).map(_.reduceLeft(_ ^ _))
 
   override def answer2 = denseHash.map{x => f"${x}%02x"}.mkString("")

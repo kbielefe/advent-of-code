@@ -22,11 +22,11 @@ case class CircularZipper[A](left: List[A] = List.empty[A], right: List[A] = Lis
   }
 
   def moveRightN(n: Int): CircularZipper[A] = {
-    Iterator.iterate(this){_.moveRight}.drop(n).next
+    Iterator.iterate(this){_.moveRight}.drop(n).next()
   }
 
   def moveLeftN(n: Int): CircularZipper[A] = {
-    Iterator.iterate(this){_.moveLeft}.drop(n).next
+    Iterator.iterate(this){_.moveLeft}.drop(n).next()
   }
 
   private def ensureCurrentOnLeft(): CircularZipper[A] = {

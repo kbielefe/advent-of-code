@@ -17,7 +17,7 @@ class Day14(source: Source) extends Day {
 
     def patternPosition(pattern: String): Option[Int] = {
       val patternSize = pattern.size
-      def existsAtOffset(offset: Int) = 
+      def existsAtOffset(offset: Int) =
         pattern.iterator.zipWithIndex.forall{case (p, i) => p.asDigit == getScore(size - patternSize + i - offset)}
 
       if (existsAtOffset(0)) {

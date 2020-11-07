@@ -69,12 +69,12 @@ class Day15(source: Source) extends Day {
     def neighbors(p: (Int, Int)): Queue[(Int, Int)] = adjacentOpenSquares(grid, List(p))
     val search = Grid.breadthFirstTraverse[Coeval, (Int, Int)]((x, y), neighbors)
     val dropNonTargets = search.dropWhile{x => !(targets contains x._3)}
-    val depth: Option[Int] = dropNonTargets.map{_._2}.headOptionL.value
+    val depth: Option[Int] = dropNonTargets.map{_._2}.headOptionL.value()
     if (depth.isDefined) {
       val targetsAtSameDepth = dropNonTargets
         .takeWhile{_._2 == depth.get}
         .toListL
-        .value
+        .value()
         .sortBy{case (_, _, (tx, ty)) => (ty, tx)}
         .filter{case (_, _, (tx, ty)) => targets contains (tx, ty)}
 
@@ -134,7 +134,7 @@ class Day15(source: Source) extends Day {
 
   def battle(grid: Grid[Cell], extraAttack: Int = 0): (Grid[Cell], Int) = {
     val turns: Iterant[Coeval, (Grid[Cell], Boolean, Int)] = grid.turns[Coeval, Boolean, (Int, Int, UUID)](turn(extraAttack), cellOrder)
-    val (finalGrid, _, rounds) = turns.dropWhile(!_._2).drop(1).headOptionL.value.get
+    val (finalGrid, _, rounds) = turns.dropWhile(!_._2).drop(1).headOptionL.value().get
     (finalGrid, rounds)
   }
 

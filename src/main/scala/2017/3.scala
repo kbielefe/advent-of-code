@@ -9,9 +9,9 @@ class Day3(source: Source) extends Day {
   val offset = Map('n' -> (0,1), 'e' -> (1,0), 's' -> (0,-1), 'w' -> (-1,0))
   val nextDir = Map('n' -> 'w', 'w' -> 's', 's' -> 'e', 'e' -> 'n')
 
-  def sideLengths = Stream.from(1).flatMap{x => Stream(x,x)}
+  def sideLengths = LazyList.from(1).flatMap{x => LazyList(x,x)}
 
-  def turns = sideLengths.flatMap{length => Stream.fill(length-1)(false) ++ Stream(true)}
+  def turns = sideLengths.flatMap{length => LazyList.fill(length-1)(false) ++ LazyList(true)}
 
   def dirs = turns.scanLeft('e'){case (dir, turn) => if (turn) nextDir(dir) else dir}
 

@@ -12,7 +12,7 @@ object Intcode {
 class Intcode(id: String, input: Task[Long], output: Long => Task[Unit], logger: (=> String) => Task[Unit] = Intcode.noLogger) {
   type Memory = Map[Long, Long]
 
-  def this(id: String, inputVar: MVar[Task, Long], outputVar: MVar[Task, Long]) {
+  def this(id: String, inputVar: MVar[Task, Long], outputVar: MVar[Task, Long]) = {
     this(id, inputVar.take, outputVar.put _)
   }
 

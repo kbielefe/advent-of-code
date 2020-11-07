@@ -42,12 +42,12 @@ class Grid[Cell](private val zorders: Map[(Int, Int), List[Cell]]) {
   // and the next layer down for elements that are deleted
   def filter(p: (Cell) => Boolean): Grid[Cell] = {
     val (keepZorders, deleteZorders) = zorders.partition(x => p(x._2.head))
-    val toKeep = keepZorders.mapValues{_.head :: Nil}
+    val toKeep = keepZorders.view.mapValues{_.head :: Nil}
     val (toTail, toDelete) = deleteZorders.partition{_._2.size > 1}
-    val tailed = toTail.mapValues{_.tail}
+    val tailed = toTail.view.mapValues{_.tail}
     val deleted = toDelete.keySet
-    val newZorders = toKeep -- deleted ++ tailed
-    new Grid(newZorders)
+    val newZorders = toKeep.toMap -- deleted ++ tailed
+    new Grid(newZorders.toMap)
   }
 
   def readingOrder(p: (Cell) => Boolean = _ => true): List[(Int, Int)] = {
@@ -116,7 +116,7 @@ class Grid[Cell](private val zorders: Map[(Int, Int), List[Cell]]) {
         val numbers = (left to right).map{_.toString}.map{rightJustify(_, headerHeight).apply(n)}.mkString
         margin + numbers
       }
-      val header: Iterator[String] = (0 until headerHeight).toIterator map headerLine
+      val header: Iterator[String] = (0 until headerHeight).iterator map headerLine
       def getChar(x: Int, y: Int) = getCell(x, y) map {cellToChar(_)} getOrElse empty
       def getLine(y: Int) = rightJustify(y.toString, marginWidth) + (left to right).map(getChar(_, y)).mkString
       header ++ (top to bottom).iterator.map(getLine)
@@ -132,7 +132,7 @@ object Grid {
     source: Source,
     under:  Char => Option[Char],
     toCell: Char => C): Grid[C] = {
-      val (_, zorders) = source.getLines.foldLeft((top, Map.empty[(Int, Int), List[C]])){case ((y, zorders), line) =>
+      val (_, zorders) = source.getLines().foldLeft((top, Map.empty[(Int, Int), List[C]])){case ((y, zorders), line) =>
         (y + 1, zorders ++ parseRow(y, left, empty, line, under, toCell))
       }
       new Grid(zorders)

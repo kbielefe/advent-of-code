@@ -10,7 +10,7 @@ class Day7(source: Source) extends Day {
     def r = new Regex(sc.parts.mkString, sc.parts.tail.map(_ => "x"): _*)
   }
 
-  val parsedLines = input.getLines.map{
+  val parsedLines = input.getLines().map{
     case r"""(\w+)${name}\s+\((\d+)${weight}\)"""                       => (name, weight, Array.empty[String])
     case r"""(\w+)${name}\s+\((\d+)${weight}\)\s+->\s*(.*)${parents}""" => (name, weight, parents.split(", "))
   }.toList
@@ -29,7 +29,7 @@ class Day7(source: Source) extends Day {
   }
 
   def weightFreqs(tower: String): Map[Int, Int] =
-    subTowerWeights(tower).groupBy(identity).mapValues(_.size)
+    subTowerWeights(tower).groupBy(identity).view.mapValues(_.size).toMap
 
   def unbalancedWeight(tower: String): Int = weightFreqs(tower).minBy{_._2}._1
   def   balancedWeight(tower: String): Int = weightFreqs(tower).maxBy{_._2}._1
@@ -45,7 +45,7 @@ class Day7(source: Source) extends Day {
 
   val unbalancedOffset = balancedWeight(answer1) - unbalancedWeight(answer1)
 
-  def unbalancedPath = Stream.iterate(answer1)(unbalancedSubTower)
+  def unbalancedPath = LazyList.iterate(answer1)(unbalancedSubTower)
 
   val unbalancedTower = unbalancedPath.dropWhile{!areSubTowersBalanced(_)}.head
 

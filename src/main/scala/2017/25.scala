@@ -28,6 +28,6 @@ class Day25(source: Source) extends Day {
     (newTape, newState, newPosition)
   }
 
-  override def answer1 = iterations.drop(1 + steps).next._1.size.toString
+  override def answer1 = iterations.drop(1 + steps).next()._1.size.toString
   override def answer2 = "free"
 }

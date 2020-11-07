@@ -147,7 +147,7 @@ class Day13(source: Source) extends Day {
     cartGrid.turns[Coeval, Option[(Int, Int)], (Int, Int)](turn(trackGrid), _.readingOrder(isCart))
       .map{_._2}
       .findL{_.isDefined}
-      .value.get.get
+      .value().get.get
   }
 
   def lastManStanding: (Int, Int) = {
@@ -156,7 +156,7 @@ class Day13(source: Source) extends Day {
       .dropWhile{_.size > 1}
       .drop(1)
       .headOptionL
-      .value.get.getAllCoords
+      .value().get.getAllCoords
 
     coords.head
   }

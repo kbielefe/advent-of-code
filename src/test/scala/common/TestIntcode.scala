@@ -33,7 +33,7 @@ class TestIntcode extends UnitSpec {
           _    <- code.cancel
         } yield ()
 
-        interpreter.runSyncUnsafe(5 seconds)
+        interpreter.runSyncUnsafe(5.seconds)
         assert(true)
       }
     }

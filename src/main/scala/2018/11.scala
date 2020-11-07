@@ -38,7 +38,7 @@ class Day11(source: Source) extends Day {
       x    <- Iterant[Task].range(1, 302 - size)
       y    <- Iterant[Task].range(1, 302 - size)
     } yield gridPower(x, y, size)
-    val buffered = gridPowers.bufferTumbling(8).mapEval(b => Task.gather(b map {x => Task(x)}))
+    val buffered = gridPowers.bufferTumbling(8).mapEval(b => Task.parSequence(b map {x => Task(x)}))
     val max = gridPowers.maxByL{_._2}.map{_.get._1.toString}
     max.runSyncUnsafe()
   }

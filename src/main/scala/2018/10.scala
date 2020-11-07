@@ -43,7 +43,7 @@ class Day10(source: Source) extends Day {
     points map {p => Point(p.x + p.vx * seconds, p.y + p.vy * seconds, p.vx, p.vy)}
   }
 
-  val points = source.getLines.toList map parsePoint
+  val points = source.getLines().toList map parsePoint
 
   def minDistanceSeconds(points: List[Point]): Iterator[Double] = {
     points.combinations(2).map{case List(a, b) => a.secondsToMinDistanceTo(b)}

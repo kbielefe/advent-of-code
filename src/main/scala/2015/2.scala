@@ -3,7 +3,7 @@ import common.Day
 import scala.io.Source
 
 class Day2(source: Source) extends Day {
-  def input = source.getLines.map(_.split("x").map(_.toInt).sorted)
+  def input = source.getLines().map(_.split("x").map(_.toInt).sorted)
 
   def paperSizes = input.map{case Array(x, y, z) => 3 * x * y + 2 * x * z + 2 * y * z}
 

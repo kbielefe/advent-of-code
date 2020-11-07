@@ -15,7 +15,7 @@ class Day6(source: Source) extends Day {
     }
   }
 
-  val redistributions = Stream.iterate(input)(redistribute)
+  val redistributions = LazyList.iterate(input)(redistribute)
   val cumulative = redistributions.scanLeft(Set.empty[Vector[Int]])(_ + _)
   val zipped = redistributions zip cumulative
   val results = zipped takeWhile {case (x, seen) => !seen.contains(x)}

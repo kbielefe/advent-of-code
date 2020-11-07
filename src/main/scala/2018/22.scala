@@ -102,12 +102,12 @@ class Day22 extends DayTask[(Int, (Int, Int)), Int, Int] {
       case Wet    => 'W'
       case Narrow => 'N'
     }
-    val mapWithChars = regionsMap.mapValues{_ match {
+    val mapWithChars = regionsMap.view.mapValues{_ match {
       case Rocky  => '.'
       case Wet    => '='
       case Narrow => '|'
     }}
-    val mapWithTarget = mapWithChars.updated((targetX, targetY), targetChar)
+    val mapWithTarget = mapWithChars.toMap.updated((targetX, targetY), targetChar)
     val map = (0 to maxY).map{y =>
       (0 to maxX).map{x => mapWithTarget((x, y))
       }.mkString

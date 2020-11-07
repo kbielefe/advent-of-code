@@ -3,7 +3,7 @@ import common.{Day, Dynamic}
 import scala.io.Source
 
 class Day1(source: Source) extends Day {
-  val input = source.getLines.map(_.toInt).toList
+  val input = source.getLines().map(_.toInt).toList
   def repeated = Iterator.continually(input).flatten.scanLeft(0){_ + _}
 
   override def answer1 = input.sum.toString

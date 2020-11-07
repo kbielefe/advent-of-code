@@ -6,7 +6,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable.Queue
 
 class Day18(source: Source) extends Day {
-  val input = source.getLines.map(_ split " ").toVector
+  val input = source.getLines().map(_ split " ").toVector
 
   class Assembly[S](
     instructions: Vector[Array[String]],
@@ -47,7 +47,7 @@ class Day18(source: Source) extends Day {
   )
   val assembly = new Assembly(input, regUpdate, pcUpdate, stateUpdate)
 
-  override def answer1 = assembly.execute(-1).dropWhile{x => input(x._2)(0) != "rcv"}.map(_._3).next.toString
+  override def answer1 = assembly.execute(-1).dropWhile{x => input(x._2)(0) != "rcv"}.map(_._3).next().toString
 
   def getArg(registers: Map[String, Long])(arg: String): Long =
     Try(arg.toLong).getOrElse(registers.getOrElse(arg, 0))

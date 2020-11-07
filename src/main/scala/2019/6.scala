@@ -4,12 +4,12 @@ import scala.io.Source
 import scala.annotation.tailrec
 
 class Day6(source: Source) extends Day {
-  val orbits = source.getLines.map{line =>
+  val orbits = source.getLines().map{line =>
     val array = line.split(')')
     (array(1), array(0))
   }.toMap
 
-  val orbitsByParent = orbits.groupBy(_._2).mapValues(_.map(_._1))
+  val orbitsByParent = orbits.groupBy(_._2).view.mapValues(_.map(_._1))
 
   def totalDepth(node: String, depth: Int): Int = {
     val children = orbitsByParent.getOrElse(node, List.empty)

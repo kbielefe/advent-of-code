@@ -10,15 +10,15 @@ import monix.eval.Task
 
 object GraphUtils {
   // Assumes a single successor for every node within n
-  def move[N, E[X] <: EdgeLikeIn[X]](g: Graph[N,E], node: N, n: Int): N = {
+  def move[N, E[+X] <: EdgeLikeIn[X]](g: Graph[N,E], node: N, n: Int): N = {
     if (n == 0)
       node
     else if (n > 0) {
       val path = Iterator.iterate(g get node){node => Try(node.diSuccessors.head) getOrElse node}
-      path.drop(n).next
+      path.drop(n).next()
     } else {
       val path = Iterator.iterate(g get node){node => Try(node.diPredecessors.head) getOrElse node}
-      path.drop(-1 * n).next
+      path.drop(-1 * n).next()
     }
   }
 
@@ -64,6 +64,4 @@ object GraphUtils {
 
     edges.toListL.map{edges => Graph(edges:_*)}
   }
-
-  def allTopoSorts[N, E[X] <: EdgeLikeIn[X]](g: Graph[N,E]): Observable[Observable[N]] = ???
 }
