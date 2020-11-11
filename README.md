@@ -1,15 +1,11 @@
 # advent-of-code
 For sharing my adventofcode.com solutions
 
-These are designed to be run primarily from the sbt console.
+The runner has been completely revamped for 2020 using Scala.js! From sbt, run
+`~fastOptJS` and open the `index.html` file in a web browser. I am hoping to
+add visualizations and debugging information in an easier to digest form than printlns.
 
-Type `run 2018 1` to run a puzzle.
-
-Type `test` to run unit tests.
-
-Type `testOnly advent2018.TestDay1` to just run tests for that day.
-
-Type `~ testOnly advent2018.TestDay1` to automatically rerun tests every time a file changes.
+Run `npm install source-map-support` to get stack traces resolved.
 
 Add the following as the url for a bookmark to view solving times for each star on a private leaderboard:
 
