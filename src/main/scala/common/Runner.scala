@@ -4,18 +4,38 @@ import cats.effect._
 import cats.implicits._
 import monix.eval._
 import monix.reactive.Observable
+import monix.execution.Scheduler.Implicits.global
 import org.scalajs.dom
 import org.scalajs.dom.document
 import org.scalajs.dom.ext._
 
-class Day(val year: Int, val day: Int) {
+abstract class Day[I, A, B](val year: Int, val day: Int) {
+  def input(string: String): I
+  def part1(input: I): Task[A]
+  def part2(input: I): Task[B]
+}
+
+abstract class IntsDay[A, B](year: Int, day: Int) extends Day[Observable[Int], A, B](year, day) {
+  override def input(string: String): Observable[Int] =
+    Observable.fromIterator(Task(string.linesIterator)).filter(!_.isEmpty).map(_.toInt)
+}
+
+package advent2019 {
+  object Day1 extends IntsDay[Int, Int](2019, 1) {
+    private def compound(in: Int): Task[Int] =
+      Observable.unfold(in){mass =>
+        val fuel = mass / 3 - 2
+        if (fuel > 0) Some(fuel -> fuel) else None
+      }.sumL
+
+    override def part1(input: Observable[Int]): Task[Int] = input.map(_ / 3 - 2).sumL
+    override def part2(input: Observable[Int]): Task[Int] = input.mapEval(compound).sumL
+  }
 }
 
 object Runner extends TaskApp {
   private val days = List(
-    new Day(2019, 1),
-    new Day(2019, 2),
-    new Day(2020, 1)
+    advent2019.Day1
   )
 
   def run(args: List[String]): Task[ExitCode] =
@@ -26,6 +46,10 @@ object Runner extends TaskApp {
     val yearSelect = document.createElement("select").asInstanceOf[dom.html.Select]
     val partSelect = document.createElement("select").asInstanceOf[dom.html.Select]
     val runButton = document.createElement("button").asInstanceOf[dom.html.Button]
+    val input = document.createElement("textarea").asInstanceOf[dom.html.TextArea]
+    val answer = document.createElement("input").asInstanceOf[dom.html.Input]
+    val time = document.createTextNode("")
+    answer.setAttribute("type", "text")
     val years = days.map(_.year).toSet.toList.sorted
     years.foreach{year =>
       val option = document.createElement("option")
@@ -43,8 +67,22 @@ object Runner extends TaskApp {
       }
       daySelect.selectedIndex = daySelect.length - 1
       partSelect.selectedIndex = 0
+      time.textContent = ""
     }
-    yearSelect.onchange = { (e: dom.Event) => setYear}
+    def setInput: Unit = {
+      val xhr = new dom.XMLHttpRequest()
+      xhr.open("GET", s"input/${yearSelect.value}/${daySelect.value}.txt")
+      xhr.onload = { (e: dom.Event) =>
+        if (xhr.status == 200) {
+          input.textContent = xhr.responseText
+        } else {
+          input.textContent = s"Not available"
+        }
+      }
+      xhr.send()
+    }
+    yearSelect.onchange = { (e: dom.Event) => setYear; setInput}
+    daySelect.onchange = { (e: dom.Event) => setInput}
     yearSelect.selectedIndex = yearSelect.length - 1
     List(1, 2).foreach{part =>
       val option = document.createElement("option")
@@ -53,9 +91,22 @@ object Runner extends TaskApp {
     }
     runButton.textContent = "Run"
     runButton.onclick = { (e: dom.Event) =>
-      println(s"Running ${yearSelect.value} ${daySelect.value} ${partSelect.value}")
+      val day = days.find(day => day.year == yearSelect.value.toInt && day.day == daySelect.value.toInt)
+      val processedInput = day.get.input(input.value)
+      if (partSelect.value == "1") {
+        day.get.part1(processedInput).timed.foreach{result =>
+          answer.value = result._2.toString
+          time.textContent = s"${result._1.toMillis} ms"
+        }
+      } else {
+        day.get.part2(processedInput).timed.foreach{result =>
+          answer.value = result._2.toString
+          time.textContent = s"${result._1.toMillis} ms"
+        }
+      }
     }
     setYear
+    setInput
     document.body.appendChild(document.createTextNode(" Year: "))
     document.body.appendChild(yearSelect)
     document.body.appendChild(document.createTextNode(" Day: "))
@@ -64,21 +115,11 @@ object Runner extends TaskApp {
     document.body.appendChild(partSelect)
     document.body.appendChild(document.createTextNode(" "))
     document.body.appendChild(runButton)
-  }
-
-  private def inputLines(year: Int, day: Int): Observable[String] =
-    Observable.fromIterator(input(year, day).map(_.linesIterator))
-
-  private def input(year: Int, day: Int): Task[String] = Task.async{callback =>
-    val xhr = new dom.XMLHttpRequest()
-    xhr.open("GET", s"input/$year/$day.txt")
-    xhr.onload = { (e: dom.Event) =>
-      if (xhr.status == 200) {
-        callback.onSuccess(xhr.responseText)
-      } else {
-        callback.onError(new Exception(s"Received status ${xhr.status} retrieving input for $year/$day"))
-      }
-    }
-    xhr.send()
+    document.body.appendChild(document.createTextNode(" "))
+    document.body.appendChild(answer)
+    document.body.appendChild(document.createTextNode(" "))
+    document.body.appendChild(time)
+    document.body.appendChild(document.createElement("br"))
+    document.body.appendChild(input)
   }
 }
