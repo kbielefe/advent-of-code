@@ -5,11 +5,7 @@ The runner has been completely revamped for 2020 using Scala.js! From sbt, run
 `~fastOptJS`. I am hoping to add visualizations and debugging information in an
 easier to digest form than printlns.
 
-Run the following to start a local web server:
-
-```
-docker run --name nginx -u $(id -u):$(id -g) -p 80:8080 -v $(pwd)/nginx.conf:/etc/nginx/nginx.conf -v $(pwd):/usr/share/nginx/html:ro -d nginx
-```
+Run `./start-dev-server.sh` start a local web server:
 
 Run `npm install source-map-support` to get stack traces resolved.
 
