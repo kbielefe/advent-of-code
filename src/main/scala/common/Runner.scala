@@ -46,6 +46,7 @@ object Runner extends TaskApp {
     val yearSelect = document.createElement("select").asInstanceOf[dom.html.Select]
     val partSelect = document.createElement("select").asInstanceOf[dom.html.Select]
     val runButton = document.createElement("button").asInstanceOf[dom.html.Button]
+    val copyButton = document.createElement("button").asInstanceOf[dom.html.Button]
     val input = document.createElement("textarea").asInstanceOf[dom.html.TextArea]
     val answer = document.createElement("input").asInstanceOf[dom.html.Input]
     val time = document.createTextNode("")
@@ -105,6 +106,11 @@ object Runner extends TaskApp {
         }
       }
     }
+    copyButton.textContent = "Copy"
+    copyButton.onclick = { (e: dom.Event) =>
+      answer.select()
+      document.execCommand("copy")
+    }
     setYear
     setInput
     document.body.appendChild(document.createTextNode(" Year: "))
@@ -117,6 +123,8 @@ object Runner extends TaskApp {
     document.body.appendChild(runButton)
     document.body.appendChild(document.createTextNode(" "))
     document.body.appendChild(answer)
+    document.body.appendChild(document.createTextNode(" "))
+    document.body.appendChild(copyButton)
     document.body.appendChild(document.createTextNode(" "))
     document.body.appendChild(time)
     document.body.appendChild(document.createElement("br"))
