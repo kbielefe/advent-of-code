@@ -49,7 +49,11 @@ object Runner extends TaskApp {
     val copyButton = document.createElement("button").asInstanceOf[dom.html.Button]
     val input = document.createElement("textarea").asInstanceOf[dom.html.TextArea]
     val answer = document.createElement("input").asInstanceOf[dom.html.Input]
+    val visualization = document.createElement("div").asInstanceOf[dom.html.Div]
     val time = document.createTextNode("")
+    input.style.cssFloat = "left"
+    input.style.width = "200px"
+    input.style.height = "350px"
     answer.setAttribute("type", "text")
     val years = days.map(_.year).toSet.toList.sorted
     years.foreach{year =>
@@ -69,6 +73,7 @@ object Runner extends TaskApp {
       daySelect.selectedIndex = daySelect.length - 1
       partSelect.selectedIndex = 0
       time.textContent = ""
+      visualization.innerHTML = ""
     }
     def setInput: Unit = {
       val xhr = new dom.XMLHttpRequest()
@@ -92,19 +97,23 @@ object Runner extends TaskApp {
     }
     runButton.textContent = "Run"
     runButton.onclick = { (e: dom.Event) =>
+      visualization.innerHTML = ""
       val day = days.find(day => day.year == yearSelect.value.toInt && day.day == daySelect.value.toInt)
       val processedInput = day.get.input(input.value)
-      if (partSelect.value == "1") {
-        day.get.part1(processedInput).timed.foreach{result =>
-          answer.value = result._2.toString
-          time.textContent = s"${result._1.toMillis} ms"
-        }
-      } else {
-        day.get.part2(processedInput).timed.foreach{result =>
-          answer.value = result._2.toString
-          time.textContent = s"${result._1.toMillis} ms"
-        }
+      val part = if (partSelect.value == "1") day.get.part1 _ else day.get.part2 _
+      part(processedInput).timed.foreachL{result =>
+        answer.value = result._2.toString
+        time.textContent = s"${result._1.toMillis} ms"
+      }.onErrorHandle{e =>
+        val os = new java.io.ByteArrayOutputStream()
+        val ps = new java.io.PrintStream(os)
+        e.printStackTrace(ps)
+        ps.flush()
+        visualization.innerHTML = s"<pre>${os.toString}</pre>"
+        ps.close()
+        os.close()
       }
+      .runToFuture
     }
     copyButton.textContent = "Copy"
     copyButton.onclick = { (e: dom.Event) =>
@@ -129,5 +138,6 @@ object Runner extends TaskApp {
     document.body.appendChild(time)
     document.body.appendChild(document.createElement("br"))
     document.body.appendChild(input)
+    document.body.appendChild(visualization)
   }
 }
