@@ -2,59 +2,106 @@ package common
 
 import cats.effect._
 import cats.implicits._
+import colibri.ext.monix._
 import monix.eval._
 import monix.execution.Scheduler.Implicits.global
+import monix.reactive.Observable
 import org.scalajs.dom
 import org.scalajs.dom.document
 import org.scalajs.dom.ext._
 import outwatch._
 import outwatch.dsl._
+import outwatch.reactive.handlers.monix._
+import scala.concurrent.duration._
 
 object Runner extends TaskApp {
   private val days = List(
-    advent2019.Day1
+    advent2019.Day1,
+    advent2020.Day1,
+    advent2020.Day2
   )
 
-  def run(args: List[String]): Task[ExitCode] = {
-    val hello = h1("Hello World")
-    OutWatch.renderInto[Task]("#outwatch", hello).as(ExitCode.Success)
-  }
+  private val years = days.map(_.year.toString).toSet.toList.sorted
+  private val daysForYear = days.groupBy(_.year).view.map{case (year, days) => (year.toString, days.map(_.day.toString))}.toMap
+  private val daysFromYearAndDay = days.map(day => ((day.year.toString, day.day.toString), day)).toMap
 
-  /*
-    <label for="year">Year:</label>
-    <select id="year"></select>
-    <label for="day">Day:</label>
-    <select id="day"></select>
-    <label for="part">Part:</label>
-    <select id="part">
-      <option>1</option>
-      <option>2</option>
-    </select>
-    <button id="run">Run</button>
-    <input type="text" id="answer" readonly>
-    <button id="copy">Copy</button>
-    <span id="time"></span>
-    <br>
-    <textarea id="input"></textarea>
-    */
+  def run(args: List[String]): Task[ExitCode] = for {
+    outwatch <- outwatchSync.to[Task]
+    _        <- OutWatch.renderReplace[Task]("#outwatch", outwatch)
+  } yield ExitCode.Success
 
-  private def createUi: Unit = {
-    val daySelect = document.getElementById("day").asInstanceOf[dom.html.Select]
-    val yearSelect = document.getElementById("year").asInstanceOf[dom.html.Select]
-    val runButton = document.getElementById("run").asInstanceOf[dom.html.Button]
-    val copyButton = document.getElementById("copy").asInstanceOf[dom.html.Button]
+  private val outwatchSync = for {
+    year   <- Handler.create[String](years.last.toString)
+    day    <- Handler.create[String](daysForYear(years.last).last.toString)
+    part   <- Handler.create[String]("1")
+    answer <- Handler.create[String]("")
+  } yield div(
+    label(`for` := "year", " Year: "),
+    select(
+      idAttr := "year",
+      selectLast(years),
+      onChange.value --> year
+    ),
+    label(`for` := "day", " Day: "),
+    select(
+      idAttr := "day",
+      year.map(y => selectLast(daysForYear(y))),
+      onChange.value --> day,
+      emitter(year.map(daysForYear(_).last)) --> day
+    ),
+    label(`for` := "part", " Part: "),
+    select(
+      idAttr := "part",
+      option("1", selectOnChange(Observable.combineLatest2(year, day))),
+      option("2"),
+      onChange.value --> part,
+      emitter(year.map(_ => "1")) --> part,
+      emitter(day.map(_ => "1")) --> part
+    ),
+    " ",
+    button("Run", runPuzzle(year, day, part, answer)),
+    " ",
+    input(`type` := "text", readOnly, value <-- answer),
+    " ",
+    button("Copy", copyAnswer(answer)),
+    // time
+    br(),
+    textArea(idAttr := "input", getInput(year, day))
+    // visualization
+  )
 
-    populateSelect("year", days.map(_.year.toString).toSet.toList.sorted)
+  private def runPuzzle(year: Handler[String], day: Handler[String], part: Handler[String], answer: Handler[String]): VDomModifier =
+    onClick
+      .withLatest(year)
+      .withLatest(day)
+      .withLatest(part)
+      .foreach{case (((_, year), day), part) => println(s"Running $year/$day/$part")}
 
-    yearSelect.onchange = { (e: dom.Event) => setYear; setInput}
-    daySelect.onchange  = { (e: dom.Event) => setInput}
+  private def copyAnswer(answer: Handler[String]): VDomModifier =
+    onClick.withLatest(answer).foreach{case (_, toCopy) => dom.window.navigator.clipboard.writeText(toCopy)}
 
-    runButton.onclick  = runClicked
-    copyButton.onclick = copyClicked
+  private def getInput(year: Observable[String], day: Observable[String]): Observable[String] =
+    Observable
+      .combineLatest2(year, day)
+      .debounce(100.millis)
+      .mapEval{case (year, day) => Task.async{callback =>
+        val xhr = new dom.XMLHttpRequest()
+        xhr.open("GET", s"input/$year/$day.txt")
+        xhr.onload = { (e: dom.Event) =>
+          if (xhr.status == 200) {
+            callback.onSuccess(xhr.responseText)
+          } else {
+            callback.onSuccess(s"Error retrieving input: ${xhr.status} ${xhr.statusText}")
+          }
+        }
+        xhr.send()
+      }}
 
-    setYear
-    setInput
-  }
+  private def selectOnChange[A](handler: Observable[A]): VDomModifier =
+    selected <-- handler.map(_ => true)
+
+  private def selectLast(options: List[String]): List[VNode] =
+    options.init.map(option(_)) :+ option(options.last, selected)
 
   private def exceptionString(e: Throwable): String = {
     val os = new java.io.ByteArrayOutputStream()
@@ -65,51 +112,6 @@ object Runner extends TaskApp {
     ps.close()
     os.close()
     result
-  }
-
-  private def populateSelect(id: String, values: List[String]): Unit = {
-    val element = document.getElementById(id).asInstanceOf[dom.html.Select]
-    element.options.length = 0
-    values.foreach{value =>
-      val option = document.createElement("option")
-      option.textContent = value
-      element.appendChild(option)
-    }
-    element.selectedIndex = element.length - 1
-  }
-
-  private def setInput: Unit = {
-    val daySelect = document.getElementById("day").asInstanceOf[dom.html.Select]
-    val yearSelect = document.getElementById("year").asInstanceOf[dom.html.Select]
-    val input = document.getElementById("input").asInstanceOf[dom.html.TextArea]
-
-    val xhr = new dom.XMLHttpRequest()
-    xhr.open("GET", s"input/${yearSelect.value}/${daySelect.value}.txt")
-    xhr.onload = { (e: dom.Event) =>
-      if (xhr.status == 200) {
-        input.textContent = xhr.responseText
-      } else {
-        input.textContent = s"Not available"
-      }
-    }
-    xhr.send()
-  }
-
-  private def setYear: Unit = {
-    val partSelect = document.getElementById("part").asInstanceOf[dom.html.Select]
-    val yearSelect = document.getElementById("year").asInstanceOf[dom.html.Select]
-    val time = document.getElementById("time")
-    val visualization = document.getElementById("visualization").asInstanceOf[dom.html.Div]
-    populateSelect("day", days.filter(_.year == yearSelect.value.toInt).map(_.day.toString).toList.sorted)
-    partSelect.selectedIndex = 0
-    time.textContent = ""
-    visualization.innerHTML = ""
-  }
-
-  private def copyClicked(e: dom.Event): Unit = {
-    val answer = document.getElementById("answer").asInstanceOf[dom.html.Input]
-    answer.select()
-    document.execCommand("copy")
   }
 
   private def runClicked(e: dom.Event): Unit = {

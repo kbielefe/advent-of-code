@@ -8,6 +8,7 @@ resolvers += "jitpack" at "https://jitpack.io"
 libraryDependencies ++= Seq(
   "org.scalactic" %%% "scalactic" % "3.2.2",
   "org.scalatest" %%% "scalatest" % "3.2.2" % "test",
+  "org.scala-js"  %%% "scalajs-dom" % "1.1.0",
   "com.github.outwatch.outwatch" %%% "outwatch"       % outwatchVersion,
   "com.github.outwatch.outwatch" %%% "outwatch-monix" % outwatchVersion
 )
