@@ -7,14 +7,36 @@ import monix.execution.Scheduler.Implicits.global
 import org.scalajs.dom
 import org.scalajs.dom.document
 import org.scalajs.dom.ext._
+import outwatch._
+import outwatch.dsl._
 
 object Runner extends TaskApp {
   private val days = List(
     advent2019.Day1
   )
 
-  def run(args: List[String]): Task[ExitCode] =
-    Task(createUi).as(ExitCode.Success)
+  def run(args: List[String]): Task[ExitCode] = {
+    val hello = h1("Hello World")
+    OutWatch.renderInto[Task]("#outwatch", hello).as(ExitCode.Success)
+  }
+
+  /*
+    <label for="year">Year:</label>
+    <select id="year"></select>
+    <label for="day">Day:</label>
+    <select id="day"></select>
+    <label for="part">Part:</label>
+    <select id="part">
+      <option>1</option>
+      <option>2</option>
+    </select>
+    <button id="run">Run</button>
+    <input type="text" id="answer" readonly>
+    <button id="copy">Copy</button>
+    <span id="time"></span>
+    <br>
+    <textarea id="input"></textarea>
+    */
 
   private def createUi: Unit = {
     val daySelect = document.getElementById("day").asInstanceOf[dom.html.Select]

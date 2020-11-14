@@ -2,7 +2,7 @@
 For sharing my adventofcode.com solutions
 
 The runner has been completely revamped for 2020 using Scala.js! From sbt, run
-`~fastOptJS`. I am hoping to add visualizations and debugging information in an
+`~fastOptJS::webpack`. I am hoping to add visualizations and debugging information in an
 easier to digest form than printlns.
 
 Run `./start-dev-server.sh` start a local web server:
