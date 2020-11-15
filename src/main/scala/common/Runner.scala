@@ -31,22 +31,29 @@ object Runner extends TaskApp {
   } yield ExitCode.Success
 
   private val outwatchSync = for {
-    year   <- Handler.create[String](years.last.toString)
-    day    <- Handler.create[String](daysForYear(years.last).last.toString)
-    part   <- Handler.create[String]("1")
-    answer <- Handler.create[String]("")
+    year        <- Handler.create[String](years.last.toString)
+    day         <- Handler.create[String](daysForYear(years.last).last.toString)
+    part        <- Handler.create[String]("1")
+    answer      <- Handler.create[String]("")
+    time        <- Handler.create[String]("")
+    timedAnswer <- Handler.create[(String, String)](("", ""))
+    puzzleInput <- Handler.create[String]("karl")
   } yield div(
     label(`for` := "year", " Year: "),
     select(
       idAttr := "year",
       selectLast(years),
-      onChange.value --> year
+      onChange.value --> year,
+      onChange.use("") --> answer,
+      onChange.use("") --> time
     ),
     label(`for` := "day", " Day: "),
     select(
       idAttr := "day",
       year.map(y => selectLast(daysForYear(y))),
       onChange.value --> day,
+      onChange.use("") --> answer,
+      onChange.use("") --> time,
       emitter(year.map(daysForYear(_).last)) --> day
     ),
     label(`for` := "part", " Part: "),
@@ -55,27 +62,53 @@ object Runner extends TaskApp {
       option("1", selectOnChange(Observable.combineLatest2(year, day))),
       option("2"),
       onChange.value --> part,
+      onChange.use("") --> answer,
+      onChange.use("") --> time,
       emitter(year.map(_ => "1")) --> part,
       emitter(day.map(_ => "1")) --> part
     ),
     " ",
-    button("Run", runPuzzle(year, day, part, answer)),
+    button(
+      "Run",
+      runPuzzle(year, day, part, puzzleInput, timedAnswer),
+      emitter(timedAnswer.map(_._1)) --> time,
+      emitter(timedAnswer.map(_._2)) --> answer
+    ),
     " ",
     input(`type` := "text", readOnly, value <-- answer),
     " ",
     button("Copy", copyAnswer(answer)),
-    // time
+    " ",
+    time,
     br(),
-    textArea(idAttr := "input", getInput(year, day))
+    textArea(
+      idAttr := "input",
+      value <-- puzzleInput,
+      emitter(getInput(year, day)) --> puzzleInput,
+      onChange.value --> puzzleInput,
+      onKeyUp.value --> puzzleInput
+    )
     // visualization
   )
 
-  private def runPuzzle(year: Handler[String], day: Handler[String], part: Handler[String], answer: Handler[String]): VDomModifier =
+  private def runPuzzle(year: Handler[String], day: Handler[String], part: Handler[String], puzzleInput: Handler[String], timedAnswer: Handler[(String, String)]): VDomModifier =
     onClick
       .withLatest(year)
       .withLatest(day)
       .withLatest(part)
-      .foreach{case (((_, year), day), part) => println(s"Running $year/$day/$part")}
+      .withLatest(puzzleInput)
+      .concatMapAsync{case ((((_, year), day), part), input) => runPart(year, day, part, input)} --> timedAnswer
+
+  private def runPart(year: String, day: String, part: String, input: String): Task[(String, String)] = {
+    val task = for {
+      puzzle         <- Task(daysFromYearAndDay((year, day)))
+      processedInput <- Task(puzzle.input(input))
+      partFunction   <- if (part == "1") Task(puzzle.part1 _) else Task(puzzle.part2 _)
+      result         <- partFunction(processedInput)
+    } yield result
+    task.timed.map{case (duration, answer) => (s"${duration.toMillis} millis", answer.toString)}
+    // TODO handle errors
+  }
 
   private def copyAnswer(answer: Handler[String]): VDomModifier =
     onClick.withLatest(answer).foreach{case (_, toCopy) => dom.window.navigator.clipboard.writeText(toCopy)}
@@ -112,29 +145,5 @@ object Runner extends TaskApp {
     ps.close()
     os.close()
     result
-  }
-
-  private def runClicked(e: dom.Event): Unit = {
-    val answer = document.getElementById("answer").asInstanceOf[dom.html.Input]
-    val input = document.getElementById("input").asInstanceOf[dom.html.TextArea]
-    val partSelect = document.getElementById("part").asInstanceOf[dom.html.Select]
-    val time = document.getElementById("time")
-    val visualization = document.getElementById("visualization").asInstanceOf[dom.html.Div]
-    val yearSelect = document.getElementById("year").asInstanceOf[dom.html.Select]
-    val daySelect = document.getElementById("day").asInstanceOf[dom.html.Select]
-
-    visualization.innerHTML = ""
-    val dayOpt = days.find(day => day.year == yearSelect.value.toInt && day.day == daySelect.value.toInt)
-    dayOpt.map{day =>
-      val processedInput = day.input(input.value)
-      val part = if (partSelect.value == "1") day.part1 _ else day.part2 _
-      part(processedInput).timed.foreachL{result =>
-        answer.value = result._2.toString
-        time.textContent = s"${result._1.toMillis} ms"
-        }.onErrorHandle{e =>
-          visualization.innerHTML = s"<pre>${exceptionString(e)}</pre>"
-        }
-          .runToFuture
-    }
   }
 }
