@@ -82,10 +82,10 @@ object Runner extends TaskApp {
     time,
     div(
       `float` := "right",
-      a(href := "https://www.reddit.com/r/adventofcode/", "Reddit"), br(),
-      a(href <-- year.map(y => s"https://adventofcode.com/$y/leaderboard/private/view/147910"), "Leaderboard"), br(),
-      a(href <-- Observable.combineLatest2(year, day).map{case (y, d) => s"https://adventofcode.com/$y/day/$d"}, "Puzzle"), br(),
-      a(href <-- year.map(y => s"https://adventofcode.com/$y"), "Advent Calendar")
+      a(href := "https://www.reddit.com/r/adventofcode/", "Reddit", target := "_blank"), br(),
+      a(href <-- year.map(y => s"https://adventofcode.com/$y/leaderboard/private/view/147910"), "Leaderboard", target := "_blank"), br(),
+      a(href <-- Observable.combineLatest2(year, day).map{case (y, d) => s"https://adventofcode.com/$y/day/$d"}, "Puzzle", target := "_blank"), br(),
+      a(href <-- year.map(y => s"https://adventofcode.com/$y"), "Advent Calendar", target := "_blank")
     ),
     br(),
     textArea(
