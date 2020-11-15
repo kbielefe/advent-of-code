@@ -80,6 +80,13 @@ object Runner extends TaskApp {
     button("Copy", copyAnswer(answer)),
     " ",
     time,
+    div(
+      `float` := "right",
+      a(href := "https://www.reddit.com/r/adventofcode/", "Reddit"), br(),
+      a(href <-- year.map(y => s"https://adventofcode.com/$y/leaderboard/private/view/147910"), "Leaderboard"), br(),
+      a(href <-- Observable.combineLatest2(year, day).map{case (y, d) => s"https://adventofcode.com/$y/day/$d"}, "Puzzle"), br(),
+      a(href <-- year.map(y => s"https://adventofcode.com/$y"), "Advent Calendar")
+    ),
     br(),
     textArea(
       idAttr := "input",
