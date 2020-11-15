@@ -13,6 +13,7 @@ import outwatch._
 import outwatch.dsl._
 import outwatch.reactive.handlers.monix._
 import scala.concurrent.duration._
+import scala.util.{Try, Success}
 
 object Runner extends TaskApp {
   private val days = List(
@@ -31,13 +32,14 @@ object Runner extends TaskApp {
   } yield ExitCode.Success
 
   private val outwatchSync = for {
-    year        <- Handler.create[String](years.last.toString)
-    day         <- Handler.create[String](daysForYear(years.last).last.toString)
-    part        <- Handler.create[String]("1")
-    answer      <- Handler.create[String]("")
-    time        <- Handler.create[String]("")
-    timedAnswer <- Handler.create[(String, String)](("", ""))
-    puzzleInput <- Handler.create[String]("karl")
+    year          <- Handler.create[String](years.last.toString)
+    day           <- Handler.create[String](daysForYear(years.last).last.toString)
+    part          <- Handler.create[String]("1")
+    answer        <- Handler.create[String]("")
+    time          <- Handler.create[String]("")
+    timedAnswer   <- Handler.create[(String, Try[String])](("", Success("")))
+    puzzleInput   <- Handler.create[String]("")
+    visualization <- Handler.create[VDomModifier](VDomModifier.empty)
   } yield div(
     div(
     label(`for` := "year", " Year: "),
@@ -46,7 +48,8 @@ object Runner extends TaskApp {
       selectLast(years),
       onChange.value --> year,
       onChange.use("") --> answer,
-      onChange.use("") --> time
+      onChange.use("") --> time,
+      onChange.use(VDomModifier.empty) --> visualization
     ),
     label(`for` := "day", " Day: "),
     select(
@@ -55,6 +58,7 @@ object Runner extends TaskApp {
       onChange.value --> day,
       onChange.use("") --> answer,
       onChange.use("") --> time,
+      onChange.use(VDomModifier.empty) --> visualization,
       emitter(year.map(daysForYear(_).last)) --> day
     ),
     label(`for` := "part", " Part: "),
@@ -65,15 +69,20 @@ object Runner extends TaskApp {
       onChange.value --> part,
       onChange.use("") --> answer,
       onChange.use("") --> time,
+      onChange.use(VDomModifier.empty) --> visualization,
       emitter(year.map(_ => "1")) --> part,
       emitter(day.map(_ => "1")) --> part
     ),
     " ",
     button(
       "[Run]",
+      onClick.use("") --> answer,
+      onClick.use("") --> time,
+      onClick.use(VDomModifier.empty) --> visualization,
       runPuzzle(year, day, part, puzzleInput, timedAnswer),
       emitter(timedAnswer.map(_._1)) --> time,
-      emitter(timedAnswer.map(_._2)) --> answer
+      emitter(timedAnswer.map(_._2).filter(_.isSuccess).map(_.get)) --> answer,
+      emitter(timedAnswer.map(_._2).filter(_.isFailure).map(_.failed.get).map(exceptionString)) --> visualization
     ),
     " ",
     input(`type` := "text", readOnly, value <-- answer),
@@ -97,11 +106,14 @@ object Runner extends TaskApp {
       emitter(getInput(year, day)) --> puzzleInput,
       onChange.value --> puzzleInput,
       onKeyUp.value --> puzzleInput
+    ),
+    div(
+      idAttr := "visualization",
+      visualization
     )
-    // visualization
   )
 
-  private def runPuzzle(year: Handler[String], day: Handler[String], part: Handler[String], puzzleInput: Handler[String], timedAnswer: Handler[(String, String)]): VDomModifier =
+  private def runPuzzle(year: Handler[String], day: Handler[String], part: Handler[String], puzzleInput: Handler[String], timedAnswer: Handler[(String, Try[String])]): VDomModifier =
     onClick
       .withLatest(year)
       .withLatest(day)
@@ -109,15 +121,14 @@ object Runner extends TaskApp {
       .withLatest(puzzleInput)
       .concatMapAsync{case ((((_, year), day), part), input) => runPart(year, day, part, input)} --> timedAnswer
 
-  private def runPart(year: String, day: String, part: String, input: String): Task[(String, String)] = {
+  private def runPart(year: String, day: String, part: String, input: String): Task[(String, Try[String])] = {
     val task = for {
       puzzle         <- Task(daysFromYearAndDay((year, day)))
       processedInput <- Task(puzzle.input(input))
       partFunction   <- if (part == "1") Task(puzzle.part1 _) else Task(puzzle.part2 _)
       result         <- partFunction(processedInput)
     } yield result
-    task.timed.map{case (duration, answer) => (s"${duration.toMillis} milliseconds", answer.toString)}
-    // TODO handle errors
+    task.materialize.timed.map{case (duration, answer) => (s"${duration.toMillis} milliseconds", answer.map(_.toString))}
   }
 
   private def copyAnswer(answer: Handler[String]): VDomModifier =
@@ -146,7 +157,7 @@ object Runner extends TaskApp {
   private def selectLast(options: List[String]): List[VNode] =
     options.init.map(option(_)) :+ option(options.last, selected)
 
-  private def exceptionString(e: Throwable): String = {
+  private def exceptionString(e: Throwable): VNode = {
     val os = new java.io.ByteArrayOutputStream()
     val ps = new java.io.PrintStream(os)
     e.printStackTrace(ps)
@@ -154,6 +165,6 @@ object Runner extends TaskApp {
     val result = os.toString
     ps.close()
     os.close()
-    result
+    pre(result)
   }
 }

@@ -72,3 +72,15 @@ option {
   display: block;
   margin: 0;
 }
+
+#visualization {
+  float: left;
+  margin-left: 10px;
+}
+
+pre {
+  margin: 0;
+  padding: 0;
+  width: 800px;
+  overflow: auto;
+}
