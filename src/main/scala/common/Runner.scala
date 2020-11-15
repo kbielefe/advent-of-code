@@ -39,6 +39,7 @@ object Runner extends TaskApp {
     timedAnswer <- Handler.create[(String, String)](("", ""))
     puzzleInput <- Handler.create[String]("karl")
   } yield div(
+    div(
     label(`for` := "year", " Year: "),
     select(
       idAttr := "year",
@@ -69,7 +70,7 @@ object Runner extends TaskApp {
     ),
     " ",
     button(
-      "Run",
+      "[Run]",
       runPuzzle(year, day, part, puzzleInput, timedAnswer),
       emitter(timedAnswer.map(_._1)) --> time,
       emitter(timedAnswer.map(_._2)) --> answer
@@ -77,17 +78,19 @@ object Runner extends TaskApp {
     " ",
     input(`type` := "text", readOnly, value <-- answer),
     " ",
-    button("Copy", copyAnswer(answer)),
+    button("[Copy]", copyAnswer(answer)),
     " ",
-    time,
+    outwatch.dsl.span(cls := "time", time),
     div(
-      `float` := "right",
-      a(href := "https://www.reddit.com/r/adventofcode/", "Reddit", target := "_blank"), br(),
-      a(href <-- year.map(y => s"https://adventofcode.com/$y/leaderboard/private/view/147910"), "Leaderboard", target := "_blank"), br(),
-      a(href <-- Observable.combineLatest2(year, day).map{case (y, d) => s"https://adventofcode.com/$y/day/$d"}, "Puzzle", target := "_blank"), br(),
-      a(href <-- year.map(y => s"https://adventofcode.com/$y"), "Advent Calendar", target := "_blank")
+      cls := "links",
+      a(href := "https://www.reddit.com/r/adventofcode/", "[Reddit]", target := "_blank"),
+      a(href <-- year.map(y => s"https://adventofcode.com/$y/leaderboard/private/view/147910"), "[Leaderboard]", target := "_blank"),
+      a(href <-- Observable.combineLatest2(year, day).map{case (y, d) => s"https://adventofcode.com/$y/day/$d"}, "[Puzzle]", target := "_blank"),
+      a(href <-- year.map(y => s"https://adventofcode.com/$y"), "[Advent Calendar]", target := "_blank"),
+      a(href := "https://github.com/kbielefe/advent-of-code", "[GitHub]", target := "_blank"),
     ),
-    br(),
+    ),
+    label(`for` := "input", idAttr := "input-label", "Input:"),
     textArea(
       idAttr := "input",
       value <-- puzzleInput,
@@ -113,7 +116,7 @@ object Runner extends TaskApp {
       partFunction   <- if (part == "1") Task(puzzle.part1 _) else Task(puzzle.part2 _)
       result         <- partFunction(processedInput)
     } yield result
-    task.timed.map{case (duration, answer) => (s"${duration.toMillis} millis", answer.toString)}
+    task.timed.map{case (duration, answer) => (s"${duration.toMillis} milliseconds", answer.toString)}
     // TODO handle errors
   }
 
