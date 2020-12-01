@@ -18,8 +18,7 @@ import scala.util.{Try, Success}
 object Runner extends TaskApp {
   private val days = List(
     advent2019.Day1,
-    advent2020.Day1,
-    advent2020.Day2
+    advent2020.Day1
   )
 
   private val years = days.map(_.year.toString).toSet.toList.sorted
