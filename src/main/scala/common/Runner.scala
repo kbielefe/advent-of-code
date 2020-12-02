@@ -105,7 +105,7 @@ object Runner extends TaskApp {
     label(`for` := "input", idAttr := "input-label", "Input:"),
     textArea(
       idAttr := "input",
-      attr("spellcheck") := false,
+      spellCheck := false,
       value <-- puzzleInput,
       emitter(getInput(year, day)) --> puzzleInput,
       onChange.value --> puzzleInput,
