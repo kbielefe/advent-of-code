@@ -15,3 +15,8 @@ abstract class IntsDay[A, B](year: Int, day: Int) extends Day[Observable[Int], A
   override def input(string: String): Observable[Int] =
     Observable.fromIterator(Task(string.linesIterator)).filter(!_.isEmpty).map(_.toInt)
 }
+
+abstract class StringsDay[A, B](year: Int, day: Int) extends Day[Observable[String], A, B](year, day) {
+  override def input(string: String): Observable[String] =
+    Observable.fromIterator(Task(string.linesIterator)).filter(!_.isEmpty)
+}
