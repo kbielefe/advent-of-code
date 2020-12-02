@@ -1,6 +1,6 @@
 package advent2019
 
-import common.IntsDay
+import common.{IntsDay, VisQueue}
 import monix.eval.Task
 import monix.reactive.Observable
 
@@ -11,6 +11,6 @@ object Day1 extends IntsDay[Int, Int](2019, 1) {
       if (fuel > 0) Some(fuel -> fuel) else None
     }.sumL
 
-  override def part1(input: Observable[Int]): Task[Int] = input.map(_ / 3 - 2).sumL
-  override def part2(input: Observable[Int]): Task[Int] = input.mapEval(compound).sumL
+  override def part1(input: Observable[Int], visQueue: VisQueue): Task[Int] = input.map(_ / 3 - 2).sumL
+  override def part2(input: Observable[Int], visQueue: VisQueue): Task[Int] = input.mapEval(compound).sumL
 }

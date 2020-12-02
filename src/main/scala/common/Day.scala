@@ -1,12 +1,14 @@
 package common
 
+import monix.catnap.ConcurrentQueue
 import monix.eval.Task
 import monix.reactive.Observable
+import outwatch.VDomModifier
 
 abstract class Day[I, A, B](val year: Int, val day: Int) {
   def input(string: String): I
-  def part1(input: I): Task[A]
-  def part2(input: I): Task[B]
+  def part1(input: I, visQueue: VisQueue): Task[A]
+  def part2(input: I, visQueue: VisQueue): Task[B]
 }
 
 abstract class IntsDay[A, B](year: Int, day: Int) extends Day[Observable[Int], A, B](year, day) {
