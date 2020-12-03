@@ -28,8 +28,8 @@ object Day2 extends StringsDay[Long, Long](2020, 2) {
   }
 
   override def part1(input: Observable[String], visQueue: VisQueue): Task[Long] =
-    input.map(Password(_)).filter(_.valid1).countL
+    ListVis[Password](visQueue, password => s"$password ${password.valid1}")(input.map(Password(_))).filter(_.valid1).countL
 
   override def part2(input: Observable[String], visQueue: VisQueue): Task[Long] =
-    input.map(Password(_)).filter(_.valid2).countL
+    ListVis[Password](visQueue, password => s"$password ${password.valid2}")(input.map(Password(_))).filter(_.valid2).countL
 }
