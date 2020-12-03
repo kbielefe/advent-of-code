@@ -20,3 +20,10 @@ abstract class StringsDay[A, B](year: Int, day: Int) extends Day[Observable[Stri
   override def input(string: String): Observable[String] =
     Observable.fromIterator(Task(string.linesIterator)).filter(!_.isEmpty)
 }
+
+abstract class GridDay[A, B](year: Int, day: Int) extends Day[Map[(Int, Int), Char], A, B](year, day) {
+  override def input(string: String): Map[(Int, Int), Char] =
+    string.linesIterator.filter(!_.isEmpty).zipWithIndex.flatMap{case (line, y) =>
+      line.iterator.zipWithIndex.map{case (char, x) => ((x, y) -> char)}
+    }.toMap
+}
