@@ -16,10 +16,10 @@ object Day3 extends GridDay[Int, Long](2020, 3) {
     }.sumL
   }
 
-  override def part1(input: Map[(Int, Int), Char], visQueue: VisQueue): Task[Int] =
+  override def part1(input: Map[(Int, Int), Char]): Task[Int] =
     trees(input)(3 -> 1)
 
-  override def part2(input: Map[(Int, Int), Char], visQueue: VisQueue): Task[Long] =
+  override def part2(input: Map[(Int, Int), Char]): Task[Long] =
     Task.parSequenceUnordered(
       List((1, 1), (3, 1), (5, 1), (7, 1), (1, 2)).map(trees(input))
     ).map(_.map(_.toLong).product)
