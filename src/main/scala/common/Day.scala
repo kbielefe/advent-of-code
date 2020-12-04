@@ -29,3 +29,30 @@ abstract class GridDay[A, B](year: Int, day: Int) extends Day[Map[(Int, Int), Ch
       line.iterator.zipWithIndex.map{case (char, x) => ((x, y) -> char)}
     }.toMap
 }
+
+object Multiline {
+  def apply(string: String): Observable[Seq[String]] =
+    Observable
+      .fromIterator(Task(string.linesIterator))
+      .append("")
+      .scan((Seq.empty[String], false)){case ((seq, complete), next) =>
+        if (next.isEmpty) (seq, true) else if (complete) (Seq(next), false) else (seq.appended(next), false)
+      }.filter(_._2)
+      .map(_._1)
+      .filter(!_.isEmpty)
+}
+
+abstract class MapDay[A, B](year: Int, day: Int) extends Day[Observable[Map[String, String]], A, B](year, day) {
+  override def input(string: String): Observable[Map[String, String]] =
+    Multiline(string)
+      .map(_.mkString(" "))
+      .map{line =>
+        val pairs = line.split(" ")
+        val fields = pairs.map{pair =>
+          val Array(x, y) = pair.split(":")
+          (x, y)
+        }
+        fields.toMap
+      }
+}
+
