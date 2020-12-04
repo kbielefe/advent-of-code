@@ -29,12 +29,11 @@ object Runner extends TaskApp {
   private val daysFromYearAndDay = days.map(day => ((day.year.toString, day.day.toString), day)).toMap
 
   def run(args: List[String]): Task[ExitCode] = for {
-    visQueue <- ConcurrentQueue.bounded[Task, VDomModifier](64)
-    outwatch <- outwatchSync(visQueue).to[Task]
+    outwatch <- outwatchSync.to[Task]
     _        <- OutWatch.renderReplace[Task]("#outwatch", outwatch)
   } yield ExitCode.Success
 
-  private def outwatchSync(visQueue: ConcurrentQueue[Task, VDomModifier]) = for {
+  private def outwatchSync = for {
     year          <- Handler.create[String](years.last.toString)
     day           <- Handler.create[String](daysForYear(years.last).last.toString)
     part          <- Handler.create[String]("1")
@@ -82,11 +81,10 @@ object Runner extends TaskApp {
       onClick.use("") --> answer,
       onClick.use("") --> time,
       onClick.use(VDomModifier.empty) --> visualization,
-      runPuzzle(year, day, part, puzzleInput, timedAnswer, visQueue),
+      runPuzzle(year, day, part, puzzleInput, timedAnswer),
       emitter(timedAnswer.map(_._1)) --> time,
       emitter(timedAnswer.map(_._2).filter(_.isSuccess).map(_.get)) --> answer,
-      emitter(timedAnswer.map(_._2).filter(_.isFailure).map(_.failed.get).map(exceptionString)) --> visualization,
-      emitter(Observable.repeatEvalF(visQueue.poll)) --> visualization
+      emitter(timedAnswer.map(_._2).filter(_.isFailure).map(_.failed.get).map(exceptionString)) --> visualization
     ),
     " ",
     input(`type` := "text", readOnly, value <-- answer),
@@ -118,15 +116,15 @@ object Runner extends TaskApp {
     )
   )
 
-  private def runPuzzle(year: Handler[String], day: Handler[String], part: Handler[String], puzzleInput: Handler[String], timedAnswer: Handler[(String, Try[String])], visQueue: ConcurrentQueue[Task, VDomModifier]): VDomModifier =
+  private def runPuzzle(year: Handler[String], day: Handler[String], part: Handler[String], puzzleInput: Handler[String], timedAnswer: Handler[(String, Try[String])]): VDomModifier =
     onClick
       .withLatest(year)
       .withLatest(day)
       .withLatest(part)
       .withLatest(puzzleInput)
-      .concatMapAsync{case ((((_, year), day), part), input) => runPart(year, day, part, input, visQueue)} --> timedAnswer
+      .concatMapAsync{case ((((_, year), day), part), input) => runPart(year, day, part, input)} --> timedAnswer
 
-  private def runPart(year: String, day: String, part: String, input: String, visQueue: ConcurrentQueue[Task, VDomModifier]): Task[(String, Try[String])] = {
+  private def runPart(year: String, day: String, part: String, input: String): Task[(String, Try[String])] = {
     val task = for {
       puzzle         <- Task(daysFromYearAndDay((year, day)))
       processedInput <- Task(puzzle.input(input))
