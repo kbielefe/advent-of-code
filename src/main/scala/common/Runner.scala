@@ -22,7 +22,8 @@ object Runner extends TaskApp {
     advent2020.Day1,
     advent2020.Day2,
     advent2020.Day3,
-    advent2020.Day4
+    advent2020.Day4,
+    advent2020.Day5
   )
 
   private val years = days.map(_.year.toString).toSet.toList.sorted
@@ -42,7 +43,7 @@ object Runner extends TaskApp {
     time          <- Handler.create[String]("")
     timedAnswer   <- Handler.create[(String, Try[String])](("", Success("")))
     puzzleInput   <- Handler.create[String]("")
-    visualization <- Handler.create[VDomModifier](VDomModifier.empty)
+    visualization <- Handler.create[Visualization.Event](Visualization.Clear)
   } yield div(
     div(
     label(`for` := "year", " Year: "),
@@ -52,7 +53,7 @@ object Runner extends TaskApp {
       onChange.value --> year,
       onChange.use("") --> answer,
       onChange.use("") --> time,
-      onChange.use(VDomModifier.empty) --> visualization
+      onChange.use(Visualization.Clear) --> visualization
     ),
     label(`for` := "day", " Day: "),
     select(
@@ -61,7 +62,7 @@ object Runner extends TaskApp {
       onChange.value --> day,
       onChange.use("") --> answer,
       onChange.use("") --> time,
-      onChange.use(VDomModifier.empty) --> visualization,
+      onChange.use(Visualization.Clear) --> visualization,
       emitter(year.map(daysForYear(_).last)) --> day
     ),
     label(`for` := "part", " Part: "),
@@ -72,7 +73,7 @@ object Runner extends TaskApp {
       onChange.value --> part,
       onChange.use("") --> answer,
       onChange.use("") --> time,
-      onChange.use(VDomModifier.empty) --> visualization,
+      onChange.use(Visualization.Clear) --> visualization,
       emitter(year.map(_ => "1")) --> part,
       emitter(day.map(_ => "1")) --> part
     ),
@@ -81,11 +82,11 @@ object Runner extends TaskApp {
       "[Run]",
       onClick.use("") --> answer,
       onClick.use("") --> time,
-      onClick.use(VDomModifier.empty) --> visualization,
+      onClick.use(Visualization.Clear) --> visualization,
       runPuzzle(year, day, part, puzzleInput, timedAnswer),
       emitter(timedAnswer.map(_._1)) --> time,
       emitter(timedAnswer.map(_._2).filter(_.isSuccess).map(_.get)) --> answer,
-      emitter(timedAnswer.map(_._2).filter(_.isFailure).map(_.failed.get).map(exceptionString)) --> visualization
+      emitter(timedAnswer.map(_._2).filter(_.isFailure).map(_.failed.get).map(Visualization.Error)) --> visualization
     ),
     " ",
     input(`type` := "text", readOnly, value <-- answer),
@@ -113,7 +114,7 @@ object Runner extends TaskApp {
     ),
     div(
       idAttr := "visualization",
-      visualization
+      Visualization(visualization)
     )
   )
 
@@ -160,15 +161,4 @@ object Runner extends TaskApp {
 
   private def selectLast(options: List[String]): List[VNode] =
     options.init.map(option(_)) :+ option(options.last, selected)
-
-  private def exceptionString(e: Throwable): VNode = {
-    val os = new java.io.ByteArrayOutputStream()
-    val ps = new java.io.PrintStream(os)
-    e.printStackTrace(ps)
-    ps.flush()
-    val result = os.toString
-    ps.close()
-    os.close()
-    pre(result)
-  }
 }
