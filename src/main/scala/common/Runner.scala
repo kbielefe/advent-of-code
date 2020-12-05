@@ -103,14 +103,24 @@ object Runner extends TaskApp {
       a(href := "https://github.com/kbielefe/advent-of-code", "[GitHub]", target := "_blank"),
     ),
     ),
-    label(`for` := "input", idAttr := "input-label", "Input:"),
-    textArea(
-      idAttr := "input",
-      spellCheck := false,
-      value <-- puzzleInput,
-      emitter(getInput(year, day)) --> puzzleInput,
-      onChange.value --> puzzleInput,
-      onKeyUp.value --> puzzleInput
+    div(
+      cls := "input",
+      label(`for` := "input", idAttr := "input-label", "Input:"),
+      textArea(
+        idAttr := "input",
+        spellCheck := false,
+        value <-- puzzleInput,
+        emitter(getInput(year, day)) --> puzzleInput,
+        onChange.value --> puzzleInput,
+        onKeyUp.value --> puzzleInput
+      ),
+      br,
+      outwatch.dsl.span(
+        cls := "lines",
+        puzzleInput
+          .map(_.linesIterator.length)
+          .map(length => if (length == 0) "" else if (length == 1) "1 line" else s"$length lines")
+      )
     ),
     div(
       idAttr := "visualization",

@@ -1,8 +1,11 @@
-#input {
+.input {
   float: left;
+  margin-top: 5px;
+}
+
+#input {
   width: 280px;
   height: 350px;
-  margin-top: 5px;
 }
 
 .links {
