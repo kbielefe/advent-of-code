@@ -42,6 +42,11 @@ object Multiline {
       .filter(!_.isEmpty)
 }
 
+abstract class MultilineStringsDay[A, B](year: Int, day: Int) extends Day[Observable[Seq[String]], A, B](year, day) {
+  override def input(string: String): Observable[Seq[String]] =
+    Multiline(string)
+}
+
 abstract class MapDay[A, B](year: Int, day: Int) extends Day[Observable[Map[String, String]], A, B](year, day) {
   override def input(string: String): Observable[Map[String, String]] =
     Multiline(string)
