@@ -61,3 +61,16 @@ abstract class MapDay[A, B](year: Int, day: Int) extends Day[Observable[Map[Stri
       }
 }
 
+abstract class ConsoleDay[A, B](year: Int, day: Int) extends Day[Vector[ConsoleInstruction], A, B](year, day) {
+  override def input(string: String): Vector[ConsoleInstruction] = {
+    val regex = """(.*) ([+-]\d+)""".r
+    string.linesIterator.map{line =>
+      val regex(instruction, offset) = line
+      instruction match {
+        case "acc" => Acc(offset.toInt)
+        case "nop" => Nop(offset.toInt)
+        case "jmp" => Jmp(offset.toInt)
+      }
+    }.toVector
+  }
+}
