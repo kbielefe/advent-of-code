@@ -17,6 +17,7 @@ object Day8 extends ConsoleDay[Int, Int](2020, 8) {
       }
   }
 
+  @scala.annotation.tailrec
   private def findTerminateAcc(instructions: Vector[ConsoleInstruction], hasExecuted: Vector[Boolean], acc: Int, pc: Int): Option[Int] = {
     if (pc >= instructions.size)
       Some(acc)

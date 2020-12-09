@@ -75,6 +75,11 @@ abstract class MapDay[A, B](year: Int, day: Int) extends TaskDay[Observable[Map[
       }
 }
 
+abstract class LongDay[A, B](year: Int, day: Int) extends SyncDay[Seq[Long], A, B](year, day) {
+  override def input(string: String): Seq[Long] =
+    string.linesIterator.filter(!_.isEmpty).map(_.toLong).toSeq
+}
+
 abstract class ConsoleDay[A, B](year: Int, day: Int) extends SyncDay[Vector[ConsoleInstruction], A, B](year, day) {
   override def input(string: String): Vector[ConsoleInstruction] = {
     val regex = """(.*) ([+-]\d+)""".r
