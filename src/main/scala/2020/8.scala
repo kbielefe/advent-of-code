@@ -42,9 +42,9 @@ object Day8 extends ConsoleDay[Int, Int](2020, 8) {
     .head
     .get
 
-  override def part1(input: Vector[ConsoleInstruction]): Task[Int] =
-    Task(findRepeatAcc(input, Vector.fill(input.size)(false), 0, 0))
+  override def part1(input: Vector[ConsoleInstruction]): Int =
+    findRepeatAcc(input, Vector.fill(input.size)(false), 0, 0)
 
-  override def part2(input: Vector[ConsoleInstruction]): Task[Int] =
-    Task(fixCorruption(input))
+  override def part2(input: Vector[ConsoleInstruction]): Int =
+    fixCorruption(input)
 }

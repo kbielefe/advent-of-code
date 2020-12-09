@@ -7,23 +7,37 @@ import outwatch.VDomModifier
 
 abstract class Day[I, A, B](val year: Int, val day: Int) {
   def input(string: String): I
-  def part1(input: I): Task[A]
-  def part2(input: I): Task[B]
+  def part1Task(input: I): Task[A]
+  def part2Task(input: I): Task[B]
   def vis1(input: I): Observable[VDomModifier] = Observable.empty
   def vis2(input: I): Observable[VDomModifier] = Observable.empty
 }
 
-abstract class IntsDay[A, B](year: Int, day: Int) extends Day[Observable[Int], A, B](year, day) {
+abstract class SyncDay[I, A, B](override val year: Int, override val day: Int) extends Day[I, A, B](year, day) {
+  override def part1Task(input: I): Task[A] = Task(part1(input))
+  override def part2Task(input: I): Task[B] = Task(part2(input))
+  def part1(input: I): A
+  def part2(input: I): B
+}
+
+abstract class TaskDay[I, A, B](override val year: Int, override val day: Int) extends Day[I, A, B](year, day) {
+  override def part1Task(input: I): Task[A] = part1(input)
+  override def part2Task(input: I): Task[B] = part2(input)
+  def part1(input: I): Task[A]
+  def part2(input: I): Task[B]
+}
+
+abstract class IntsDay[A, B](year: Int, day: Int) extends TaskDay[Observable[Int], A, B](year, day) {
   override def input(string: String): Observable[Int] =
     Observable.fromIterator(Task(string.linesIterator)).filter(!_.isEmpty).map(_.toInt)
 }
 
-abstract class StringsDay[A, B](year: Int, day: Int) extends Day[Observable[String], A, B](year, day) {
+abstract class StringsDay[A, B](year: Int, day: Int) extends TaskDay[Observable[String], A, B](year, day) {
   override def input(string: String): Observable[String] =
     Observable.fromIterator(Task(string.linesIterator)).filter(!_.isEmpty)
 }
 
-abstract class GridDay[A, B](year: Int, day: Int) extends Day[Map[(Int, Int), Char], A, B](year, day) {
+abstract class GridDay[A, B](year: Int, day: Int) extends TaskDay[Map[(Int, Int), Char], A, B](year, day) {
   override def input(string: String): Map[(Int, Int), Char] =
     string.linesIterator.filter(!_.isEmpty).zipWithIndex.flatMap{case (line, y) =>
       line.iterator.zipWithIndex.map{case (char, x) => ((x, y) -> char)}
@@ -42,12 +56,12 @@ object Multiline {
       .filter(!_.isEmpty)
 }
 
-abstract class MultilineStringsDay[A, B](year: Int, day: Int) extends Day[Observable[Seq[String]], A, B](year, day) {
+abstract class MultilineStringsDay[A, B](year: Int, day: Int) extends TaskDay[Observable[Seq[String]], A, B](year, day) {
   override def input(string: String): Observable[Seq[String]] =
     Multiline(string)
 }
 
-abstract class MapDay[A, B](year: Int, day: Int) extends Day[Observable[Map[String, String]], A, B](year, day) {
+abstract class MapDay[A, B](year: Int, day: Int) extends TaskDay[Observable[Map[String, String]], A, B](year, day) {
   override def input(string: String): Observable[Map[String, String]] =
     Multiline(string)
       .map(_.mkString(" "))
@@ -61,7 +75,7 @@ abstract class MapDay[A, B](year: Int, day: Int) extends Day[Observable[Map[Stri
       }
 }
 
-abstract class ConsoleDay[A, B](year: Int, day: Int) extends Day[Vector[ConsoleInstruction], A, B](year, day) {
+abstract class ConsoleDay[A, B](year: Int, day: Int) extends SyncDay[Vector[ConsoleInstruction], A, B](year, day) {
   override def input(string: String): Vector[ConsoleInstruction] = {
     val regex = """(.*) ([+-]\d+)""".r
     string.linesIterator.map{line =>

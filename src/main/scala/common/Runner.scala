@@ -143,7 +143,7 @@ object Runner extends TaskApp {
     val task = for {
       puzzle         <- Task(daysFromYearAndDay((year, day)))
       processedInput <- Task(puzzle.input(input))
-      partFunction   <- if (part == "1") Task(puzzle.part1 _) else Task(puzzle.part2 _)
+      partFunction   <- if (part == "1") Task(puzzle.part1Task _) else Task(puzzle.part2Task _)
       result         <- partFunction(processedInput)
     } yield result
     task.materialize.timed.map{case (duration, answer) => (s"${duration.toMillis} milliseconds", answer.map(_.toString))}
