@@ -11,8 +11,9 @@ object Day10 extends SyncIntsDay[Int, Long](2020, 10) {
   }
 
   override def part2(input: Seq[Int]): Long = {
-    val counts = input.appended(0).sorted.reverse.map(_.toLong).foldLeft(Map.empty[Long, Long]){case (counts, next) =>
-      val count = Math.max(1L, counts.getOrElse(next + 1, 0L) + counts.getOrElse(next + 2, 0L) + counts.getOrElse(next + 3, 0L))
+    val init = Map(input.max + 3 -> 1L)
+    val counts = input.appended(0).sorted.reverse.foldLeft(init){case (counts, next) =>
+      val count = (next + 1 to next + 3).map(counts.getOrElse(_, 0L)).sum
       counts + (next -> count)
     }
     counts(0)
