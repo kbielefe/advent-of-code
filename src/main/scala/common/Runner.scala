@@ -18,6 +18,7 @@ import scala.util.{Try, Success}
 
 object Runner extends TaskApp {
   private val days = List(
+    advent2018.Day23,
     advent2019.Day1,
     advent2020.Day1,
     advent2020.Day2,

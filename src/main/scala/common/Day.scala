@@ -37,6 +37,11 @@ abstract class StringsDay[A, B](year: Int, day: Int) extends TaskDay[Observable[
     Observable.fromIterator(Task(string.linesIterator)).filter(!_.isEmpty)
 }
 
+abstract class SyncStringsDay[A, B](year: Int, day: Int) extends SyncDay[Seq[String], A, B](year, day) {
+  override def input(string: String): Seq[String] =
+    string.linesIterator.filter(!_.isEmpty).toSeq
+}
+
 abstract class GridDay[A, B](year: Int, day: Int) extends TaskDay[Map[(Int, Int), Char], A, B](year, day) {
   override def input(string: String): Map[(Int, Int), Char] =
     string.linesIterator.filter(!_.isEmpty).zipWithIndex.flatMap{case (line, y) =>
