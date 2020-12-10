@@ -28,7 +28,8 @@ object Runner extends TaskApp {
     advent2020.Day6,
     advent2020.Day7,
     advent2020.Day8,
-    advent2020.Day9
+    advent2020.Day9,
+    advent2020.Day10
   )
 
   private val years = days.map(_.year.toString).toSet.toList.sorted
