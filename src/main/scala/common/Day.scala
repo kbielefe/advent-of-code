@@ -54,6 +54,13 @@ abstract class GridDay[A, B](year: Int, day: Int) extends TaskDay[Map[(Int, Int)
     }.toMap
 }
 
+abstract class SyncGridDay[A, B](year: Int, day: Int) extends SyncDay[Map[(Int, Int), Char], A, B](year, day) {
+  override def input(string: String): Map[(Int, Int), Char] =
+    string.linesIterator.filter(!_.isEmpty).zipWithIndex.flatMap{case (line, y) =>
+      line.iterator.zipWithIndex.map{case (char, x) => ((x, y) -> char)}
+    }.toMap
+}
+
 object Multiline {
   def apply(string: String): Observable[Seq[String]] =
     Observable

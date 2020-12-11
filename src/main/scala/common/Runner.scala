@@ -29,7 +29,8 @@ object Runner extends TaskApp {
     advent2020.Day7,
     advent2020.Day8,
     advent2020.Day9,
-    advent2020.Day10
+    advent2020.Day10,
+    advent2020.Day11
   )
 
   private val years = days.map(_.year.toString).toSet.toList.sorted
@@ -104,7 +105,9 @@ object Runner extends TaskApp {
       cls := "links",
       a(href := "https://www.reddit.com/r/adventofcode/", "[Reddit]", target := "_blank"),
       a(href <-- year.map(y => s"https://adventofcode.com/$y/leaderboard/private/view/147910"), "[Leaderboard]", target := "_blank"),
+      a(href <-- year.map(y => s"https://adventofcode.com/$y/leaderboard/self"), "[Personal Stats]", target := "_blank"),
       a(href <-- Observable.combineLatest2(year, day).map{case (y, d) => s"https://adventofcode.com/$y/day/$d"}, "[Puzzle]", target := "_blank"),
+      a(href <-- Observable.combineLatest2(year, day).map{case (y, d) => s"https://github.com/kbielefe/advent-of-code/blob/master/src/main/scala/$y/$d.scala"}, "[Solution]", target := "_blank"),
       a(href <-- year.map(y => s"https://adventofcode.com/$y"), "[Advent Calendar]", target := "_blank"),
       a(href := "https://github.com/kbielefe/advent-of-code", "[GitHub]", target := "_blank"),
     ),
@@ -149,7 +152,15 @@ object Runner extends TaskApp {
       partFunction   <- if (part == "1") Task(puzzle.part1Task _) else Task(puzzle.part2Task _)
       result         <- partFunction(processedInput)
     } yield result
-    task.materialize.timed.map{case (duration, answer) => (s"${duration.toMillis} milliseconds", answer.map(_.toString))}
+    task.materialize.timed.map{case (duration, answer) => (durationString(duration), answer.map(_.toString))}
+  }
+
+  private def durationString(duration: FiniteDuration): String = {
+    val millis = duration.toMillis
+    if (millis < 1000)
+      s"$millis milliseconds"
+    else
+      s"${millis / 1000} seconds"
   }
 
   private def copyAnswer(answer: Handler[String]): VDomModifier =
