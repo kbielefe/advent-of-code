@@ -1,7 +1,7 @@
 val outwatchVersion = "53a890b" // Get from https://jitpack.io/#outwatch/outwatch builds
 Global / onChangedBuildSource := ReloadOnSourceChanges
 enablePlugins(ScalaJSBundlerPlugin)
-scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature")
+scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-opt-inline-from:advent2018.**,advent2019.**,advent2020.**", "-opt:l:inline")
 scalaVersion := "2.13.3"
 scalaJSUseMainModuleInitializer := true
 resolvers += "jitpack" at "https://jitpack.io"
