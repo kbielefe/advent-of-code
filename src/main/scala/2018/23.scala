@@ -7,6 +7,8 @@ object Day23 extends SyncStringsDay[Long, Long](2018, 23) {
     def overlaps(other: Nanobot): Boolean = {
       Math.abs(x - other.x) + Math.abs(y - other.y) + Math.abs(z - other.z) <= (r + other.r)
     }
+    def distanceFromOrigin: Long =
+      Math.abs(x) + Math.abs(y) + Math.abs(z) - r
   }
 
   private def parse(input: Seq[String]): Seq[Nanobot] =
@@ -22,11 +24,8 @@ object Day23 extends SyncStringsDay[Long, Long](2018, 23) {
     val bots = parse(input)
     val neighbors = calculateBotNeighbors(bots)
     val maximalClique = bronKerbosch(Set.empty, bots.toSet, Set.empty, neighbors)
-    println(maximalClique)
-    println(maximalClique.map(_.size).getOrElse(0))
-    0
+    maximalClique.get.map(_.distanceFromOrigin).max
   }
-  //75197225 is too low
 
   private def calculateBotNeighbors(bots: Seq[Nanobot]): Map[Nanobot, Set[Nanobot]] =
     bots.combinations(2).foldLeft(Map.empty[Nanobot, Set[Nanobot]]){case (neighbors, Seq(a, b)) =>
@@ -51,14 +50,4 @@ object Day23 extends SyncStringsDay[Long, Long](2018, 23) {
       else
         None
     }
-  /*
-  algorithm BronKerbosch2(R, P, X) is
-      if P and X are both empty then
-          report R as a maximal clique
-      choose a pivot vertex u in P ⋃ X
-      for each vertex v in P \ N(u) do
-          BronKerbosch2(R ⋃ {v}, P ⋂ N(v), X ⋂ N(v))
-          P := P \ {v}
-          X := X ⋃ {v}
-  */
 }
