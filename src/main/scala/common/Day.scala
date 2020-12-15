@@ -37,6 +37,11 @@ abstract class SyncIntsDay[A, B](year: Int, day: Int) extends SyncDay[Seq[Int], 
     string.linesIterator.filter(!_.isEmpty).map(_.toInt).toSeq
 }
 
+abstract class CommaSeparatedIntsDay[A, B](year: Int, day: Int) extends SyncDay[Seq[Int], A, B](year, day) {
+  override def input(string: String): Seq[Int] =
+    string.trim.split(",").map(_.toInt).toSeq
+}
+
 abstract class StringsDay[A, B](year: Int, day: Int) extends TaskDay[Observable[String], A, B](year, day) {
   override def input(string: String): Observable[String] =
     Observable.fromIterator(Task(string.linesIterator)).filter(!_.isEmpty)
