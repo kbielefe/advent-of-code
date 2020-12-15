@@ -8,11 +8,7 @@ object Day15 extends CommaSeparatedIntsDay[Int, Int](2020, 15) {
     val turn = input.size
     val lastNumber = input.last
     val turns = Iterator.iterate((lastTurns, lastNumber, turn)){case (lastTurns, lastNumber, turn) =>
-      val nextNumber = if (lastTurns.contains(lastNumber)) {
-        turn - lastTurns(lastNumber)
-      } else {
-        0
-      }
+      val nextNumber = lastTurns.get(lastNumber).map(turn - _).getOrElse(0)
       (lastTurns + (lastNumber -> turn), nextNumber, turn + 1)
     }
     turns.dropWhile(_._3 < target).next()._2
