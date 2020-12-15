@@ -6,7 +6,17 @@ import monix.reactive.Observable
 import scala.annotation.tailrec
 
 object Day24 extends MultilineStringsDay[Int, Int](2018, 24) {
-  private case class Army(immuneSystem: Boolean, id: Int, count: Int, hp: Int, weaknesses: Set[String], immunities: Set[String], damage: Int, damageType: String, initiative: Int) {
+  private case class Army(
+    immuneSystem: Boolean,
+    id: Int,
+    count: Int,
+    hp: Int,
+    weaknesses: Set[String],
+    immunities: Set[String],
+    damage: Int,
+    damageType: String,
+    initiative: Int) {
+
     def effectivePower: Int = count * damage
 
     def damageDealt(enemy: Army): Int =
@@ -16,6 +26,11 @@ object Day24 extends MultilineStringsDay[Int, Int](2018, 24) {
         effectivePower * 2
       else
         effectivePower
+
+    def applyDamage(damage: Int): Army = {
+      println(s"Doing $damage damage killing ${damage / hp} of $count units")
+      copy(count = Math.max(0, count - (damage / hp)))
+    }
 
     def selectDefender(armies: Set[Army]): Option[Army] =
       armies.filter(_.immuneSystem != immuneSystem).filter(damageDealt(_) != 0).maxByOption(enemy => (damageDealt(enemy), enemy.effectivePower, enemy.initiative))
@@ -28,11 +43,12 @@ object Day24 extends MultilineStringsDay[Int, Int](2018, 24) {
       val winner = playUntilWin(immune ++ infection)
       winner.map(_.count).sum
     }
+  // 46010 is too high.
 
   override def part2(input: Observable[Seq[String]]): Task[Int] =
     ???
 
-
+  @tailrec
   private def playUntilWin(armies: Set[Army]): Set[Army] = {
     if (armies.filter(_.immuneSystem).map(_.count).sum == 0) {
       armies.filterNot(_.immuneSystem)
@@ -46,13 +62,24 @@ object Day24 extends MultilineStringsDay[Int, Int](2018, 24) {
           .map(defender => (armies - defender, Some(attacker -> defender)))
           .getOrElse((armies, None))
       }
-      val attackOrder = targetSelection.map(_._2).flatten.sortBy(-1 * _._1.initiative)
-      attackOrder.foldLeft(armies){case (armies, (attacker, defender)) =>
-        // TODO: Start here. Probably want to use a map instead of a set of
-        // armies to speed up lookups as changes are made during the round.
-        ???
+      val attackOrder = targetSelection.map(_._2).flatten.sortBy(-1 * _._1.initiative).map{case (attacker, defender) => (attacker.immuneSystem, attacker.id, defender.id)}
+      val armyMap = armies.map(army => ((army.immuneSystem, army.id) -> army)).toMap
+      val newArmyMap = attackOrder.foldLeft(armyMap){case (armyMap, (immuneSystem, attackerId, defenderId)) =>
+        println(armyMap, immuneSystem, attackerId, defenderId)
+        val newArmyMap = for {
+          attacker <- armyMap.get(immuneSystem -> attackerId)
+          defender <- armyMap.get(!immuneSystem -> defenderId)
+        } yield {
+          val damage = attacker.damageDealt(defender)
+          val newDefender = defender.applyDamage(damage)
+          if (newDefender.count == 0)
+            armyMap - (!immuneSystem -> defenderId)
+          else
+            armyMap.updated(!immuneSystem -> defenderId, newDefender)
+        }
+        newArmyMap.getOrElse(armyMap)
       }
-      ???
+      playUntilWin(newArmyMap.values.toSet)
     }
   }
 
@@ -88,6 +115,6 @@ object Day24 extends MultilineStringsDay[Int, Int](2018, 24) {
 
 Infection:
 801 units each with 4706 hit points (weak to radiation) with an attack that does 116 bludgeoning damage at initiative 1
-4485 units each with 2961 hit points (immune to radiation; weak to fire, cold) with an attack that does 12 slashing damage at initiative 4 }
+4485 units each with 2961 hit points (immune to radiation; weak to fire, cold) with an attack that does 12 slashing damage at initiative 4
   */
 }
