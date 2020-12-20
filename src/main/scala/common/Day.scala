@@ -83,6 +83,11 @@ abstract class MultilineStringsDay[A, B](year: Int, day: Int) extends TaskDay[Ob
     Multiline(string)
 }
 
+abstract class MultilineSyncStringsDay[A, B](year: Int, day: Int) extends SyncDay[Seq[Seq[String]], A, B](year, day) {
+  override def input(string: String): Seq[Seq[String]] =
+    string.split("\n\n").toSeq.map(_.linesIterator.toSeq)
+}
+
 abstract class MapDay[A, B](year: Int, day: Int) extends TaskDay[Observable[Map[String, String]], A, B](year, day) {
   override def input(string: String): Observable[Map[String, String]] =
     Multiline(string)
