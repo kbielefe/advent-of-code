@@ -1,14 +1,6 @@
 # advent-of-code
 For sharing my adventofcode.com solutions
 
-The runner has been completely revamped for 2020 using Scala.js! From sbt, run
-`~fastOptJS::webpack`. I am hoping to add visualizations and debugging information in an
-easier to digest form than printlns.
-
-Run `./start-dev-server.sh` start a local web server:
-
-Run `npm install source-map-support` to get stack traces resolved.
-
 Add the following as the url for a bookmark to view solving times for each star on a private leaderboard:
 
 ```javascript
