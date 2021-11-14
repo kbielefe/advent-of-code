@@ -1,10 +1,14 @@
-import java.awt.datatransfer.StringSelection
 import java.awt.Toolkit
-import scala.io.Source
+import java.awt.datatransfer.StringSelection
+import java.util.{Calendar, Date, TimeZone}
+import sttp.client3.*
 
 object Runner:
   @main def main(year: Int, day: Int, part: Int): Unit =
-    val input = Source.fromFile(s"input/$year/$day.txt").mkString
+    if !unlocked(year, day) then
+      println("Puzzle input not yet unlocked")
+      return
+    val input = getOrDownloadInput(year, day)
     val run = runDay(input, part)
     (year, day) match
       case (2020, 1) => run(advent2020.Day1.part1, advent2020.Day1.part2)
@@ -27,4 +31,30 @@ object Runner:
         .getSystemClipboard()
         .setContents(new StringSelection(text), null)
   end runDay
+
+  private def getOrDownloadInput(year: Int, day: Int): String =
+    val filename = os.pwd / "input" / s"$year" / s"$day.txt"
+    if os.exists(filename) then
+      os.read(filename)
+    else
+      println("Downloading new input")
+      val session = os.read(os.pwd / "input" / "session").trim
+      val backend = HttpURLConnectionBackend()
+      val response = basicRequest
+        .cookie("session", session)
+        .get(uri"https://adventofcode.com/$year/day/$day/input")
+        .send(backend)
+      val text = response.body match
+        case Left(e) => throw new Exception(s"Error downloading input: $e")
+        case Right(text) => text
+      os.write(filename, text)
+      text
+
+  private def unlocked(year: Int, day: Int): Boolean =
+    val calendar = Calendar.getInstance(TimeZone.getTimeZone("EST"))
+    calendar.set(year, 11, day, 0, 0, 0)
+    val unlockTime = calendar.getTimeInMillis()
+    val currentTime = new Date().getTime()
+    currentTime >= unlockTime
+
 end Runner
