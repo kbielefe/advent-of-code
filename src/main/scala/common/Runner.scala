@@ -12,6 +12,7 @@ object Runner:
     val run = runDay(input, part)
     (year, day) match
       case (2020, 1) => run(advent2020.Day1.part1, advent2020.Day1.part2)
+      case (2020, 2) => run(advent2020.Day2.part1, advent2020.Day2.part2)
       case _         => println("Puzzle solution not found.")
 
   private class runDay(input: String, part: Int):
