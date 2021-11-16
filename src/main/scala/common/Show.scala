@@ -1,3 +1,5 @@
+package puzzleparse
+
 trait Show[A]:
   def show(output: A): String
   def list(output: A): List[String] = List(show(output))
@@ -24,3 +26,10 @@ given [H : Show, T <: Tuple : Show]: Show[H *: T] with
   override def list(output: H *: T): List[String] =
     summon[Show[H]].show(output.head) :: summon[Show[T]].list(output.tail)
 
+given Show[Letter] with
+  def show(output: Letter): String =
+    output.toString
+
+given Show[Letters] with
+  def show(output: Letters): String =
+    output

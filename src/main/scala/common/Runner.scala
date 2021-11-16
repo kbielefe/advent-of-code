@@ -1,6 +1,7 @@
 import java.awt.Toolkit
 import java.awt.datatransfer.StringSelection
 import java.util.{Calendar, Date, TimeZone}
+import puzzleparse.{*, given}
 import sttp.client3.*
 
 object Runner:
