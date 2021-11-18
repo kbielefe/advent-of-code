@@ -1,8 +1,10 @@
 package advent2020
-import puzzleparse.{Letter, Letters}
+import puzzleparse.{*, given}
 
 object Day2:
-  def part1(input: List[(Int, Int, Letter, Letters)]): String =
-    input.head._4.drop(10)
+  case class Password(min: Int, max: Int, letter: Letter, password: Letters) derives Read
+
+  def part1(input: List[Password]): List[String] =
+    input.map(_.password)
 
   def part2(input: String): String = input

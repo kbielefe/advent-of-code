@@ -1,4 +1,5 @@
 package puzzleparse
+import shapeless3.deriving.*
 
 trait Read[A]:
   def read(input: String): A
@@ -63,3 +64,10 @@ given Read[Letter] with
       .dropWhile(!_.isLetter)
       .drop(1)
     (result, remainder)
+
+given readGen[A](using inst: K0.ProductInstances[Read, A]): Read[A] with
+  def read(input: String): A =
+    inst.construct([t] => (r: Read[t]) => r.read(input)) // TODO: make readPartial, but need to figure out how to pass remainder as context
+
+object Read:
+  inline def derived[A](using gen: K0.ProductGeneric[A]): Read[A] = readGen

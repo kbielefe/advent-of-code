@@ -33,3 +33,10 @@ given Show[Letter] with
 given Show[Letters] with
   def show(output: Letters): String =
     output
+
+given [A : Show]: Show[List[A]] with
+  def show(output: List[A]): String =
+    list(output).mkString("\n")
+
+  override def list(output: List[A]): List[String] =
+    output.map(summon[Show[A]].show)
