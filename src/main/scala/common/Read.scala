@@ -1,5 +1,6 @@
 package puzzleparse
-import shapeless3.deriving.*
+import scala.deriving.Mirror
+import scala.compiletime.{erasedValue, summonInline}
 
 trait Read[A]:
   def read(input: String): A
@@ -65,9 +66,15 @@ given Read[Letter] with
       .drop(1)
     (result, remainder)
 
-given readGen[A](using inst: K0.ProductInstances[Read, A]): Read[A] with
-  def read(input: String): A =
-    inst.construct([t] => (r: Read[t]) => r.read(input)) // TODO: make readPartial, but need to figure out how to pass remainder as context
-
 object Read:
-  inline def derived[A](using gen: K0.ProductGeneric[A]): Read[A] = readGen
+  inline given derived[T](using m: Mirror.ProductOf[T]): Read[T] =
+    new Read[T]:
+      def read(input: String): T =
+        m.fromProduct(fold[m.MirroredElemTypes](input))
+
+  private inline def fold[T <: Tuple](input: String): Tuple =
+    inline erasedValue[T] match
+      case _: EmptyTuple => EmptyTuple
+      case _: (t *: ts)  =>
+        val (result, remainder) = summonInline[Read[t]].readPartial(input)
+        result *: fold[ts](remainder)
