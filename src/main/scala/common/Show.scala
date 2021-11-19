@@ -1,4 +1,6 @@
 package puzzleparse
+import scala.deriving.Mirror
+import scala.compiletime.*
 
 trait Show[A]:
   def show(output: A): String
@@ -40,3 +42,23 @@ given [A : Show]: Show[List[A]] with
 
   override def list(output: List[A]): List[String] =
     output.map(summon[Show[A]].show)
+
+object Show:
+  inline given derived[T <: Product](using m: Mirror.ProductOf[T]): Show[T] =
+    new Show[T]:
+      def show(output: T): String =
+        val label = constValue[m.MirroredLabel]
+        val elems = elemsList[m.MirroredElemLabels, m.MirroredElemTypes](Tuple.fromProductTyped(output))
+        label + elems.mkString("(", ", ", ")")
+
+  private inline def elemsList[L <: Tuple, T <: Tuple](v: Tuple): List[String] =
+    val (head, tail) = v match
+      case _: EmptyTuple => (None, None)
+      case t: NonEmptyTuple => (Some(t.head), Some(t.tail))
+    inline erasedValue[(L, T)] match
+      case _: (EmptyTuple, EmptyTuple) => Nil
+      case _: (l *: ls, t *: ts) =>
+        val label = constValue[l].asInstanceOf[String]
+        val show = summonInline[Show[t]]
+        val value = show.show(head.get.asInstanceOf[t])
+        s"$label: $value" :: elemsList[ls, ts](tail.get)
