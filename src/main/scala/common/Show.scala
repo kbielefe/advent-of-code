@@ -36,6 +36,22 @@ given Show[Letters] with
   def show(output: Letters): String =
     output
 
+given Show[Char] with
+  def show(output: Char): String =
+    output.toString
+
+given Show[Long] with
+  def show(output: Long): String =
+    output.toString
+
+given [A : Show]: Show[MultiLine[A]] with
+  def show(output: MultiLine[A]): String =
+    output.map(summon[Show[A]].show).mkString("\n\n")
+
+given [K : Show, V : Show]: Show[Map[K, V]] with
+  def show(output: Map[K, V]): String =
+    output.map((k, v) => s"${summon[Show[K]].show(k)}:${summon[Show[V]].show(v)}").mkString("\n")
+
 given [A : Show]: Show[List[A]] with
   def show(output: List[A]): String =
     list(output).mkString("\n")

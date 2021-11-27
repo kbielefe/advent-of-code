@@ -14,7 +14,22 @@ object Runner:
     (year, day) match
       case (2020, 1) => run(advent2020.Day1.part1, advent2020.Day1.part2)
       case (2020, 2) => run(advent2020.Day2.part1, advent2020.Day2.part2)
+      case (2020, 3) => run(advent2020.Day3.part1, advent2020.Day3.part2)
+      case (2020, 4) => run(advent2020.Day4.part1, advent2020.Day4.part2)
+      case (2020, 5) => run(advent2020.Day5.part1, advent2020.Day5.part2)
+      case (2020, 6) => run(advent2020.Day6.part1, advent2020.Day6.part2)
+      case (2020, 7) => run(advent2020.Day7.part1, advent2020.Day7.part2)
+      case (2020, 8) => run(advent2020.Day8.part1, advent2020.Day8.part2)
+      case (2020, 9) => run(advent2020.Day9.part1, advent2020.Day9.part2)
+      case (2020, 10) => run(advent2020.Day10.part1, advent2020.Day10.part2)
+      case (2020, 11) => run(advent2020.Day11.part1, advent2020.Day11.part2)
+      case (2020, 12) => run(advent2020.Day12.part1, advent2020.Day12.part2)
+      case (2020, 13) => run(advent2020.Day13.part1, advent2020.Day13.part2)
+      case (2020, 14) => run(advent2020.Day14.part1, advent2020.Day14.part2)
       case _         => println("Puzzle solution not found.")
+
+  private def runMacro(input: String, part: Int): Unit =
+    ???
 
   private class runDay(input: String, part: Int):
     def apply[A: Read, B: Show, C: Read, D: Show](part1: A => B, part2: C => D): Unit =

@@ -1,9 +1,10 @@
 package advent2020
+import puzzleparse.Nat
 
 object Day1:
-  def part1(input: List[Int]): Int = sumsTo2020(input, 2).product
+  def part1(input: List[Nat]): Int = sumsTo2020(input, 2).product
 
-  def part2(input: List[Int]): Int = sumsTo2020(input, 3).product
+  def part2(input: List[Nat]): Int = sumsTo2020(input, 3).product
 
   private def sumsTo2020(input: List[Int], count: Int): List[Int] =
     val expenses = input.toSet
