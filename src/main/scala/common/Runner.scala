@@ -27,6 +27,7 @@ object Runner:
       case (2020, 13) => run(advent2020.Day13.part1, advent2020.Day13.part2)
       case (2020, 14) => run(advent2020.Day14.part1, advent2020.Day14.part2)
       case (2021, 1) => run(advent2021.Day1.part1, advent2021.Day1.part2)
+      case (2021, 2) => run(advent2021.Day2.part1, advent2021.Day2.part2)
       case _         => println("Puzzle solution not found.")
 
   private def runMacro(input: String, part: Int): Unit =
