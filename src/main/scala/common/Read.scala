@@ -42,6 +42,10 @@ given Read[Long] with
   def read(input: String): Long =
     input.toLong
 
+given Read[Binary] with
+  def read(input: String): Binary =
+    Integer.parseInt(input, 2).asInstanceOf[Binary]
+
 given Read[Int] with
   def read(input: String): Int =
     input.toInt
