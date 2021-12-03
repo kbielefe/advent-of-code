@@ -5,11 +5,14 @@ import puzzleparse.{*, given}
 import sttp.client3.*
 
 object Runner:
-  @main def main(year: Int, day: Int, part: Int): Unit =
+  @main def main(year: Int, day: Int, part: Int, example: Int*): Unit =
     if !unlocked(year, day) then
       println("Puzzle input not yet unlocked")
       return
-    val input = getOrDownloadInput(year, day)
+    val input = if example.isEmpty then
+      getOrDownloadInput(year, day)
+    else
+      getExample(year, day, example.head)
     val run = runDay(input, part)
     (year, day) match
       case (2020, 1) => run(advent2020.Day1.part1, advent2020.Day1.part2)
@@ -30,9 +33,6 @@ object Runner:
       case (2021, 2) => run(advent2021.Day2.part1, advent2021.Day2.part2)
       case (2021, 3) => run(advent2021.Day3.part1, advent2021.Day3.part2)
       case _         => println("Puzzle solution not found.")
-
-  private def runMacro(input: String, part: Int): Unit =
-    ???
 
   private class runDay(input: String, part: Int):
     def apply[A: Read, B: Show, C: Read, D: Show](part1: A => B, part2: C => D): Unit =
@@ -69,6 +69,13 @@ object Runner:
         case Right(text) => text
       os.write(filename, text)
       text
+
+  private def getExample(year: Int, day: Int, example: Int): String =
+    val filename = os.pwd / "input" / s"$year" / s"${day}_example_$example.txt"
+    if !os.exists(filename) then
+      throw new Exception(s"Example file $filename does not exist")
+    else
+      os.read(filename)
 
   private def unlocked(year: Int, day: Int): Boolean =
     val calendar = Calendar.getInstance(TimeZone.getTimeZone("EST"))
