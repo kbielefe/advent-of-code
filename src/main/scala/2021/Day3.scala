@@ -3,39 +3,23 @@ import puzzleparse.{*, given}
 
 object Day3:
   def part1(input: List[String]): Int =
-    val bits = for
-      pos  <- 0 until input.head.length
-      line <- input
-    yield (pos, line(pos).asDigit)
-    val majority = input.size / 2
-    val frequency = bits.groupMapReduce(_._1)(_._2)(_ + _)
-    val gammaString = (0 until input.head.length).map(pos => if frequency(pos) >= majority then '1' else '0').mkString
-    val epsilonString = (0 until input.head.length).map(pos => if frequency(pos) >= majority then '0' else '1').mkString
-    val gamma = Integer.parseInt(gammaString, 2)
-    val epsilon = Integer.parseInt(epsilonString, 2)
+    val gamma = (0 until input.head.length).foldLeft(0){case (acc, bit) => (acc << 1) + mostFrequent(input, bit)}
+    val epsilon = ~gamma & ((1 << input.head.length) - 1)
     epsilon * gamma
 
   def part2(input: List[String]): Int =
-    oxygenRating(input) * scrubberRating(input)
+    rating(input, _ == _) * rating(input, _ != _)
 
-  private def oxygenRating(input: List[String], pos: Int = 0): Int =
-    if input.size == 1 then
-      Integer.parseInt(input.head, 2)
-    else
-      val oneCount = input.map(_(pos).asDigit).sum
-      val zeroCount = input.size - oneCount
-      if oneCount >= zeroCount then
-        oxygenRating(input.filter(_(pos) == '1'), pos + 1)
-      else
-        oxygenRating(input.filter(_(pos) == '0'), pos + 1)
+  private def mostFrequent(input: List[String], bit: Int): Int =
+    val oneCount = input.map(_(bit).asDigit).sum
+    val zeroCount = input.size - oneCount
+    if oneCount >= zeroCount then 1 else 0
 
-  private def scrubberRating(input: List[String], pos: Int = 0): Int =
-    if input.size == 1 then
-      Integer.parseInt(input.head, 2)
-    else
-      val oneCount = input.map(_(pos).asDigit).sum
-      val zeroCount = input.size - oneCount
-      if oneCount >= zeroCount then
-        scrubberRating(input.filter(_(pos) == '0'), pos + 1)
-      else
-        scrubberRating(input.filter(_(pos) == '1'), pos + 1)
+  def rating(input: List[String], compare: (Int, Int) => Boolean): Int =
+    val result = (0 until input.head.length)
+      .iterator
+      .scanLeft(input){case (list, bit) =>
+        list.filter(num => compare(num(bit).asDigit, mostFrequent(list, bit)))
+      }
+      .dropWhile(_.size > 1)
+    Integer.parseInt(result.next.head, 2)
