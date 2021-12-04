@@ -6,8 +6,7 @@ object Day4:
   given Read[Board] with
     def read(input: String): Board =
       val grid = summon[Read[Grid[Int]]].read(input)
-      val unmarked = grid.map((pos, num) => (num -> pos))
-      Board(Map.empty, unmarked, 0)
+      Board(Map.empty, grid.map(_.swap), 0)
 
   def part1(input: Header[List[Int], MultiLine[Board]]): Int =
     input.body.map(_.playUntilWins(input.header)).minBy(_._2)._1.score
