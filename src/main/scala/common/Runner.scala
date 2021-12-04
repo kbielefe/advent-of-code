@@ -80,15 +80,19 @@ object Runner:
 
   private def getAnswer(puzzle: Puzzle, kind: String): Option[String] =
     val filename = os.pwd / "input" / s"${puzzle.year}" / s"${puzzle.day}_answers.txt"
-    os.read.lines(filename)
-      .find(_.startsWith(s"part ${puzzle.part} $kind"))
-      .map(_.split(" ").last)
+    if os.exists(filename) then
+      os.read.lines(filename)
+        .find(_.startsWith(s"part ${puzzle.part} $kind"))
+        .map(_.split(" ").last)
+    else None
 
   private def getIncorrect(puzzle: Puzzle): IndexedSeq[String] =
     val filename = os.pwd / "input" / s"${puzzle.year}" / s"${puzzle.day}_answers.txt"
-    os.read.lines(filename)
-      .filter(_.startsWith(s"part ${puzzle.part} incorrect"))
+    if os.exists(filename) then
+      os.read.lines(filename)
+        .filter(_.startsWith(s"part ${puzzle.part} incorrect"))
       .map(_.split(" ").last)
+    else IndexedSeq.empty
 
   private def exampleAnswer(puzzle: Puzzle): Unit =
     modifyAnswers(puzzle, s"example ${puzzle.example.get}", s"example ${puzzle.example.get} ${puzzle.exampleAnswer.get}")

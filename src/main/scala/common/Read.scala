@@ -10,7 +10,16 @@ trait Read[A]:
 
 given [A : Read]: Read[List[A]] with
   def read(input: String): List[A] =
-    input.split("[\r\n]+").toList.map(summon[Read[A]].read)
+    val delim =
+      if input.contains("\n") then
+        "[\r\n]+"
+      else if input.contains(",") then
+        ",\\s*"
+      else if input.contains(" ") then
+        "\\s+"
+      else
+        ""
+    input.split(delim).filterNot(_.isEmpty).toList.map(summon[Read[A]].read)
 
 given Read[EmptyTuple] with
   def read(input: String): EmptyTuple =
@@ -80,6 +89,10 @@ given Read[Letters] with
       .dropWhile(_.isLetter)
     (result, remainder)
 
+given Read[Char] with
+  def read(input: String): Char =
+    input.head
+
 given Read[Letter] with
   def read(input: String): Letter =
     input.head.asInstanceOf[Letter] // TODO: fail if more than one character or if not a letter
@@ -94,13 +107,14 @@ given Read[Letter] with
       .drop(1)
     (result, remainder)
 
-given Read[Grid] with
-  def read(input: String): Grid =
-    input.linesIterator.zipWithIndex.flatMap{(line, row) =>
-      line.zipWithIndex.map{(char, col) =>
-        ((row, col), char)
+given [A : Read]: Read[Grid[A]] with
+  def read(input: String): Grid[A] =
+    val delim = if input.linesIterator.filterNot(_.isEmpty).next.contains(" ") then "\\s+" else ""
+    input.linesIterator.filterNot(_.isEmpty).zipWithIndex.flatMap{(line, row) =>
+      line.split(delim).filterNot(_.isEmpty).zipWithIndex.map{(elem, col) =>
+        ((row, col), summon[Read[A]].read(elem))
       }
-    }.toMap.asInstanceOf[Grid]
+    }.toMap.asInstanceOf[Grid[A]]
 
 given [A : Read : ClassTag]: Read[MultiLine[A]] with
   def read(input: String): MultiLine[A] =
@@ -128,6 +142,12 @@ given [D <: String & Singleton: ValueOf, A : Read : ClassTag]: Read[DList[D, A]]
       .map(summon[Read[A]].read)
       .toList
       .asInstanceOf[DList[D, A]]
+
+given [A : Read, B : Read]: Read[Header[A, B]] with
+  def read(input: String): Header[A, B] =
+    val header = summon[Read[A]].read(input.linesIterator.next)
+    val body = summon[Read[B]].read(input.linesIterator.drop(1).mkString("\n"))
+    Header(header, body)
 
 object Read:
   inline given derived[T](using m: Mirror.ProductOf[T]): Read[T] =
