@@ -9,13 +9,14 @@ object Day4:
       Board(Set.empty, grid.map(_.swap), 0)
 
   type Input = Header[List[Int], MultiLine[Board]]
-  type BI = (Board, Int)
 
-  def part1(input: Input): Int = answer(input, _.minBy)
-  def part2(input: Input): Int = answer(input, _.maxBy)
+  def part1(input: Input): Int = answer(input.header, input.body, true)
+  def part2(input: Input): Int = answer(input.header, input.body, false)
 
-  private def answer(input: Input, f: Seq[BI] => (BI => Int) => BI): Int =
-    f(input.body.map(_.playUntilWins(input.header)))(_._2)._1.score
+  private def answer(calledNumbers: List[Int], boards: List[Board], first: Boolean): Int =
+    val winningBoards = boards.map(_.playUntilWins(calledNumbers))
+    val chosenBoard = if first then winningBoards.minBy(_._2) else winningBoards.maxBy(_._2)
+    chosenBoard._1.score
 
   case class Board(marked: Set[Pos], unmarked: Map[Int, Pos], lastCalled: Int):
     def mark(num: Int): Board =
@@ -27,8 +28,8 @@ object Day4:
     def score: Int = unmarked.keys.sum * lastCalled
 
     def wins: Boolean =
-      val rows = marked.groupBy(_._1).exists(_._2.size == 5)
-      val cols = marked.groupBy(_._2).exists(_._2.size == 5)
+      val rows = marked.groupBy(_.row).exists(_._2.size == 5)
+      val cols = marked.groupBy(_.col).exists(_._2.size == 5)
       rows || cols
 
     def playUntilWins(calledNumbers: List[Int]): (Board, Int) =

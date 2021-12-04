@@ -112,7 +112,7 @@ given [A : Read]: Read[Grid[A]] with
     val delim = if input.linesIterator.filterNot(_.isEmpty).next.contains(" ") then "\\s+" else ""
     input.linesIterator.filterNot(_.isEmpty).zipWithIndex.flatMap{(line, row) =>
       line.split(delim).filterNot(_.isEmpty).zipWithIndex.map{(elem, col) =>
-        ((row, col), summon[Read[A]].read(elem))
+        (Pos(row, col), summon[Read[A]].read(elem))
       }
     }.toMap.asInstanceOf[Grid[A]]
 
