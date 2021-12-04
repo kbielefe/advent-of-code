@@ -15,8 +15,8 @@ object Day4:
 
   private def answer(calledNumbers: List[Int], boards: List[Board], first: Boolean): Int =
     val winningBoards = boards.map(_.playUntilWins(calledNumbers))
-    val chosenBoard = if first then winningBoards.minBy(_._2) else winningBoards.maxBy(_._2)
-    chosenBoard._1.score
+    val (chosenBoard, _) = if first then winningBoards.minBy(_._2) else winningBoards.maxBy(_._2)
+    chosenBoard.score
 
   case class Board(marked: Set[Pos], unmarked: Map[Int, Pos], lastCalled: Int):
     def mark(num: Int): Board =
