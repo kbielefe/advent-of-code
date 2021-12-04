@@ -17,6 +17,8 @@ object Puzzle:
 object Runner:
   @main def advent(year: Int, day: Int, part: Int, optional: String*): Unit =
     val puzzle = Puzzle(year, day, part, optional)
+    if puzzle.exampleAnswer.isDefined then
+      exampleAnswer(puzzle)
     if !unlocked(puzzle) then
       println("Puzzle input not yet unlocked")
       return
@@ -88,8 +90,8 @@ object Runner:
       .filter(_.startsWith(s"part ${puzzle.part} incorrect"))
       .map(_.split(" ").last)
 
-  private def exampleAnswer(puzzle: Puzzle, example: Int, answer: String): Unit =
-    modifyAnswers(puzzle, s"example $example", s"example $example $answer")
+  private def exampleAnswer(puzzle: Puzzle): Unit =
+    modifyAnswers(puzzle, s"example ${puzzle.example.get}", s"example ${puzzle.example.get} ${puzzle.exampleAnswer.get}")
 
   private def markCorrect(puzzle: Puzzle, answer: String): Unit =
     modifyAnswers(puzzle, s"correct|incorrect|low|high", s"correct $answer")
