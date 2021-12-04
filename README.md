@@ -1,38 +1,19 @@
 # advent-of-code
 For sharing my adventofcode.com solutions
 
-Add the following as the url for a bookmark to view solving times for each star on a private leaderboard:
+To set up:
 
-```javascript
-javascript:(function() {
-  var hoursAndMinutes = function(year, day, finish) {
-    var start = Date.UTC(year, 11, day, 5);
-    var minutes = Math.round((finish - start) / 1000 / 60);
-    var hours = Math.floor(minutes / 60).toString();
-    var remainder = (minutes % 60).toString();
-    var hourPlural = (hours == 1) ? "" : "s";
-    var minutePlural = (remainder == 1) ? "" : "s";
-    return hours + " hour" + hourPlural + ", " + remainder + " minute" + minutePlural;
-  };
-  var done = function() {
-    resp = JSON.parse(this.responseText);
-    year = resp.event.toString();
-    mems = Object.values(resp.members).sort((a,b) => b.local_score - a.local_score);
-    rows = document.querySelectorAll(".privboard-row");
-    for(i=1; i<rows.length; i++) {
-      stars = rows[i].querySelectorAll(".privboard-star-both, .privboard-star-firstonly, .privboard-star-unlocked");
-      for(let day in mems[i-1].completion_day_level) {
-        var compl1 = mems[i-1].completion_day_level[day][1];
-        var compl2 = mems[i-1].completion_day_level[day][2];
-        stars[day-1].title = ""
-          + (compl1 != null ? (hoursAndMinutes(year, day, compl1.get_star_ts*1000)) : "")
-            + (compl2 != null ? ("\n"+hoursAndMinutes(year, day, compl2.get_star_ts*1000)) : "");
-      }
-    }
-  };
-  var apiEndpoint = window.location.href+".json";
-  var req = new XMLHttpRequest(); req.addEventListener("load", done);
-  req.open("GET", apiEndpoint);
-  req.send();
-})();
-```
+ - Place your session cookie in a file called `input/session`.
+ - Create a new Day file.
+ - Add the new day to the `advent` function in `Runner.scala`.
+ - Start the sbt console.
+
+Available sbt commands:
+
+ - `run <year> <day> <part>` Runs the specified puzzle against your official input.
+ - `run <year> <day> <part> example 1` Runs the puzzle against an example input in file `input/<year>/<day>_example_1.txt`.
+ - `run <year> <day> <part> example 1 <answer>` Remembers the correct answer for the specified example.
+ - `run <year> <day> <part> correct` Remembers that the calculated answer is correct. Useful when refactoring.
+ - `run <year> <day> <part> incorrect` Remembers that the calculated answer is incorrect.
+ - `run <year> <day> <part> high` Remembers that the calculated answer is too high.
+ - `run <year> <day> <part> low` Remembers that the calculated answer is too low.
