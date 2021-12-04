@@ -10,7 +10,7 @@ trait Read[A]:
 
 given [A : Read]: Read[List[A]] with
   def read(input: String): List[A] =
-    input.split("\n").toList.map(summon[Read[A]].read)
+    input.split("[\r\n]+").toList.map(summon[Read[A]].read)
 
 given Read[EmptyTuple] with
   def read(input: String): EmptyTuple =
