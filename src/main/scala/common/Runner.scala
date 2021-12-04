@@ -5,18 +5,22 @@ import puzzleparse.{*, given}
 import scala.util.Try
 import sttp.client3.*
 
+case class Puzzle(year: Int, day: Int, part: Int, command: Option[String], example: Option[Int], exampleAnswer: Option[String])
+
+object Puzzle:
+  def apply(year: Int, day: Int, part: Int, optional: Seq[String]): Puzzle =
+    val command = optional.headOption.filter(_ != "example")
+    val example = optional.headOption.filter(_ == "example").map(_ => optional(1).toInt)
+    val exampleAnswer = if example.isDefined && optional.length > 2 then Some(optional(2)) else None
+    Puzzle(year, day, part, command, example, exampleAnswer)
+
 object Runner:
   @main def advent(year: Int, day: Int, part: Int, optional: String*): Unit =
-    if !unlocked(year, day) then
+    val puzzle = Puzzle(year, day, part, optional)
+    if !unlocked(puzzle) then
       println("Puzzle input not yet unlocked")
       return
-    val input = if optional.headOption.map(_ == "example").getOrElse(false) then
-      val example = optional(1).toInt
-      if optional.length > 2 then exampleAnswer(year, day, part, example, optional(2))
-      getExample(year, day, example)
-    else
-      getOrDownloadInput(year, day)
-    val run = runDay(input, year, day, part, optional)
+    val run = runDay(puzzle)
     (year, day) match
       case (2020, 1) => run(advent2020.Day1.part1, advent2020.Day1.part2)
       case (2020, 2) => run(advent2020.Day2.part1, advent2020.Day2.part2)
@@ -38,14 +42,16 @@ object Runner:
       case (2021, 4) => run(advent2021.Day4.part1, advent2021.Day4.part2)
       case _         => println("Puzzle solution not found.")
 
-  private class runDay(input: String, year: Int, day: Int, part: Int, optional: Seq[String]):
+  private class runDay(puzzle: Puzzle):
+    val input = puzzle.example.map(_ => getExample(puzzle)).getOrElse(getOrDownloadInput(puzzle))
+
     def apply[A: Read, B: Show, C: Read, D: Show](part1: A => B, part2: C => D): Unit =
       val start = System.currentTimeMillis()
-      val output = if part == 1 then run(part1) else run(part2)
+      val output = if puzzle.part == 1 then run(part1) else run(part2)
       val end = System.currentTimeMillis()
       println(s"(${end - start} ms)\n$output")
       copyToClipboard(output)
-      runCommand(year, day, part, optional, output)
+      runCommand(puzzle, output)
 
     private def run[A, B](f: A => B)(using read: Read[A], show: Show[B]): String =
       show.show(f(read.read(input)))
@@ -57,59 +63,59 @@ object Runner:
         .setContents(new StringSelection(text), null)
   end runDay
 
-  private def runCommand(year: Int, day: Int, part: Int, optional: Seq[String], output: String): Unit =
-    val command = optional.headOption.getOrElse("")
+  private def runCommand(puzzle: Puzzle, output: String): Unit =
+    val command = puzzle.command.getOrElse("")
     if command.startsWith("correct") then
-      markCorrect(year, day, part, output)
+      markCorrect(puzzle, output)
     if command.startsWith("incorrect") then
-      markIncorrect(year, day, part, output)
+      markIncorrect(puzzle, output)
     else if command.startsWith("high") then
-      markHigh(year, day, part, output)
+      markHigh(puzzle, output)
     else if command.startsWith("low") then
-      markLow(year, day, part, output)
+      markLow(puzzle, output)
     else
-      checkAnswer(year, day, part, output, optional)
+      checkAnswer(puzzle, output)
 
-  private def getAnswer(year: Int, day: Int, part: Int, kind: String): Option[String] =
-    val filename = os.pwd / "input" / s"$year" / s"${day}_answers.txt"
+  private def getAnswer(puzzle: Puzzle, kind: String): Option[String] =
+    val filename = os.pwd / "input" / s"${puzzle.year}" / s"${puzzle.day}_answers.txt"
     os.read.lines(filename)
-      .find(_.startsWith(s"part $part $kind"))
+      .find(_.startsWith(s"part ${puzzle.part} $kind"))
       .map(_.split(" ").last)
 
-  private def getIncorrect(year: Int, day: Int, part: Int): IndexedSeq[String] =
-    val filename = os.pwd / "input" / s"$year" / s"${day}_answers.txt"
+  private def getIncorrect(puzzle: Puzzle): IndexedSeq[String] =
+    val filename = os.pwd / "input" / s"${puzzle.year}" / s"${puzzle.day}_answers.txt"
     os.read.lines(filename)
-      .filter(_.startsWith(s"part $part incorrect"))
+      .filter(_.startsWith(s"part ${puzzle.part} incorrect"))
       .map(_.split(" ").last)
 
-  private def exampleAnswer(year: Int, day: Int, part: Int, example: Int, answer: String): Unit =
-    modifyAnswers(year, day, part, s"example $example", s"example $example $answer")
+  private def exampleAnswer(puzzle: Puzzle, example: Int, answer: String): Unit =
+    modifyAnswers(puzzle, s"example $example", s"example $example $answer")
 
-  private def markCorrect(year: Int, day: Int, part: Int, answer: String): Unit =
-    modifyAnswers(year, day, part, s"correct|incorrect|low|high", s"correct $answer")
+  private def markCorrect(puzzle: Puzzle, answer: String): Unit =
+    modifyAnswers(puzzle, s"correct|incorrect|low|high", s"correct $answer")
 
-  private def markIncorrect(year: Int, day: Int, part: Int, answer: String): Unit =
-    modifyAnswers(year, day, part, s"incorrect $answer", s"incorrect $answer")
+  private def markIncorrect(puzzle: Puzzle, answer: String): Unit =
+    modifyAnswers(puzzle, s"incorrect $answer", s"incorrect $answer")
 
-  private def markHigh(year: Int, day: Int, part: Int, answer: String): Unit =
-    val correct = getAnswer(year, day, part, "correct")
-    val high = getAnswer(year, day, part, "high")
+  private def markHigh(puzzle: Puzzle, answer: String): Unit =
+    val correct = getAnswer(puzzle, "correct")
+    val high = getAnswer(puzzle, "high")
     if !correct.isDefined && high.map(num => BigInt(num) < BigInt(answer)).getOrElse(true) then
-      modifyAnswers(year, day, part, s"high", s"high $answer")
+      modifyAnswers(puzzle, s"high", s"high $answer")
 
-  private def markLow(year: Int, day: Int, part: Int, answer: String): Unit =
-    val correct = getAnswer(year, day, part, "correct")
-    val low = getAnswer(year, day, part, "low")
+  private def markLow(puzzle: Puzzle, answer: String): Unit =
+    val correct = getAnswer(puzzle, "correct")
+    val low = getAnswer(puzzle, "low")
     if !correct.isDefined && low.map(num => BigInt(num) > BigInt(answer)).getOrElse(true) then
-      modifyAnswers(year, day, part, s"low", s"low $answer")
+      modifyAnswers(puzzle, s"low", s"low $answer")
 
-  private def checkAnswer(year: Int, day: Int, part: Int, answer: String, optional: Seq[String]): Unit =
-    val example = optional.headOption.map(_ == "example").getOrElse(false)
-    val correctString = if example then s"example ${optional(1).toInt}" else "correct"
-    val correct = getAnswer(year, day, part, correctString)
-    val high = getAnswer(year, day, part, "high").filterNot(_ => example)
-    val low = getAnswer(year, day, part, "low").filterNot(_ => example)
-    val incorrect = getIncorrect(year, day, part).filterNot(_ => example)
+  private def checkAnswer(puzzle: Puzzle, answer: String): Unit =
+    val example = puzzle.example.isDefined
+    val correctString = puzzle.example.map(example => s"example $example").getOrElse("correct")
+    val correct = getAnswer(puzzle, correctString)
+    val high = getAnswer(puzzle, "high").filterNot(_ => example)
+    val low = getAnswer(puzzle, "low").filterNot(_ => example)
+    val incorrect = getIncorrect(puzzle).filterNot(_ => example)
     val numeric = Try(BigInt(answer)).isSuccess
 
     val result = correct match
@@ -137,19 +143,19 @@ object Runner:
           "Unknown"
     println(result)
 
-  private def modifyAnswers(year: Int, day: Int, part: Int, remove: String, add: String): Unit =
-    val filename = os.pwd / "input" / s"$year" / s"${day}_answers.txt"
+  private def modifyAnswers(puzzle: Puzzle, remove: String, add: String): Unit =
+    val filename = os.pwd / "input" / s"${puzzle.year}" / s"${puzzle.day}_answers.txt"
     if os.exists(filename) then
       val text = os.read.lines(filename)
-        .filterNot(line => line.startsWith(s"part $part") && remove.r.unanchored.matches(line))
-        .appended(s"part $part $add")
+        .filterNot(line => line.startsWith(s"part ${puzzle.part}") && remove.r.unanchored.matches(line))
+        .appended(s"part ${puzzle.part} $add")
         .mkString("\n")
       os.write.over(filename, text)
     else
-      os.write(filename, s"part $part $add")
+      os.write(filename, s"part ${puzzle.part} $add")
 
-  private def getOrDownloadInput(year: Int, day: Int): String =
-    val filename = os.pwd / "input" / s"$year" / s"$day.txt"
+  private def getOrDownloadInput(puzzle: Puzzle): String =
+    val filename = os.pwd / "input" / s"${puzzle.year}" / s"${puzzle.day}.txt"
     if os.exists(filename) then
       os.read(filename)
     else
@@ -158,7 +164,7 @@ object Runner:
       val backend = HttpURLConnectionBackend()
       val response = basicRequest
         .cookie("session", session)
-        .get(uri"https://adventofcode.com/$year/day/$day/input")
+        .get(uri"https://adventofcode.com/${puzzle.year}/day/${puzzle.day}/input")
         .send(backend)
       val text = response.body match
         case Left(e) => throw new Exception(s"Error downloading input: $e")
@@ -166,16 +172,16 @@ object Runner:
       os.write(filename, text)
       text
 
-  private def getExample(year: Int, day: Int, example: Int): String =
-    val filename = os.pwd / "input" / s"$year" / s"${day}_example_$example.txt"
+  private def getExample(puzzle: Puzzle): String =
+    val filename = os.pwd / "input" / s"${puzzle.year}" / s"${puzzle.day}_example_${puzzle.example.get}.txt"
     if !os.exists(filename) then
       throw new Exception(s"Example file $filename does not exist")
     else
       os.read(filename)
 
-  private def unlocked(year: Int, day: Int): Boolean =
+  private def unlocked(puzzle: Puzzle): Boolean =
     val calendar = Calendar.getInstance(TimeZone.getTimeZone("EST"))
-    calendar.set(year, 11, day, 0, 0, 0)
+    calendar.set(puzzle.year, 11, puzzle.day, 0, 0, 0)
     val unlockTime = calendar.getTimeInMillis()
     val currentTime = new Date().getTime()
     currentTime >= unlockTime
