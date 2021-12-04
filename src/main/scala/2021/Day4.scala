@@ -25,8 +25,8 @@ object Day4:
     def score: Int = unmarked.keys.sum * lastCalled
 
     def wins: Boolean =
-      val rows = marked.values.groupMapReduce(_._1)(_ => 1)(_ + _).exists(_._2 == 5)
-      val cols = marked.values.groupMapReduce(_._2)(_ => 1)(_ + _).exists(_._2 == 5)
+      val rows = marked.values.groupBy(_._1).exists(_._2.size == 5)
+      val cols = marked.values.groupBy(_._2).exists(_._2.size == 5)
       rows || cols
 
     def playUntilWins(calledNumbers: List[Int]): (Board, Int) =
