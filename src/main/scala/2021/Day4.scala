@@ -8,11 +8,14 @@ object Day4:
       val grid = summon[Read[Grid[Int]]].read(input)
       Board(Set.empty, grid.map(_.swap), 0)
 
-  def part1(input: Header[List[Int], MultiLine[Board]]): Int =
-    input.body.map(_.playUntilWins(input.header)).minBy(_._2)._1.score
+  type Input = Header[List[Int], MultiLine[Board]]
+  type BI = (Board, Int)
 
-  def part2(input: Header[List[Int], MultiLine[Board]]): Int =
-    input.body.map(_.playUntilWins(input.header)).maxBy(_._2)._1.score
+  def part1(input: Input): Int = answer(input, _.minBy)
+  def part2(input: Input): Int = answer(input, _.maxBy)
+
+  private def answer(input: Input, f: Seq[BI] => (BI => Int) => BI): Int =
+    f(input.body.map(_.playUntilWins(input.header)))(_._2)._1.score
 
   case class Board(marked: Set[Pos], unmarked: Map[Int, Pos], lastCalled: Int):
     def mark(num: Int): Board =
