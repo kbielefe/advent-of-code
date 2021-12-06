@@ -10,10 +10,6 @@ given Show[Int] with
   def show(output: Int): String =
     output.toString
 
-given Show[Nat] with
-  def show(output: Nat): String =
-    output.toString
-
 given Show[String] with
   def show(output: String): String =
     output
@@ -32,14 +28,6 @@ given [H : Show, T <: Tuple : Show]: Show[H *: T] with
   override def list(output: H *: T): List[String] =
     summon[Show[H]].show(output.head) :: summon[Show[T]].list(output.tail)
 
-given Show[Letter] with
-  def show(output: Letter): String =
-    output.toString
-
-given Show[Letters] with
-  def show(output: Letters): String =
-    output
-
 given Show[Char] with
   def show(output: Char): String =
     output.toString
@@ -47,10 +35,6 @@ given Show[Char] with
 given Show[Long] with
   def show(output: Long): String =
     output.toString
-
-given [A : Show]: Show[MultiLine[A]] with
-  def show(output: MultiLine[A]): String =
-    output.map(summon[Show[A]].show).mkString("\n\n")
 
 given [K : Show, V : Show]: Show[Map[K, V]] with
   def show(output: Map[K, V]): String =
