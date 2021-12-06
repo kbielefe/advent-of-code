@@ -57,7 +57,7 @@ given Read[Binary] with
 
 given Read[Int] with
   def read(input: String): Int =
-    input.toInt
+    input.trim.toInt
 
   override def readPartial(input: String): (Int, String) =
     if !input.exists(_.isDigit) then
