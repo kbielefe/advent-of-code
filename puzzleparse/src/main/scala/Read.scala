@@ -1,53 +1,54 @@
 package puzzleparse
 import scala.deriving.Mirror
-import scala.compiletime.{erasedValue, summonInline}
+import scala.compiletime.erasedValue
 import scala.reflect.ClassTag
+import scala.util.matching.Regex.Match
 
 trait Read[A]:
   def read(input: String): A
+  def pattern: String
+  def extract(m: Match, group: Int): A
 
-given [A : Read]: Read[List[A]] with
-  def read(input: String): List[A] =
-    val delim =
-      if input.contains("\n") then
-        "[\r\n]+"
-      else if input.contains(",") then
-        ",\\s*"
-      else if input.contains(" ") then
-        "\\s+"
-      else
-        ""
-    input.split(delim).filterNot(_.isEmpty).toList.map(summon[Read[A]].read)
+given Read[Int] with
+  def read(input: String): Int =
+    pattern.r.findFirstIn(input).map(_.toInt).get
+  def pattern: String = "-?\\d+"
+  def extract(m: Match, group: Int): Int =
+    m.group(group).toInt
+
+given Read[String] with
+  def read(input: String): String =
+    input
+  def pattern: String = "(?s).*"
+  def extract(m: Match, group: Int): String =
+    m.group(group).trim
 
 given Read[EmptyTuple] with
-  def read(input: String): EmptyTuple =
-    EmptyTuple
+  def read(input: String): EmptyTuple = EmptyTuple
+  def pattern: String = ""
+  def extract(m: Match, group: Int): EmptyTuple = EmptyTuple
 
 given [H : Read, T <: Tuple : Read]: Read[H *: T] with
   def read(input: String): H *: T =
-    ???
+    val m = pattern.r.findFirstMatchIn(input).get
+    extract(m, 1)
 
-given [A : Read]: Read[Grid[A]] with
-  def read(input: String): Grid[A] =
-    val delim = if input.linesIterator.filterNot(_.isEmpty).next.contains(" ") then "\\s+" else ""
-    input.linesIterator.filterNot(_.isEmpty).zipWithIndex.flatMap{(line, row) =>
-      line.split(delim).filterNot(_.isEmpty).zipWithIndex.map{(elem, col) =>
-        (Pos(row, col), summon[Read[A]].read(elem))
-      }
-    }.toMap.asInstanceOf[Grid[A]]
+  inline def pattern: String =
+    val sep = inline erasedValue[T] match
+      case _: EmptyTuple => ""
+      case _ => ".*?"
+    "(" + summon[Read[H]].pattern + ")" + sep + summon[Read[T]].pattern
 
-given [K : Read, V : Read]: Read[Map[K, V]] with
-  def read(input: String): Map[K, V] =
-    input
-      .split("\\s")
-      .map(_.split(":") match {case Array(k, v) => (summon[Read[K]].read(k.trim), summon[Read[V]].read(v.trim))})
-      .toMap
+  def extract(m: Match, group: Int): H *: T =
+    summon[Read[H]].extract(m, group) *: summon[Read[T]].extract(m, group + 1)
 
 object Read:
   inline given derived[T](using m: Mirror.ProductOf[T]): Read[T] =
     new Read[T]:
       def read(input: String): T =
         m.fromProduct(fold[m.MirroredElemTypes](input))
+      def pattern: String = ???
+      def extract(m: Match, group: Int): T = ???
 
   private inline def fold[T <: Tuple](input: String): Tuple =
     inline erasedValue[T] match
