@@ -6,7 +6,7 @@ import scala.util.matching.Regex.Match
 
 trait Read[A]:
   def read(input: String): A =
-    val m = pattern.r.findFirstMatchIn(input).get
+    val m = ("(?s)" + pattern).r.findFirstMatchIn(input).get
     extract(m, 1)
   def pattern: String
   def extract(m: Match, group: Int): A
@@ -19,7 +19,7 @@ given Read[Int] with
   def groupCount: Int = 1
 
 given Read[String] with
-  def pattern: String = "(?s)(.*)"
+  def pattern: String = "(.*)"
   def extract(m: Match, group: Int): String =
     m.group(group).trim
   def groupCount: Int = 1
@@ -43,6 +43,18 @@ given [H : Read, T <: Tuple : Read]: Read[H *: T] with
 
   def groupCount: Int =
     summon[Read[H]].groupCount + summon[Read[T]].groupCount
+
+given [A](using reader: Read[A]): Read[List[A]] with
+  inline def pattern: String =
+    val delim = ".*"
+    "(" + reader.pattern + delim + ")*"
+
+  def extract(m: Match, group: Int): List[A] =
+    val matches = reader.pattern.r.findAllMatchIn(m.group(group))
+    matches.map(m => reader.extract(m, 1)).toList
+
+  def groupCount: Int =
+    1 + reader.groupCount
 
 object Read:
   inline given derived[T](using mirror: Mirror.ProductOf[T]): Read[T] =

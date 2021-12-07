@@ -50,5 +50,38 @@ class TestRead extends AnyFreeSpec with Matchers:
         summon[Read[(Pos, Pos)]].read("1,2 -> 3,4") shouldBe (Pos(1, 2), Pos(3, 4))
       }
     }
+
+    "of a List[Int]" - {
+      val reader = summon[Read[List[Int]]]
+      val expected = List(1,2,3,4)
+
+      "should read a single line" in {
+        reader.read("1,2,3,4") shouldBe expected
+      }
+
+      "should read subsequent lines" in {
+        reader.read("1\n2\n3\n4") shouldBe expected
+      }
+
+      "should read multiple lines" in {
+        reader.read("1\n\n2\n\n3\n\n4") shouldBe expected
+      }
+    }
+
+    "of a List[String]" - {
+      val reader = summon[Read[List[String]]]
+
+      "should read a single line" in {
+        reader.read("abc") shouldBe List("abc")
+      }
+
+      "should read subsequent lines" in {
+        reader.read("abc\ndef\nghi") shouldBe List("abc", "def", "ghi")
+      }
+
+      "should read multiple lines" in {
+        reader.read("abc\ndef\n\nghi") shouldBe List("abc\ndef", "ghi")
+      }
+    }
   }
 end TestRead
