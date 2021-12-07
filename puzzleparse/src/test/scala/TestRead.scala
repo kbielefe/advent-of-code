@@ -40,5 +40,15 @@ class TestRead extends AnyFreeSpec with Matchers:
         reader.read("forward\n\n3") shouldBe ("forward" -> 3)
       }
     }
+
+    "of a Pos" - {
+      "should read a single line" in {
+        summon[Read[Pos]].read("1,2") shouldBe Pos(1, 2)
+      }
+
+      "should read two on a line" in {
+        summon[Read[(Pos, Pos)]].read("1,2 -> 3,4") shouldBe (Pos(1, 2), Pos(3, 4))
+      }
+    }
   }
 end TestRead
