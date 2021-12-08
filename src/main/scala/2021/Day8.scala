@@ -13,7 +13,7 @@ object Day8:
     val outputs = input.drop(11)
     val one  = hasSize(inputs, 2)
     val four = hasSize(inputs, 4)
-    outputs.map(segmentsToDigit(one, four)).foldLeft(0)(_ * 10 + _)
+    outputs.map(segmentsToDigit(one, four)).reduceLeft(_ * 10 + _)
 
   private def hasSize(inputs: List[Letters], size: Int): Set[Char] =
     inputs.find(_.size == size).get.toSet
