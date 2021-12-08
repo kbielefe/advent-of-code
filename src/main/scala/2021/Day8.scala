@@ -3,7 +3,7 @@ import puzzleparse.{*, given}
 
 object Day8:
   def part1(input: List[List[Letters]]): Int =
-    input.flatMap(_.drop(10)).map(_.size).count(x => x == 7 || x == 4 || x == 3 || x == 2)
+    input.flatMap(_.drop(10)).map(_.size).count(Set(2,3,4,7).contains(_))
 
   def part2(input: List[List[Letters]]): Int =
     input.map(unscramble).sum
