@@ -93,6 +93,10 @@ given Read[Char] with
   def read(input: String): Char =
     input.head
 
+given Read[Digit] with
+  def read(input: String): Digit =
+    input.head.asDigit.asInstanceOf[Digit]
+
 given Read[Letter] with
   def read(input: String): Letter =
     input.head.asInstanceOf[Letter] // TODO: fail if more than one character or if not a letter

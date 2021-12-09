@@ -1,15 +1,13 @@
 package advent2021
-import puzzleparse.{Grid, Pos}
+import puzzleparse.{Digit, Grid, Pos}
 import scala.annotation.tailrec
 
 object Day9:
-  def part1(input: Grid[Char]): Int =
-    val grid = input.mapValues(_.asDigit).toMap.asInstanceOf[Grid[Int]]
-    grid.lowPoints.map(grid.risk).sum
+  def part1(input: Grid[Digit]): Int =
+    input.lowPoints.map(input.risk).sum
 
-  def part2(input: Grid[Char]): Int =
-    val grid = input.mapValues(_.asDigit).toMap.asInstanceOf[Grid[Int]]
-    grid.lowPoints.map(grid.basinSize).sorted.takeRight(3).product
+  def part2(input: Grid[Digit]): Int =
+    input.lowPoints.map(input.basinSize).sorted.takeRight(3).product
 
   extension (pos: Pos)
     def neighbors: Set[Pos] = Set(
@@ -19,7 +17,7 @@ object Day9:
       Pos(pos.row, pos.col + 1)
     )
 
-  extension (grid: Grid[Int])
+  extension (grid: Grid[Digit])
     def risk(pos: Pos): Int = grid(pos) + 1
 
     def isLowPoint(pos: Pos): Boolean =

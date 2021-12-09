@@ -1,6 +1,7 @@
 package puzzleparse
 
 opaque type Nat <: Int = Int
+opaque type Digit <: Int = Int
 opaque type Binary <: Int = Int
 opaque type Letter <: Char = Char
 opaque type Letters <: String = String
