@@ -6,7 +6,7 @@ lazy val commonSettings = Seq(
 lazy val root = (project in file(".")).settings(
   name := "advent of code",
   publish / skip := true
-).aggregate(aoc, puzzleparse)
+).aggregate(aoc, puzzleparse, visualization)
 
 lazy val aoc = (project in file("aoc")).settings(
   commonSettings,
@@ -22,5 +22,13 @@ lazy val puzzleparse = (project in file("puzzleparse")).settings(
   libraryDependencies ++= Seq(
     "org.scalactic" %% "scalactic" % "3.2.10",
     "org.scalatest" %% "scalatest" % "3.2.10" % "test"
+  )
+)
+
+lazy val visualization = (project in file("visualization")).settings(
+  name := "visualization",
+  commonSettings,
+  libraryDependencies ++= Seq(
+    "io.monix" %% "monix" % "3.4.0"
   )
 )
