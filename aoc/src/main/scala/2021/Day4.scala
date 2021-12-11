@@ -3,17 +3,13 @@ import puzzleparse.{*, given}
 
 object Day4:
 
-  given Read[Board] with
-    def read(input: String): Board =
-      val grid = summon[Read[Grid[Int]]].read(input)
-      Board(Set.empty, grid.map(_.swap), 0)
+  type Input = (List[Int], List[Grid[Int]])
 
-  type Input = Header[List[Int], MultiLine[Board]]
+  def part1(input: Input): Int = answer(input._1, input._2, true)
+  def part2(input: Input): Int = answer(input._1, input._2, false)
 
-  def part1(input: Input): Int = answer(input.header, input.body, true)
-  def part2(input: Input): Int = answer(input.header, input.body, false)
-
-  private def answer(calledNumbers: List[Int], boards: List[Board], first: Boolean): Int =
+  private def answer(calledNumbers: List[Int], grids: List[Grid[Int]], first: Boolean): Int =
+    val boards = grids.map(grid => Board(Set.empty, grid.map(_.swap), 0))
     val winningBoards = boards.map(_.playUntilWins(calledNumbers))
     val (chosenBoard, _) = if first then winningBoards.minBy(_._2) else winningBoards.maxBy(_._2)
     chosenBoard.score

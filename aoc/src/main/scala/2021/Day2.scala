@@ -2,7 +2,7 @@ package advent2021
 import puzzleparse.{*, given}
 
 object Day2:
-  def part1(input: List[(Letters, Int)]): Int =
+  def part1(input: List[(String, Int)]): Int =
     val (horizontal, depth) = input
       .foldLeft((0, 0)){case ((horizontal, depth), (command, amount)) =>
         command match
@@ -12,7 +12,7 @@ object Day2:
       }
     horizontal * depth
 
-  def part2(input: List[(Letters, Int)]): Int =
+  def part2(input: List[(String, Int)]): Int =
     val (horizontal, depth, _) = input
       .foldLeft((0, 0, 0)){case ((horizontal, depth, aim), (command, amount)) =>
         command match

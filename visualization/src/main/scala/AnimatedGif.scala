@@ -7,11 +7,11 @@ import javax.imageio.{ImageIO, IIOImage, ImageTypeSpecifier}
 import org.w3c.dom.Node
 
 @main def main(): Unit =
-  val loop = true
+  val loopCount: Short = 0
   val filename = "test.gif"
   val width = 200
   val height = 200
-  val loopDelayMs = 2000
+  val loopDelayMs = 1000
   val imageType = BufferedImage.TYPE_INT_ARGB
 
   val imageWriter = ImageIO.getImageWritersByFormatName("gif").next()
@@ -30,7 +30,7 @@ import org.w3c.dom.Node
   val app = root.getChild("ApplicationExtensions").getChild("ApplicationExtension")
   app.setAttribute("applicationID", "NETSCAPE")
   app.setAttribute("authenticationCode", "2.0")
-  app.setUserObject(Array[Byte](1, if loop then 0 else 1, 0))
+  app.setUserObject(Array[Byte](1, (loopCount & 0xff).toByte, ((loopCount >> 8) & 0xff).toByte))
 
   imageMetadata.setFromTree(formatName, root)
   val fos = new FileImageOutputStream(new File(filename))

@@ -57,6 +57,11 @@ given [H : Read, T <: Tuple : Read]: Read[H *: T] with
   def groupCount: Int =
     summon[Read[H]].groupCount + summon[Read[T]].groupCount
 
+given [A : Read]: Read[Grid[A]] with
+  def pattern(level: Level): String = ???
+  def extract(m: Match, group: Int, level: Level): Grid[A] = ???
+  def groupCount: Int = ???
+
 given [A](using reader: Read[A]): Read[List[A]] with
   inline def pattern(level: Level): String =
     val delim = level match

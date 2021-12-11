@@ -6,7 +6,7 @@ object Day5:
   def part1(input: List[Line]): Int = countOverlaps(input.filter(_.straight))
   def part2(input: List[Line]): Int = countOverlaps(input)
 
-  case class Line(x1: Nat, y1: Nat, x2: Nat, y2: Nat):
+  case class Line(x1: Int, y1: Int, x2: Int, y2: Int):
     def straight: Boolean = x1 == x2 || y1 == y2
 
     def points: Seq[Pos] =
