@@ -29,6 +29,11 @@ object Runner:
       case (2021, 3) => run(advent2021.Day3.part1, advent2021.Day3.part2)
       case (2021, 4) => run(advent2021.Day4.part1, advent2021.Day4.part2)
       case (2021, 5) => run(advent2021.Day5.part1, advent2021.Day5.part2)
+      case (2021, 6) => run(advent2021.Day6.part1, advent2021.Day6.part2)
+      case (2021, 7) => run(advent2021.Day7.part1, advent2021.Day7.part2)
+      case (2021, 8) => run(advent2021.Day8.part1, advent2021.Day8.part2)
+      case (2021, 9) => run(advent2021.Day9.part1, advent2021.Day9.part2)
+      case (2021, 10) => run(advent2021.Day10.part1, advent2021.Day10.part2)
       case _         => println("Puzzle solution not found.")
 
   private class runDay(puzzle: Puzzle):

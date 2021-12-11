@@ -28,6 +28,12 @@ given Read[Int] with
     m.group(group).toInt
   def groupCount: Int = 1
 
+given Read[Digit] with
+  def pattern(level: Level): String = "(\\d)"
+  def extract(m: Match, group: Int, level: Level): Digit =
+    m.group(group).toByte.asInstanceOf[Digit]
+  def groupCount: Int = 1
+
 given Read[String] with
   def pattern(level: Level): String = level match
     case Level.Char      => "(.+)"
