@@ -15,7 +15,7 @@ object Day13:
   private def display(dots: Set[Pos]): String =
     (dots.map(_.row).min to dots.map(_.row).max).map{row =>
       (dots.map(_.col).min to dots.map(_.col).max).map{col =>
-        if dots.contains(Pos(row, col)) then '█' else ' '
+        if dots.contains(Pos(row, col)) then "██" else "  "
       }.mkString
     }.mkString("\n")
 
