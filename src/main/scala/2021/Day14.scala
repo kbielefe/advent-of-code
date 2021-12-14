@@ -8,26 +8,23 @@ object Day14:
     answer(input, 40)
 
   private def answer(input: List[String], iterations: Int): Long =
-    Iterator.iterate(Counts(input))(_.insertion).drop(iterations).next.answer
+    val rules = getRules(input)
+    val pairs = getPairs(input)
+    val lastPairs = Iterator.iterate(pairs)(insertion(rules)).drop(iterations).next
+    val individuals = getIndividuals(input.head.head, lastPairs)
+    individuals.max - individuals.min
 
-  case class Counts(rules: Map[String, Char], pair: Map[String, Long], individual: Map[Char, Long]):
-    def answer: Long = individual.values.max - individual.values.min
+  private def getIndividuals(firstElement: Char, pairs: Map[String, Long]): Iterable[Long] =
+    val individualCounts = pairs.toList.map((pair, count) => (pair.last, count))
+      .groupMapReduce(_._1)(_._2)(_ + _)
+    (individualCounts + (firstElement -> individualCounts.get(firstElement).map(_ + 1).getOrElse(1L))).values
 
-    def insertion: Counts =
-      val newPair = pair.toList
-        .flatMap((pair, count) => List((pair.head.toString + rules(pair), count), (rules(pair) + pair.last.toString, count)))
-        .groupMapReduce(_._1)(_._2)(_ + _)
-      val newIndividualFromPairs = pair.toList
-        .map((pair, count) => (rules(pair), count))
-        .groupMapReduce(_._1)(_._2)(_ + _)
-      val newIndividual = (newIndividualFromPairs.keySet ++ individual.keySet)
-        .map(key => (key, newIndividualFromPairs.getOrElse(key, 0L) + individual.getOrElse(key, 0L)))
-        .toMap
-      Counts(rules, newPair, newIndividual)
+  def insertion(rules: Map[String, Char])(pairs: Map[String, Long]): Map[String, Long] =
+    pairs.toList.flatMap((pair, count) => List((pair.head.toString + rules(pair), count), (rules(pair) + pair.last.toString, count)))
+      .groupMapReduce(_._1)(_._2)(_ + _)
 
-  object Counts:
-    def apply(input: List[String]): Counts =
-      val rules = input.drop(1).map(_.split(" -> ")).map{case Array(x, y) => (x, y.head)}.toMap
-      val pair = input.head.sliding(2).toList.map(_.mkString).groupMapReduce(identity)(_ => 1L)(_ + _)
-      val individual = input.head.groupMapReduce(identity)(_ => 1L)(_ + _)
-      Counts(rules, pair, individual)
+  private def getRules(input: List[String]): Map[String, Char] =
+    input.drop(1).map(_.split(" -> ")).map{case Array(x, y) => (x, y.head)}.toMap
+
+  private def getPairs(input: List[String]): Map[String, Long] =
+    input.head.sliding(2).toList.map(_.mkString).groupMapReduce(identity)(_ => 1L)(_ + _)
