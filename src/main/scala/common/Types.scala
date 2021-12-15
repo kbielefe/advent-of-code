@@ -5,7 +5,7 @@ opaque type Digit <: Int = Int
 opaque type Binary <: Int = Int
 opaque type Letter <: Char = Char
 opaque type Letters <: String = String
-case class Pos(row: Int, col: Int)
+case class Pos(row: Int, col: Int) derives CanEqual
 opaque type Grid[+A] <: Map[Pos, A] = Map[Pos, A]
 opaque type MultiLine[A] <: List[A] = List[A]
 opaque type DMap[D <: String & Singleton, K, V] <: Map[K, V] = Map[K, V]
