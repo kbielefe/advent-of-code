@@ -8,13 +8,13 @@ class AStar[Position](
 
   def getPath(start: Position, goal: Position) : List[Position] = {
     @tailrec
-    def helper(open: Set[Position], cameFrom: Map[Position, Position],
-      g: Map[Position, Double], f: Map[Position, Double]): List[Position] = {
+    def helper(open: PriorityQueue[Position, Double], cameFrom: Map[Position, Position],
+      g: Map[Position, Double]): List[Position] = {
 
       if (open.isEmpty)
         return List[Position]()
 
-      val current = open minBy {f(_)}
+      val current = open.min
       if (current == goal)
         return reconstructPath(start, goal, cameFrom)
 
@@ -25,18 +25,17 @@ class AStar[Position](
 
       val newCameFrom = cameFrom ++ betterNeighbors.map{(_, current)}
       val newG = g ++ betterNeighbors.map{neighbor => (neighbor, tentativeG(neighbor))}
-      val newF = f ++ betterNeighbors.map{neighbor => (neighbor, tentativeG(neighbor) + heuristic(neighbor, goal))}
+      val updatedH = betterNeighbors.map{neighbor => (neighbor, tentativeG(neighbor) + heuristic(neighbor, goal))}
 
-      val newOpen = open ++ betterNeighbors - current
+      val newOpen = open ++ updatedH - current
 
-      helper(newOpen, newCameFrom, newG, newF)
+      helper(newOpen, newCameFrom, newG)
     }
 
-    val open = Set(start)
+    val open = PriorityQueue(start -> heuristic(start, goal))
     val cameFrom = Map[Position, Position]()
     val g = Map[Position, Double](start -> 0.0)
-    val f = Map[Position, Double](start -> heuristic(start, goal))
-    helper(open, cameFrom, g, f)
+    helper(open, cameFrom, g)
   }
 
   private def reconstructPath(start: Position, goal: Position, cameFrom: Map[Position, Position]): List[Position] = {
