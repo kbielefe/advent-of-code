@@ -1,18 +1,21 @@
 package algorithms
+import math.Numeric.Implicits.infixNumericOps
+import math.Ordering.Implicits.infixOrderingOps
+import scala.annotation.tailrec
 
-class AStar[Position](
-    heuristic: (Position, Position) => Double,
-    edgeWeight: (Position, Position) => Double,
+class AStar[Position, Weight : Numeric](
+    heuristic: (Position, Position) => Weight,
+    edgeWeight: (Position, Position) => Weight,
+    startWeight: Weight,
     getNeighbors: Position => Set[Position])(using CanEqual[Position, Position]) {
-  import scala.annotation.tailrec
 
   def getPath(start: Position, goal: Position) : List[Position] = {
     @tailrec
-    def helper(open: PriorityQueue[Position, Double], cameFrom: Map[Position, Position],
-      g: Map[Position, Double]): List[Position] = {
+    def helper(open: PriorityQueue[Position, Weight], cameFrom: Map[Position, Position],
+      g: Map[Position, Weight]): List[Position] = {
 
       if (open.isEmpty)
-        return List[Position]()
+        return List.empty[Position]
 
       val current = open.min
       if (current == goal)
@@ -34,7 +37,7 @@ class AStar[Position](
 
     val open = PriorityQueue(start -> heuristic(start, goal))
     val cameFrom = Map[Position, Position]()
-    val g = Map[Position, Double](start -> 0.0)
+    val g = Map[Position, Weight](start -> startWeight)
     helper(open, cameFrom, g)
   }
 
@@ -46,6 +49,6 @@ class AStar[Position](
       helper(cameFrom(current), current :: result)
     }
 
-    helper(goal, List[Position]())
+    helper(goal, List.empty[Position])
   }
 }
