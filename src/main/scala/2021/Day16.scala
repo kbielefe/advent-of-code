@@ -68,7 +68,11 @@ object Day16:
   private def int(bits: Int): Parsed[Int] = get(bits).map(Integer.parseInt(_, 2))
 
   private def get(bits: Int): Parsed[String] =
-    State(s => (s.copy(pos = s.pos + bits), s.bits.slice(s.pos, s.pos + bits)))
+    State{s =>
+      val (output, newBits) = s.bits.splitAt(bits)
+      val newPos = s.pos + bits
+      (ParseState(newBits, newPos), output)
+    }
 
   case class ParseState(bits: String, pos: Int)
 
