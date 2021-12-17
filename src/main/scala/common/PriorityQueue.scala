@@ -1,43 +1,40 @@
 package algorithms
+import math.Ordering.Implicits.infixOrderingOps
 
-import scala.collection.immutable.SortedMap
+sealed trait PriorityQueue[+A, +P : Ordering]:
+  import PriorityQueue.{Empty, Heap}
 
-/** An immutable min priority queue that allows updating of priorities. */
-class PriorityQueue[A, P] private (elementsByPriority: SortedMap[P, Set[A]], priorityByElement: Map[A, P])(using Ordering[P]):
+  def dequeue: Option[(A, PriorityQueue[A, P])] = this match
+    case Empty                   => None
+    case Heap(elem, _, subHeaps) => Some(elem, mergePairs(subHeaps))
 
-  given [A >: P]: CanEqual[P, A] = CanEqual.derived
+  def enqueue[B >: A, Q >: P : Ordering](element: (B, Q)): PriorityQueue[B, Q] =
+    meld(Heap(element._1, element._2, List.empty), this)
 
-  /** Returns if the priority queue is empty. */
-  def isEmpty: Boolean = priorityByElement.isEmpty
+  def enqueue[B >: A, Q >: P : Ordering](elements: IterableOnce[(B, Q)]): PriorityQueue[B, Q] =
+    elements.foldLeft[PriorityQueue[B, Q]](this)(_ enqueue _)
 
-  /** Returns the minimum element. Should check if empty first. */
-  def min: A =
-    elementsByPriority.head._2.head
+  def isEmpty: Boolean = this match
+    case Empty => true
+    case _     => false
 
-  /** Adds or updates the given element with priority */
-  def +(other: (A, P)): PriorityQueue[A, P] =
-    val (a, newPriority) = other
-    val newElementsByPriority = priorityByElement.get(a) match
-      case None              => elementsByPriority + (newPriority -> (elementsByPriority.getOrElse(newPriority, Set.empty) + a))
-      case Some(oldPriority) => elementsByPriority + (oldPriority -> (elementsByPriority(oldPriority) - a)) + (newPriority -> (elementsByPriority.getOrElse(newPriority, Set.empty) + a))
-    new PriorityQueue(newElementsByPriority, priorityByElement + other)
+  given [A, P, Q <: PriorityQueue[A, P]]: CanEqual[Q, Q] = CanEqual.derived
 
-  /** Adds or updates the given elements with their priorities */
-  def ++(other: Iterable[(A, P)]): PriorityQueue[A, P] = other.foldLeft(this)(_ + _)
+  private def meld[B >: A, Q >: P : Ordering](left: PriorityQueue[B, Q], right: PriorityQueue[B, Q]): PriorityQueue[B, Q] = (left, right) match
+    case (Empty, Empty) => Empty
+    case (Empty, right) => right
+    case (left, Empty)  => left
+    case (Heap(elem, priority, subHeaps), right: Heap[B, Q]) if priority < right.priority => Heap(elem, priority, right :: subHeaps)
+    case (left: Heap[B, Q], Heap(elem, priority, subHeaps))                               => Heap(elem, priority, left  :: subHeaps)
 
-  /** Removes the given element, if it exists. */
-  def -(element: A): PriorityQueue[A, P] =
-    val exists = for
-      priority <- priorityByElement.get(element)
-      elements <- elementsByPriority.get(priority)
-      newElements = elements - element
-      newElementsByPriority = if newElements.isEmpty then elementsByPriority - priority else elementsByPriority + (priority -> newElements)
-    yield new PriorityQueue(newElementsByPriority, priorityByElement - element)
-    exists.getOrElse(this)
+  private def mergePairs(subHeaps: List[Heap[A, P]]): PriorityQueue[A, P] = subHeaps match
+    case Nil            => Empty
+    case x :: Nil       => x
+    case x :: y :: tail => meld(meld(x, y), mergePairs(tail))
+
+end PriorityQueue
 
 object PriorityQueue:
-  def empty[A, P](using Ordering[P]): PriorityQueue[A, P] =
-    new PriorityQueue(SortedMap.empty, Map.empty)
-
-  def apply[A, P](a: (A, P)*)(using Ordering[P]): PriorityQueue[A, P] =
-    empty ++ a
+  def apply[A, P : Ordering](element: (A, P)): PriorityQueue[A, P] = Empty.enqueue(element)
+  case object Empty extends PriorityQueue[Nothing, Nothing]
+  case class Heap[+A, +P : Ordering](elem: A, priority: P, subHeaps: List[Heap[A, P]]) extends PriorityQueue[A, P]
