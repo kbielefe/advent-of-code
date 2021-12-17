@@ -80,7 +80,7 @@ object Runner:
     val filename = os.pwd / "input" / s"${puzzle.year}" / s"${puzzle.day}_answers.txt"
     if os.exists(filename) then
       os.read.lines(filename)
-        .find(_.startsWith(s"part ${puzzle.part} $kind"))
+        .find(_.startsWith(s"part ${puzzle.part} $kind "))
         .map(_.split(" ").last)
     else None
 
