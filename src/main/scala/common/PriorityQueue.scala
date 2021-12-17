@@ -4,6 +4,9 @@ import scala.collection.immutable.SortedMap
 
 /** An immutable min priority queue that allows updating of priorities. */
 class PriorityQueue[A, P] private (elementsByPriority: SortedMap[P, Set[A]], priorityByElement: Map[A, P])(using Ordering[P]):
+
+  given [A >: P]: CanEqual[P, A] = CanEqual.derived
+
   /** Returns if the priority queue is empty. */
   def isEmpty: Boolean = priorityByElement.isEmpty
 

@@ -10,6 +10,10 @@ given Show[Int] with
   def show(output: Int): String =
     output.toString
 
+given Show[BigInt] with
+  def show(output: BigInt): String =
+    output.toString
+
 given Show[Nat] with
   def show(output: Nat): String =
     output.toString
