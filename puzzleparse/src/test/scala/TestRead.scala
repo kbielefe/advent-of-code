@@ -18,12 +18,11 @@ class TestRead extends AnyFreeSpec with Matchers with EitherValues:
       }
     }
 
-    /*
     "of a String" - {
       val reader = summon[Read[String]]
 
       "should read the entire string" in {
-        reader.read("12") shouldBe "12"
+        reader.read("12").right.value shouldBe "12"
       }
     }
 
@@ -31,17 +30,18 @@ class TestRead extends AnyFreeSpec with Matchers with EitherValues:
       val reader = summon[Read[(String, Int)]]
 
       "should read a single line" in {
-        reader.read("forward 3") shouldBe ("forward" -> 3)
+        reader.read("forward 3").right.value shouldBe ("forward" -> 3)
       }
 
       "should read subsequent lines" in {
-        reader.read("forward\n3") shouldBe ("forward" -> 3)
+        reader.read("forward\n3").right.value shouldBe ("forward" -> 3)
       }
 
       "should read multiple lines" in {
-        reader.read("forward\n\n3") shouldBe ("forward" -> 3)
+        reader.read("forward\n\n3").right.value shouldBe ("forward" -> 3)
       }
     }
+    /*
 
     "of a Pos" - {
       "should read a single line" in {

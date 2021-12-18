@@ -1,6 +1,7 @@
 lazy val commonSettings = Seq(
   scalaVersion := "3.1.0",
-  scalacOptions ++= Seq("-source", "future", "-language:strictEquality")
+  scalacOptions ++= Seq("-source", "future", "-language:strictEquality"),
+  Test/testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oD", "-h", ((Test/testReportsDirectory).value / "html").absolutePath)
 )
 
 lazy val root = (project in file(".")).settings(
@@ -22,7 +23,8 @@ lazy val puzzleparse = (project in file("puzzleparse")).settings(
   commonSettings,
   libraryDependencies ++= Seq(
     "org.scalactic" %% "scalactic" % "3.2.10",
-    "org.scalatest" %% "scalatest" % "3.2.10" % "test"
+    "org.scalatest" %% "scalatest" % "3.2.10" % Test,
+    "com.vladsch.flexmark" % "flexmark-all" % "0.62.2" % Test
   )
 )
 
