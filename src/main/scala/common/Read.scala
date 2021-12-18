@@ -19,7 +19,7 @@ given [A : Read]: Read[List[A]] with
         "\\s+"
       else
         ""
-    input.split(delim).filterNot(_.isEmpty).toList.map(summon[Read[A]].read)
+    input.split(delim).map(_.trim).filterNot(_.isEmpty).toList.map(summon[Read[A]].read)
 
 given Read[EmptyTuple] with
   def read(input: String): EmptyTuple =
