@@ -4,8 +4,8 @@ import math.Ordering.Implicits.infixOrderingOps
 import scala.annotation.tailrec
 
 class AStar[Position, Weight : Numeric](
-    heuristic: (Position, Position) => Weight,
-    edgeWeight: (Position, Position) => Weight,
+    heuristic: (Position, Position) => Weight,  // Must be <= the actual cost
+    edgeWeight: (Position, Position) => Weight, // Only called between neighbors
     startWeight: Weight,
     getNeighbors: Position => Set[Position])(using CanEqual[Position, Position]) {
 
@@ -39,6 +39,35 @@ class AStar[Position, Weight : Numeric](
     val cameFrom = Map[Position, Position]()
     val g = Map[Position, Weight](start -> startWeight)
     helper(open, cameFrom, g)
+  }
+
+  def getMinCost(start: Position, goal: Position) : Option[Weight] = {
+    @tailrec
+    def helper(open: PriorityQueue[Position, Weight], g: Map[Position, Weight]): Option[Weight] = {
+
+      if (open.isEmpty)
+        return None
+
+      val (current, openWithoutMin) = open.dequeue.get
+      if (current == goal)
+        return Some(g(current))
+
+      def tentativeG(neighbor: Position) = g(current) + edgeWeight(current, neighbor)
+
+      val neighbors = getNeighbors(current) - current
+      val betterNeighbors = neighbors filter {neighbor => g.get(neighbor).map(tentativeG(neighbor) < _).getOrElse(true)}
+
+      val newG = g ++ betterNeighbors.map{neighbor => (neighbor, tentativeG(neighbor))}
+      val updatedH = betterNeighbors.map{neighbor => (neighbor, tentativeG(neighbor) + heuristic(neighbor, goal))}
+
+      val newOpen = openWithoutMin.enqueue(updatedH)
+
+      helper(newOpen, newG)
+    }
+
+    val open = PriorityQueue(start -> heuristic(start, goal))
+    val g = Map[Position, Weight](start -> startWeight)
+    helper(open, g)
   }
 
   private def reconstructPath(start: Position, goal: Position, cameFrom: Map[Position, Position]): List[Position] = {
