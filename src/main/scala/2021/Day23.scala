@@ -7,7 +7,7 @@ object Day23:
     AStar(heuristic, edgeWeight, 0, _.neighbors).getMinCost(burrow, goal).get
 
   def part2(burrow: Burrow): Int =
-    AStar(heuristic, edgeWeight, 0, _.neighbors).getMinCost(burrow, goal).get
+    AStar(heuristic, edgeWeight, 0, _.neighbors).getMinCost(burrow.augment, part2goal).get
 
   type Pod = Char
 
@@ -63,6 +63,10 @@ object Day23:
     def heuristic: Int =
       podList.zipWithIndex.map((podOpt, index) => podOpt.filter(_ != owner).map(pod => (2 + index + (pod.col - col).abs) * pod.energy)).flatten.sum
 
+    def augment(insert: String): Room =
+      val newPodList = Vector(podList(0), Some(insert(0)), Some(insert(1)), podList(1))
+      Room(col, owner, newPodList)
+
   case class Burrow(hallway: Hallway, rooms: Map[Pod, Room]) derives CanEqual:
     override def toString: String =
       "\n#############\n" +
@@ -104,9 +108,19 @@ object Day23:
         moveOut <- hallway.availableMovesOut(room)
       yield Burrow(moveOut, rooms + (pod -> moveIn))
 
+    def augment: Burrow =
+      val augmentedRooms = rooms.map{
+        case ('A', room) => ('A' -> room.augment("DD"))
+        case ('B', room) => ('B' -> room.augment("CB"))
+        case ('C', room) => ('C' -> room.augment("BA"))
+        case ('D', room) => ('D' -> room.augment("AC"))
+      }.toMap
+      Burrow(hallway, augmentedRooms)
+
   def edgeWeight(start: Burrow, end: Burrow): Int = start.edgeWeight(end)
   def heuristic(start: Burrow, end: Burrow): Int = start.heuristic
   val goal: Burrow = Burrow(Hallway(), "ABCD".zip(Seq(2, 4, 6, 8)).map{case (pod, col) => pod -> Room(col, pod, Vector(Some(pod), Some(pod)))}.toMap)
+  val part2goal: Burrow = Burrow(Hallway(), "ABCD".zip(Seq(2, 4, 6, 8)).map{case (pod, col) => pod -> Room(col, pod, Vector(Some(pod), Some(pod), Some(pod), Some(pod)))}.toMap)
 
   given Read[Burrow] with
     def read(input: String): Burrow =
