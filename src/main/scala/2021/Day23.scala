@@ -7,7 +7,7 @@ object Day23:
     AStar(heuristic, edgeWeight, 0, _.neighbors).getMinCost(burrow, goal).get
 
   def part2(burrow: Burrow): Int =
-    ???
+    AStar(heuristic, edgeWeight, 0, _.neighbors).getMinCost(burrow, goal).get
 
   type Pod = Char
 
@@ -32,33 +32,36 @@ object Day23:
     def pods: Set[(Pos, Pod)] =
       spaces.map((col, pod) => (Pos(0, col) -> pod)).toSet
 
-  case class Room(col: Int, owner: Pod, top: Option[Pod], bottom: Option[Pod]):
+  case class Room(col: Int, owner: Pod, podList: Vector[Option[Pod]]):
     def apply(index: Int): Char =
-      if index == 0 then
-        top.getOrElse('.')
+      podList(index).getOrElse('.')
+
+    def availableMovesOut: Set[Room] =
+      val topIndex = podList.indexWhere(_.isDefined)
+      if topIndex == -1 then
+        Set.empty
       else
-        bottom.getOrElse('.')
+        val newPodList = podList.updated(topIndex, None)
+        Set(Room(col, owner, newPodList))
 
-    def availableMovesOut: Set[Room] = (top, bottom) match
-      case (Some(_), _)    => Set(Room(col, owner, None, bottom))
-      case (None, Some(_)) => Set(Room(col, owner, None, None))
-      case (None, None)    => Set.empty
-
-    def availableMovesIn: Set[Room] = (top, bottom) match
-      case (None, None)                      => Set(Room(col, owner, None, Some(owner)))
-      case (None, Some(pod)) if pod == owner => Set(Room(col, owner, Some(owner), Some(owner)))
-      case _ => Set.empty
+    def availableMovesIn: Set[Room] =
+      val lowestEmpty = podList.lastIndexWhere(!_.isDefined)
+      val eligible = podList.flatten.forall(_ == owner)
+      if eligible && lowestEmpty != -1 then
+        val newPodList = podList.updated(lowestEmpty, Some(owner))
+        Set(Room(col, owner, newPodList))
+      else
+        Set.empty
 
     // Throws if room is empty, should only be called in contexts where that
     // has already been checked with availableMovesOut.
-    def availablePod: Pod = top.orElse(bottom).get
+    def availablePod: Pod = podList.flatten.head
 
     def pods: Set[(Pos, Pod)] =
-      Set(top.map(pod => (Pos(1, col) -> pod)), bottom.map(pod => (Pos(2, col) -> pod))).flatten
+      podList.zipWithIndex.map((podOpt, index) => podOpt.map(pod => (Pos(index + 1, col) -> pod))).flatten.toSet
 
     def heuristic: Int =
-      top.filter(_ != owner).map(p => (2 + (p.col - col).abs) * p.energy).getOrElse(0) +
-      bottom.filter(_ != owner).map(p => (3 + (p.col - col).abs) * p.energy).getOrElse(0)
+      podList.zipWithIndex.map((podOpt, index) => podOpt.filter(_ != owner).map(pod => (2 + index + (pod.col - col).abs) * pod.energy)).flatten.sum
 
   case class Burrow(hallway: Hallway, rooms: Map[Pod, Room]) derives CanEqual:
     override def toString: String =
@@ -103,16 +106,16 @@ object Day23:
 
   def edgeWeight(start: Burrow, end: Burrow): Int = start.edgeWeight(end)
   def heuristic(start: Burrow, end: Burrow): Int = start.heuristic
-  val goal: Burrow = Burrow(Hallway(), "ABCD".zip(Seq(2, 4, 6, 8)).map{case (pod, col) => pod -> Room(col, pod, Some(pod), Some(pod))}.toMap)
+  val goal: Burrow = Burrow(Hallway(), "ABCD".zip(Seq(2, 4, 6, 8)).map{case (pod, col) => pod -> Room(col, pod, Vector(Some(pod), Some(pod)))}.toMap)
 
   given Read[Burrow] with
     def read(input: String): Burrow =
       val grid = summon[Read[Grid[Char]]].read(input)
       val rooms = Map(
-        'A' -> Room(2, 'A', Some(grid(Pos(2, 3))), Some(grid(Pos(3, 3)))),
-        'B' -> Room(4, 'B', Some(grid(Pos(2, 5))), Some(grid(Pos(3, 5)))),
-        'C' -> Room(6, 'C', Some(grid(Pos(2, 7))), Some(grid(Pos(3, 7)))),
-        'D' -> Room(8, 'D', Some(grid(Pos(2, 9))), Some(grid(Pos(3, 9))))
+        'A' -> Room(2, 'A', Vector(Some(grid(Pos(2, 3))), Some(grid(Pos(3, 3))))),
+        'B' -> Room(4, 'B', Vector(Some(grid(Pos(2, 5))), Some(grid(Pos(3, 5))))),
+        'C' -> Room(6, 'C', Vector(Some(grid(Pos(2, 7))), Some(grid(Pos(3, 7))))),
+        'D' -> Room(8, 'D', Vector(Some(grid(Pos(2, 9))), Some(grid(Pos(3, 9)))))
       )
       Burrow(Hallway(), rooms)
 
