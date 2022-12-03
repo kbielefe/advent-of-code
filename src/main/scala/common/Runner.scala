@@ -189,6 +189,7 @@ object Runner:
       val backend = HttpURLConnectionBackend()
       val response = basicRequest
         .cookie("session", session)
+        .header("User-Agent", "sttp https://github.com/kbielefe/advent-of-code/ by karl.bielefeldt@gmail.com")
         .get(uri"https://adventofcode.com/${puzzle.year}/day/${puzzle.day}/input")
         .send(backend)
       val text = response.body match
