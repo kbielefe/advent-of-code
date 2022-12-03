@@ -16,7 +16,7 @@ object Day3:
     priority((first.toSet & second.toSet & third.toSet).head)
 
   private def priority(input: Char): Int =
-    if input >= 'a' && input <= 'z' then
+    if input.isLower then
       input - 'a' + 1
     else
       input - 'A' + 27
