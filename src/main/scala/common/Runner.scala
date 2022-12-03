@@ -24,6 +24,7 @@ object Runner:
       return
     val run = runDay(puzzle)
     (year, day) match
+      case (2022, 1) => run(advent2022.Day1.part1, advent2022.Day1.part2)
       case (2016, 1) => run(advent2016.Day1.part1, advent2016.Day1.part2)
       case (2016, 2) => run(advent2016.Day2.part1, advent2016.Day2.part2)
       case (2016, 3) => run(advent2016.Day3.part1, advent2016.Day3.part2)
