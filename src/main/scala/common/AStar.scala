@@ -6,7 +6,7 @@ import scala.annotation.tailrec
 class AStar[Position, Weight : Numeric](
     heuristic: (Position, Position) => Weight,  // Must be <= the actual cost
     edgeWeight: (Position, Position) => Weight, // Only called between neighbors
-    startWeight: Weight,
+    startWeight: Weight,                        // Should be smaller than any actual weight, usually 0
     getNeighbors: Position => Set[Position])(using CanEqual[Position, Position]) {
 
   def getPath(start: Position, goal: Position) : List[Position] = {
