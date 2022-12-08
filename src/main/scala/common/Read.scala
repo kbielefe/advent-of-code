@@ -21,6 +21,10 @@ given [A : Read]: Read[List[A]] with
         ""
     input.split(delim).map(_.trim).filterNot(_.isEmpty).toList.map(summon[Read[A]].read)
 
+given [A : Read]: Read[Vector[A]] with
+  def read(input: String): Vector[A] =
+    summon[Read[List[A]]].read(input).toVector
+
 given Read[EmptyTuple] with
   def read(input: String): EmptyTuple =
     EmptyTuple
