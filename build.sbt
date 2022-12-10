@@ -1,5 +1,5 @@
 scalaVersion := "3.2.1"
-scalacOptions ++= Seq("-source", "future", "-language:strictEquality")
+scalacOptions ++= Seq("-source", "future", "-language:strictEquality", "-deprecation", "-feature", "-explain")
 libraryDependencies ++= Seq(
   "com.softwaremill.sttp.client3" %% "core" % "3.8.3",
   "com.lihaoyi"   %% "os-lib"    % "0.8.1",
