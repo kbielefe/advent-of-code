@@ -53,6 +53,7 @@ object Runner:
       case (2016, 17) => run(advent2016.Day17.part1, advent2016.Day17.part2)
       case (2016, 18) => run(advent2016.Day18.part1, advent2016.Day18.part2)
       case (2016, 19) => run(advent2016.Day19.part1, advent2016.Day19.part2)
+      case (2016, 20) => run(advent2016.Day20.part1, advent2016.Day20.part2)
       case (2020, 20) => run(advent2020.Day20.part1, advent2020.Day20.part2)
       case (2020, 21) => run(advent2020.Day21.part1, advent2020.Day21.part2)
       case (2020, 22) => run(advent2020.Day22.part1, advent2020.Day22.part2)
