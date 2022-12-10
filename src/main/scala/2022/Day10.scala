@@ -4,13 +4,13 @@ object Day10:
   def part1(input: List[String]): Int =
     xs(input)
       .zipWithIndex
-      .map{case (x, index) => (x, index + 1)}
+      .map{(x, index) => (x, index + 1)}
       .filter(_._2 % 40 == 20)
-      .map{case (x, cycle) => x * cycle}
+      .map{(x, cycle) => x * cycle}
       .sum
 
   def part2(input: List[String]): String =
-    val pixels = xs(input).zipWithIndex.map{case (spritePos, pixel) =>
+    val pixels = xs(input).zipWithIndex.map{(spritePos, pixel) =>
       if Math.abs((pixel % 40) - spritePos) <= 1 then '█' else ' '
     }
     pixels.grouped(40).map(_.mkString).mkString("\n")
