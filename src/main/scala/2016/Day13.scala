@@ -4,8 +4,8 @@ import scala.annotation.tailrec
 import scala.collection.immutable.Queue
 
 object Day13:
-  private def heuristic(start: (Int, Int), end: (Int, Int)): Int =
-    Math.abs(start._1 - end._1) + Math.abs(start._2 - end._2)
+  private def heuristic(start: (Int, Int)): Int =
+    Math.abs(start._1 - goal._1) + Math.abs(start._2 - goal._2)
 
   private def getNeighbors(input: Int)(start: (Int, Int)): Set[(Int, Int)] =
     val (x, y) = start
@@ -34,9 +34,11 @@ object Day13:
       else
         bfs(input, newOpen, newVisited)
 
+  val goal = (31, 39)
+
   def part1(input: Int): Int =
-    val astar = new AStar(heuristic, edgeWeight, 0, getNeighbors(input))
-    astar.getMinCost((1, 1), (31, 39)).get
+    val astar = new AStar[(Int, Int), Int](_ == goal, heuristic, edgeWeight, 0, getNeighbors(input))
+    astar.getMinCost((1, 1)).get
 
   def part2(input: Int): Int =
     bfs(input, Queue(((1, 1), 0)), Set.empty)

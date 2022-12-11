@@ -4,10 +4,10 @@ import algorithms.AStar
 
 object Day23:
   def part1(burrow: Burrow): Int =
-    AStar(heuristic, edgeWeight, 0, _.neighbors).getMinCost(burrow, goal).get
+    AStar[Burrow, Int](_ == goal, _.heuristic, neighborWeight, 0, _.neighbors).getMinCost(burrow).get
 
   def part2(burrow: Burrow): Int =
-    AStar(heuristic, edgeWeight, 0, _.neighbors).getMinCost(burrow.augment, part2goal).get
+    AStar[Burrow, Int](_ == part2goal, _.heuristic, neighborWeight, 0, _.neighbors).getMinCost(burrow.augment).get
 
   type Pod = Char
 
@@ -78,7 +78,7 @@ object Day23:
     def heuristic: Int =
       rooms.values.toList.map(_.heuristic).sum + hallway.heuristic
 
-    def edgeWeight(end: Burrow): Int =
+    def neighborWeight(end: Burrow): Int =
       val startRoomPods = rooms.flatMap(_._2.pods).toSet
       val endRoomPods = end.rooms.flatMap(_._2.pods).toSet
       if startRoomPods.size > endRoomPods.size then // Moved up to hallway
@@ -117,8 +117,7 @@ object Day23:
       }.toMap
       Burrow(hallway, augmentedRooms)
 
-  def edgeWeight(start: Burrow, end: Burrow): Int = start.edgeWeight(end)
-  def heuristic(start: Burrow, end: Burrow): Int = start.heuristic
+  def neighborWeight(start: Burrow, end: Burrow): Int = start.neighborWeight(end)
   val goal: Burrow = Burrow(Hallway(), "ABCD".zip(Seq(2, 4, 6, 8)).map{case (pod, col) => pod -> Room(col, pod, Vector(Some(pod), Some(pod)))}.toMap)
   val part2goal: Burrow = Burrow(Hallway(), "ABCD".zip(Seq(2, 4, 6, 8)).map{case (pod, col) => pod -> Room(col, pod, Vector(Some(pod), Some(pod), Some(pod), Some(pod)))}.toMap)
 

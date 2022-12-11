@@ -10,9 +10,9 @@ object Day15:
     totalRisk(expandGrid(input))
 
   private def totalRisk(input: Grid[Int]): Int =
-    val astar = new AStar(heuristic, weight(input), 0, neighbors(input))
     val goal = Pos(input.keySet.map(_.row).max, input.keySet.map(_.col).max)
-    val path = astar.getPath(Pos(0, 0), goal)
+    val astar = new AStar[Pos, Int](_ == goal, heuristic(goal), weight(input), 0, neighbors(input))
+    val path = astar.getPath(Pos(0, 0))
     path.drop(1).map(input(_)).sum
 
   private def expandGrid(grid: Grid[Int]): Grid[Int] =
@@ -33,7 +33,7 @@ object Day15:
     val wrappedRisk = if unwrappedRisk % 9 == 0 then 9 else unwrappedRisk % 9
     (Pos(newRow, newCol), wrappedRisk)
 
-  private def heuristic(from: Pos, to: Pos): Int =
+  private def heuristic(to: Pos)(from: Pos): Int =
     (from.row - to.row).abs + (from.col - to.col).abs
 
   private def weight(grid: Grid[Int])(from: Pos, to: Pos): Int =
