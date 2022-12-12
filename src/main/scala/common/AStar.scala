@@ -44,6 +44,8 @@ class AStar[Position, Weight : Numeric](
     helper(open, cameFrom, g)
   }
 
+  // TODO: Allow taking a list of start positions that all get added to the open queue.
+  // TODO: Add visualization
   def getMinCost(start: Position): Option[Weight] = {
     @tailrec
     def helper(open: PriorityQueue[Position, Weight], g: Map[Position, Weight]): Option[Weight] = {
