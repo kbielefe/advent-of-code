@@ -12,7 +12,6 @@ object Day12:
   def part2(input: Grid[Char]): Int =
     val startPos = input.find(_._2 == 'E').get._1
     val astar = new AStar[Pos, Int](goal(input, 2), heuristicPart2(input), neighborWeight, 0, getNeighbors(input, 2))
-    astar.getPath(startPos).foreach(println)
     astar.getMinCost(startPos).get
 
   private def goal(grid: Grid[Char], part: Int)(pos: Pos): Boolean =
