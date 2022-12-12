@@ -5,7 +5,9 @@ import scala.annotation.tailrec
 
 class AStar[Position, Weight : Numeric](
     goal: Position => Boolean,
-    heuristic: Position => Weight, // Must be <= the actual cost
+   // The heuristic must be <= the actual cost, but is more efficient when
+   // closer to the actual cost. _ => 0 is equivalent to Dijkstra's algorithm.
+    heuristic: Position => Weight,
     neighborWeight: (Position, Position) => Weight,
     zero: Weight,
     getNeighbors: Position => Set[Position])(using CanEqual[Position, Position]) {
