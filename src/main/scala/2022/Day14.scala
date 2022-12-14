@@ -2,42 +2,37 @@ package advent2022
 import scala.annotation.tailrec
 
 object Day14:
-  def part1(input: List[String]): Int =
+  def part1(input: List[String]): Int = answer(input, false)
+  def part2(input: List[String]): Int = answer(input, true) + 1
+
+  private def answer(input: List[String], floor: Boolean): Int =
     val obstacles = initialObstacles(input)
-    val bottom = obstacles.map(_._2).max
-    val initialSize = obstacles.size
-    val finalSize = finalObstacles(obstacles, bottom).size
-    finalSize - initialSize
+    val bottom = obstacles.map(_._2).max + (if floor then 1 else 0)
 
-  def part2(input: List[String]): Int =
-    val obstacles = initialObstacles(input)
-    val bottom = obstacles.map(_._2).max
-    val floor = initialObstacles(List(s"${500 - bottom - 10},${bottom + 2} -> ${500 + bottom + 10},${bottom + 2}"))
-    val initialSize = obstacles.size + floor.size
-    val finalSize = finalObstacles(obstacles ++ floor, bottom + 2).size
-    finalSize - initialSize + 1
+    @tailrec
+    def finalObstacles(obstacles: Set[(Int, Int)]): Set[(Int, Int)] =
+      addSand(obstacles) match
+        case Some(restingPlace) => finalObstacles(obstacles + restingPlace)
+        case None => obstacles
 
-  @tailrec
-  private def finalObstacles(obstacles: Set[(Int, Int)], bottom: Int): Set[(Int, Int)] =
-    addSand(obstacles, bottom) match
-      case Some(restingPlace) => finalObstacles(obstacles + restingPlace, bottom)
-      case None => obstacles
+    @tailrec
+    def addSand(obstacles: Set[(Int, Int)], moving: (Int, Int) = (500, 0)): Option[(Int, Int)] =
+      val (x, y) = moving
+      if y == bottom then
+        if floor then Some(moving) else None
+      else if !obstacles.contains((x, y + 1)) then
+        addSand(obstacles, (x, y + 1))
+      else if !obstacles.contains((x - 1, y + 1)) then
+        addSand(obstacles, (x - 1, y + 1))
+      else if !obstacles.contains((x + 1, y + 1)) then
+        addSand(obstacles, (x + 1, y + 1))
+      else if y == 0 then
+        None
+      else
+        Some(moving)
 
-  @tailrec
-  private def addSand(obstacles: Set[(Int, Int)], bottom: Int, moving: (Int, Int) = (500, 0)): Option[(Int, Int)] =
-    val (x, y) = moving
-    if y == bottom then
-      None
-    else if !obstacles.contains((x, y + 1)) then
-      addSand(obstacles, bottom, (x, y + 1))
-    else if !obstacles.contains((x - 1, y + 1)) then
-      addSand(obstacles, bottom, (x - 1, y + 1))
-    else if !obstacles.contains((x + 1, y + 1)) then
-      addSand(obstacles, bottom, (x + 1, y + 1))
-    else if y == 0 then
-      None
-    else
-      Some(moving)
+    finalObstacles(obstacles).size - obstacles.size
+  end answer
 
   private def initialObstacles(input: List[String]): Set[(Int, Int)] =
     input.foldLeft(Set.empty[(Int, Int)]){(obstacles, line) =>
