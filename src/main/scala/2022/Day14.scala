@@ -39,15 +39,10 @@ object Day14:
     else
       Some(moving)
 
-  private val start = """(\d+),(\d+)""".r
-  private val continue = """ -> (\d+),(\d+)""".r
-
   private def initialObstacles(input: List[String]): Set[(Int, Int)] =
     input.foldLeft(Set.empty[(Int, Int)]){(obstacles, line) =>
-      val first = Iterator(start.findFirstMatchIn(line).get.subgroups)
-      val matches = continue.findAllMatchIn(line).map(_.subgroups)
-      val coords = (first ++ matches).map{case List(x, y) => x.toInt -> y.toInt}
-      coords.sliding(2).flatMap{case Seq((a,b), (x,y)) =>
+      val coords = line.split(" -> ").map(_.split(",").map(_.toInt))
+      coords.sliding(2).flatMap{case Array(Array(a, b), Array(x, y)) =>
         for
           x <- Math.min(a, x) to Math.max(a, x)
           y <- Math.min(b, y) to Math.max(b, y)
