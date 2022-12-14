@@ -25,6 +25,7 @@ object Runner:
     val run = runDay(puzzle)
     (year, day) match
       case (2015, 6) => run(advent2015.Day6.part1, advent2015.Day6.part2)
+      case (2015, 7) => run(advent2015.Day7.part1, advent2015.Day7.part2)
       case (2016, 1) => run(advent2016.Day1.part1, advent2016.Day1.part2)
       case (2016, 2) => run(advent2016.Day2.part1, advent2016.Day2.part2)
       case (2016, 3) => run(advent2016.Day3.part1, advent2016.Day3.part2)
@@ -82,10 +83,6 @@ object Runner:
       case (2021, 8) => run(advent2021.Day8.part1, advent2021.Day8.part2)
       case (2021, 9) => run(advent2021.Day9.part1, advent2021.Day9.part2)
       case (2022, 1) => run(advent2022.Day1.part1, advent2022.Day1.part2)
-      case (2022, 10) => run(advent2022.Day10.part1, advent2022.Day10.part2)
-      case (2022, 11) => run(advent2022.Day11.part1, advent2022.Day11.part2)
-      case (2022, 12) => run(advent2022.Day12.part1, advent2022.Day12.part2)
-      case (2022, 13) => run(advent2022.Day13.part1, advent2022.Day13.part2)
       case (2022, 2) => run(advent2022.Day2.part1, advent2022.Day2.part2)
       case (2022, 3) => run(advent2022.Day3.part1, advent2022.Day3.part2)
       case (2022, 4) => run(advent2022.Day4.part1, advent2022.Day4.part2)
@@ -94,6 +91,11 @@ object Runner:
       case (2022, 7) => run(advent2022.Day7.part1, advent2022.Day7.part2)
       case (2022, 8) => run(advent2022.Day8.part1, advent2022.Day8.part2)
       case (2022, 9) => run(advent2022.Day9.part1, advent2022.Day9.part2)
+      case (2022, 10) => run(advent2022.Day10.part1, advent2022.Day10.part2)
+      case (2022, 11) => run(advent2022.Day11.part1, advent2022.Day11.part2)
+      case (2022, 12) => run(advent2022.Day12.part1, advent2022.Day12.part2)
+      case (2022, 13) => run(advent2022.Day13.part1, advent2022.Day13.part2)
+      case (2022, 14) => run(advent2022.Day14.part1, advent2022.Day14.part2)
       case _         => println("Puzzle solution not found.")
 
   private class runDay(puzzle: Puzzle):

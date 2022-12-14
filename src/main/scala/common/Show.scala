@@ -1,6 +1,9 @@
 package puzzleparse
-import scala.deriving.Mirror
 import scala.compiletime.*
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.*
+import scala.concurrent.{Await, Future}
+import scala.deriving.Mirror
 
 trait Show[A]:
   def show(output: A): String
@@ -51,6 +54,10 @@ given Show[Char] with
 given Show[Long] with
   def show(output: Long): String =
     output.toString
+
+given [A : Show]: Show[Future[A]] with
+  def show(output: Future[A]): String =
+    Await.result(output.map(summon[Show[A]].show), 10.seconds)
 
 given [A : Show]: Show[MultiLine[A]] with
   def show(output: MultiLine[A]): String =
