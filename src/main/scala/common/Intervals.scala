@@ -42,9 +42,19 @@ class Intervals[A](private[datastructures] val pairs: List[(A, A)])(using n: Num
       case ((lStart, lEnd) :: lTail, (rStart, rEnd) :: rTail) if rStart >= lStart && rEnd >= lStart =>
         subtract(lTail, remove, (lStart, rStart - n.one) :: result)
 
+      // Last 3 cases have not been tested in a puzzle
       // erase the middle part of the segment
-      // doesn't overlap and remove is lower than previous
-      // doesn't overlap and previous is lower than remove
+      case ((lStart, lEnd) :: lTail, (rStart, rEnd) :: rTail) if rStart >= lStart && rEnd <= lEnd =>
+        subtract((rEnd + n.one, lEnd) :: lTail, rTail, (lStart, rStart - n.one) :: result)
+
+      // doesn't overlap and remove is lower than segment
+      case ((lStart, lEnd) :: lTail, (rStart, rEnd) :: rTail) if rEnd < lStart =>
+        subtract(previous, rTail, result)
+
+      // doesn't overlap and segment is lower than remove
+      case ((lStart, lEnd) :: lTail, _) =>
+        subtract(lTail, remove, (lStart, lEnd) :: result)
+
     new Intervals(subtract(pairs, other.pairs, List.empty))
 
   def elements(using Integral[A]): List[A] =
