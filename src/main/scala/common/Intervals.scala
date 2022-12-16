@@ -3,6 +3,7 @@ import math.Numeric.Implicits.given
 import math.Ordering.Implicits.given
 import scala.annotation.tailrec
 
+// pairs are always sorted and disjoint and inclusive
 class Intervals[A](private[datastructures] val pairs: List[(A, A)])(using n: Numeric[A]):
   def |(other: Intervals[A]): Intervals[A] =
     @tailrec
@@ -17,6 +18,37 @@ class Intervals[A](private[datastructures] val pairs: List[(A, A)])(using n: Num
           merge(right :: tail, left :: merged)
 
     new Intervals(merge((pairs ++ other.pairs).sorted, List.empty))
+
+  def -(other: Intervals[A]): Intervals[A] =
+    @tailrec
+    def subtract(previous: List[(A, A)], remove: List[(A, A)], result: List[(A, A)]): List[(A, A)] = (previous, remove) match
+      // Ran out of segments
+      case (Nil, _) =>
+        result.reverse
+
+      // Ran out of removals
+      case (pair :: tail, Nil) =>
+        subtract(tail, Nil, pair :: result)
+
+      // completely erase segment
+      case ((lStart, lEnd) :: lTail, (rStart, rEnd) :: rTail) if rStart <= lStart && rEnd >= lEnd =>
+        subtract(lTail, remove, result)
+
+      // erase the left part of the segment
+      case ((lStart, lEnd) :: lTail, (rStart, rEnd) :: rTail) if rStart <= lStart && rEnd >= lStart =>
+        subtract((rEnd + n.one, lEnd) :: lTail, rTail, result)
+
+      // erase the right part of the segment
+      case ((lStart, lEnd) :: lTail, (rStart, rEnd) :: rTail) if rStart >= lStart && rEnd >= lStart =>
+        subtract(lTail, remove, (lStart, rStart - n.one) :: result)
+
+      // erase the middle part of the segment
+      // doesn't overlap and remove is lower than previous
+      // doesn't overlap and previous is lower than remove
+    new Intervals(subtract(pairs, other.pairs, List.empty))
+
+  def elements(using Integral[A]): List[A] =
+    pairs.flatMap((start, end) => List.range(start, end + n.one))
 
   def contains(element: A): Boolean =
     pairs.exists((start, end) => element >= start && element <= end)
