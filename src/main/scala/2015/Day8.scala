@@ -8,5 +8,5 @@ object Day8:
 
   def part2(input: List[String]): Int =
     input.map{string =>
-      string.replaceAll("""\"|\\""", "\\.").size - string.size + 2
+      string.replaceAll("\"|\\\\", "\\\\.").size - string.size + 2
     }.sum

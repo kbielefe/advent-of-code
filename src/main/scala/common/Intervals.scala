@@ -3,8 +3,9 @@ import math.Numeric.Implicits.given
 import math.Ordering.Implicits.given
 import scala.annotation.tailrec
 
+// TODO: Optimize with something like R-tree or Interval tree
 // pairs are always sorted and disjoint and inclusive
-class Intervals[A](private[datastructures] val pairs: List[(A, A)])(using n: Numeric[A]):
+class Intervals[A] private (private[datastructures] val pairs: List[(A, A)])(using n: Numeric[A]):
   def |(other: Intervals[A]): Intervals[A] =
     @tailrec
     def merge(unmerged: List[(A, A)], merged: List[(A, A)]): List[(A, A)] = unmerged match
