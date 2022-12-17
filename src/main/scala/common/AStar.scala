@@ -8,11 +8,11 @@ class AStar[Position, Weight : Numeric](
    // The heuristic must be <= the actual cost, but is more efficient when
    // closer to the actual cost. _ => 0 is equivalent to Dijkstra's algorithm.
     heuristic: Position => Weight,
-    neighborWeight: (Position, Position) => Weight,
-    zero: Weight,
-    getNeighbors: Position => Set[Position])(using CanEqual[Position, Position]) {
+    neighborWeight: (Position, Position) => Weight, // current -> neighbor -> weight
+    initial: Weight, // initial weight of the start state, usually zero
+    getNeighbors: Position => Set[Position]) {
 
-  def getPath(start: Position) : List[Position] = {
+  def getPath(start: Position)(using CanEqual[Position, Position]) : List[Position] = {
     @tailrec
     def helper(open: PriorityQueue[Position, Weight], cameFrom: Map[Position, Position],
       g: Map[Position, Weight]): List[Position] = {
@@ -40,12 +40,17 @@ class AStar[Position, Weight : Numeric](
 
     val open = PriorityQueue(start -> heuristic(start))
     val cameFrom = Map[Position, Position]()
-    val g = Map[Position, Weight](start -> zero)
+    val g = Map[Position, Weight](start -> initial)
     helper(open, cameFrom, g)
   }
 
   // TODO: Allow taking a list of start positions that all get added to the open queue.
   // TODO: Add visualization
+  // To find max reward instead:
+  //   - make the neighbor weights negative
+  //   - make sure the heuristic is more negative (larger absolute value) than the real reward. (maybe not?)
+  //   - make sure it can't loop indefinitely (or at all?)
+  //   - negate the result
   def getMinCost(start: Position): Option[Weight] = {
     @tailrec
     def helper(open: PriorityQueue[Position, Weight], g: Map[Position, Weight]): Option[Weight] = {
@@ -71,11 +76,11 @@ class AStar[Position, Weight : Numeric](
     }
 
     val open = PriorityQueue(start -> heuristic(start))
-    val g = Map[Position, Weight](start -> zero)
+    val g = Map[Position, Weight](start -> initial)
     helper(open, g)
   }
 
-  private def reconstructPath(start: Position, end: Position, cameFrom: Map[Position, Position]): List[Position] = {
+  private def reconstructPath(start: Position, end: Position, cameFrom: Map[Position, Position])(using CanEqual[Position, Position]): List[Position] = {
     @tailrec
     def helper(current: Position, result: List[Position]): List[Position] = {
       if (current == start)
