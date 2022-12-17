@@ -46,11 +46,6 @@ class AStar[Position, Weight : Numeric](
 
   // TODO: Allow taking a list of start positions that all get added to the open queue.
   // TODO: Add visualization
-  // To find max reward instead:
-  //   - make the neighbor weights negative
-  //   - make sure the heuristic is more negative (larger absolute value) than the real reward. (maybe not?)
-  //   - make sure it can't loop indefinitely (or at all?)
-  //   - negate the result
   def getMinCost(start: Position): Option[Weight] = {
     @tailrec
     def helper(open: PriorityQueue[Position, Weight], g: Map[Position, Weight]): Option[Weight] = {
