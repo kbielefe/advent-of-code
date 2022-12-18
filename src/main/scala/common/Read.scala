@@ -27,6 +27,10 @@ given [A : Read]: Read[Vector[A]] with
   def read(input: String): Vector[A] =
     summon[Read[List[A]]].read(input).toVector
 
+given [A : Read]: Read[Set[A]] with
+  def read(input: String): Set[A] =
+    summon[Read[List[A]]].read(input).toSet
+
 given Read[EmptyTuple] with
   def read(input: String): EmptyTuple =
     EmptyTuple

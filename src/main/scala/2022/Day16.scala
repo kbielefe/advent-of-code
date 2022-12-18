@@ -1,6 +1,5 @@
 package advent2022
 import algorithms.floydWarshall
-import scala.annotation.tailrec
 
 object Day16:
   def part1(input: List[String]): Int =
@@ -14,15 +13,15 @@ object Day16:
       distance != 0 && valves(to).flowRate != 0 && (from == "AA" || valves(from).flowRate != 0)
     }.view.mapValues(_ + 1).toMap
     val vertices = nonZeroDistances.toSet.flatMap{case ((from, to), distance) => Set(from, to)}
-    possiblePaths(List("AA"), 30, Set("AA"), nonZeroDistances, vertices).map(pressure(nonZeroDistances, valves)).max
+    possiblePaths(List("AA"), 30, Set("AA"), nonZeroDistances, vertices).map(pressure(30, nonZeroDistances, valves)).max
 
   def part2(input: List[String]): Int =
     ???
 
   case class Valve(name: String, flowRate: Int, tunnels: Set[String])
 
-  private def pressure(distances: Map[(String, String), Int], valves: Map[String, Valve])(path: List[String]): Int =
-    def times = path.sliding(2).map{case List(from, to) => distances((from, to))}.scanLeft(30)(_ - _)
+  private def pressure(time: Int, distances: Map[(String, String), Int], valves: Map[String, Valve])(path: List[String]): Int =
+    def times = path.sliding(2).map{case List(from, to) => distances((from, to))}.scanLeft(time)(_ - _)
     val flowRates = path.map(valves(_).flowRate)
     flowRates.zip(times).map(_ * _).sum
 
