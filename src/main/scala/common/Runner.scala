@@ -103,6 +103,8 @@ object Runner:
       case (2022, 16) => run(advent2022.Day16.part1, advent2022.Day16.part2)
       case (2022, 17) => run(advent2022.Day17.part1, advent2022.Day17.part2)
       case (2022, 18) => run(advent2022.Day18.part1, advent2022.Day18.part2)
+      case (2022, 19) => run(advent2022.Day19.part1, advent2022.Day19.part2)
+      case (2022, 21) => run(advent2022.Day21.part1, advent2022.Day21.part2)
       case _         => println("Puzzle solution not found.")
 
   private class runDay(puzzle: Puzzle):
@@ -117,7 +119,11 @@ object Runner:
       runCommand(puzzle, output)
 
     private def run[A, B](f: A => B)(using read: Read[A], show: Show[B]): String =
-      show.show(f(read.read(input)))
+      Try(show.show(f(read.read(input)))).recover{
+        case e: NotImplementedError =>
+          val stackElement = e.getStackTrace().find(_.getClassName().contains("advent")).get
+          s"Unimplemented code at ${stackElement.getFileName()}, line ${stackElement.getLineNumber()}"
+      }.get
 
     private def copyToClipboard(text: String): Unit =
       Toolkit

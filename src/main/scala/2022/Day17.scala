@@ -7,19 +7,20 @@ object Day17:
     moves(input).map(_._1).drop(2022).next
 
   def part2(input: String): Long =
-    val rocks = Iterator.continually(rockOrder.iterator).flatten
-    val skylines = rocks.zip(moves(input)).map(skyline)
+    val rockIndex = Iterator.continually((1 to 5).iterator).flatten
+    val jetIndex = Iterator.continually((1 to input.trim.size).iterator).flatten
+    val skylines = rockIndex.zip(jetIndex).zip(moves(input)).map(skyline)
     val Some((start, period, repeated)) = detectCycle(skylines): @unchecked
     cycledEquivalentValue(start, period, 1000000000000, n => moves(input).map(_._1).drop(n.toInt).next.toLong)
 
-  private def skyline(state: (Set[(Int, Int)], (Int, Set[(Int, Int)]))): (Set[(Int, Int)], List[Int]) =
-    val (nextRock, (height, cubes)) = state
+  private def skyline(state: ((Int, Int), (Int, Set[(Int, Int)]))): (Int, Int, List[Int]) =
+    val ((rockIndex, jetIndex), (height, cubes)) = state
     val highest = (1 to 7).toList.map{x =>
       val cubesInColumn = cubes.filter(_._1 == x).map(_._2)
       val max = if cubesInColumn.isEmpty then 0 else cubesInColumn.max
       height - max
     }
-    (nextRock, highest)
+    (rockIndex, jetIndex, highest)
 
   private def moves(input: String): Iterator[(Int, Set[(Int, Int)])] =
     val rocks = Iterator.continually(rockOrder.iterator).flatten
@@ -38,7 +39,7 @@ object Day17:
         val movedDownRocks = movedVertically.map{case (x, y) => (x, y - 1)}
         if movedDownRocks.map(_._2).exists(_ <= 0) || movedDownRocks.exists(cubes.contains) then
           val newHeight = Math.max(movedVertically.map(_._2).max, height)
-          val newCubes = cubes ++ movedVertically
+          val newCubes = cubes.filter{case (x, y) => y >= height - 100} ++ movedVertically
           (newHeight, newCubes)
         else
           moveUntilBlocked(movedDownRocks)
