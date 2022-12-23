@@ -1,40 +1,69 @@
 package advent2022
-import algorithms.binarySearch
-import scala.util.Try
 
 object Day21:
-  def part1(input: List[String]): BigInt =
-    evaluate(monkeys(input), "root", Map.empty[String, BigInt])._1
-
-  def part2(input: List[String]): BigInt =
+  def part1(input: List[String]): Long =
     val monkeyMap = monkeys(input)
-    def shout(monkey: String, n: Long): BigInt =
-      val result = evaluate(monkeyMap, monkey, Map("humn" -> n))._1
-      println(s"shout($monkey, $n) = $result")
-      result
-    val zvcm = shout("zvcm", 0)
-    binarySearch[BigInt, Long](0L, Long.MaxValue, shout("pnhm", _), _ < zvcm)._2
+    evaluate(substitute(monkeyMap, monkeyMap("root")))
 
-  private def monkeys(input: List[String]): Map[String, String] =
-    input.map(_.split(": ")).map{case Array(monkey, expression) => monkey -> expression}.toMap
+  def part2(input: List[String]): Long =
+    val monkeyMap = monkeys(input).updated("humn", Human())
+    val pnhm = substitute(monkeyMap, monkeyMap("pnhm"))
+    val zvcm = substitute(monkeyMap, monkeyMap("zvcm"))
+    solve(pnhm, zvcm)
 
-  private def evaluate(monkeys: Map[String, String], number: String, numbers: Map[String, BigInt]): (BigInt, Map[String, BigInt]) =
-    def binary(x: String, y: String, op: (BigInt, BigInt) => BigInt): (BigInt, Map[String, BigInt]) =
-      import math.Integral.Implicits.infixIntegralOps
-      val (xResult, xnumbers) = evaluate(monkeys, x, numbers)
-      val (yResult, ynumbers) = evaluate(monkeys, y, xnumbers)
-      val result = op(xResult, yResult)
-      (result, ynumbers + (number -> result))
+  sealed trait Expression
+  case class Add(x: Expression, y: Expression)      extends Expression
+  case class Subtract(x: Expression, y: Expression) extends Expression
+  case class Multiply(x: Expression, y: Expression) extends Expression
+  case class Divide(x: Expression, y: Expression)   extends Expression
+  case class Const(x: Int)                          extends Expression
+  case class Reference(monkey: String)              extends Expression
+  case class Human()                                extends Expression
 
-    numbers.get(number).map(_ -> numbers).getOrElse{
-      Try(BigInt(number)).map(_ -> numbers).getOrElse{
-        monkeys(number) match
-          case s"$x * $y" => binary(x, y, _ * _)
-          case s"$x / $y" =>
-            println(s"$x % $y = ${evaluate(monkeys, x, numbers)._1 % evaluate(monkeys, y, numbers)._1}")
-            binary(x, y, _ / _)
-          case s"$x + $y" => binary(x, y, _ + _)
-          case s"$x - $y" => binary(x, y, _ - _)
-          case x => (BigInt(x), numbers + (number -> BigInt(x)))
-      }
-    }
+  private def monkeys(input: List[String]): Map[String, Expression] =
+    input.map{
+      case s"$monkey: $x + $y" => monkey -> Add(Reference(x), Reference(y))
+      case s"$monkey: $x - $y" => monkey -> Subtract(Reference(x), Reference(y))
+      case s"$monkey: $x * $y" => monkey -> Multiply(Reference(x), Reference(y))
+      case s"$monkey: $x / $y" => monkey -> Divide(Reference(x), Reference(y))
+      case s"$monkey: $x"      => monkey -> Const(x.toInt)
+    }.toMap
+
+  private def substitute(monkeyMap: Map[String, Expression], monkey: Expression): Expression = monkey match
+    case Add(x, y)         => Add(substitute(monkeyMap, x), substitute(monkeyMap, y))
+    case Subtract(x, y)    => Subtract(substitute(monkeyMap, x), substitute(monkeyMap, y))
+    case Multiply(x, y)    => Multiply(substitute(monkeyMap, x), substitute(monkeyMap, y))
+    case Divide(x, y)      => Divide(substitute(monkeyMap, x), substitute(monkeyMap, y))
+    case Const(x)          => monkey
+    case Human()           => monkey
+    case Reference(monkey) => substitute(monkeyMap, monkeyMap(monkey))
+
+  private def evaluate(monkey: Expression): Long = monkey match
+    case Add(x, y)         => evaluate(x) + evaluate(y)
+    case Subtract(x, y)    => evaluate(x) - evaluate(y)
+    case Multiply(x, y)    => evaluate(x) * evaluate(y)
+    case Divide(x, y)      => evaluate(x) / evaluate(y)
+    case Const(x)          => x.toLong
+    case Reference(monkey) => ???
+    case Human()           => ???
+
+  private def solve(lhs: Expression, rhs: Expression): Long =
+    lhs match
+      case Add(x, y)      if containsHuman(x) => solve(x, Subtract(rhs, y))
+      case Add(x, y)      if containsHuman(y) => solve(y, Subtract(rhs, x))
+      case Subtract(x, y) if containsHuman(x) => solve(x, Add(rhs, y))
+      case Subtract(x, y) if containsHuman(y) => solve(y, Subtract(x, rhs))
+      case Divide(x, y)   if containsHuman(x) => solve(x, Multiply(rhs, y))
+      case Divide(x, y)   if containsHuman(y) => solve(y, Divide(x, rhs))
+      case Multiply(x, y) if containsHuman(x) => solve(x, Divide(rhs, y))
+      case Multiply(x, y) if containsHuman(y) => solve(y, Divide(rhs, x))
+      case _ => evaluate(rhs)
+
+  private def containsHuman(expression: Expression): Boolean = expression match
+    case Human()        => true
+    case Const(_)       => false
+    case Add(x, y)      => containsHuman(x) || containsHuman(y)
+    case Divide(x, y)   => containsHuman(x) || containsHuman(y)
+    case Subtract(x, y) => containsHuman(x) || containsHuman(y)
+    case Multiply(x, y) => containsHuman(x) || containsHuman(y)
+    case Reference(_)   => ???
