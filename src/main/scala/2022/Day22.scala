@@ -9,7 +9,7 @@ object Day22:
   def answer(input: String, wrap: Wrap): Int =
     val Array(gridString, moveString) = input.split("\n\n")
     val grid = parseGrid(gridString)
-    val startingPos = grid.map(_._1).filter(_.row == 1).minBy(_.col)
+    val startingPos = grid.map(_._1).filter(_.row == 0).minBy(_.col)
     val startingDir = '>'
     import Move.*
     val (Pos(endRow, endCol), facing) = moves(moveString.trim).foldLeft((startingPos, startingDir)){
@@ -25,7 +25,7 @@ object Day22:
         case '<' => (pos, '^')
         case 'v' => (pos, '<')
     }
-    1000 * endRow + 4 * endCol + ">v<^".indexOf(facing)
+    1000 * (endRow + 1) + 4 * (endCol + 1) + ">v<^".indexOf(facing)
 
   @tailrec
   private def moveForward(pos: Pos, dir: Char, distance: Int, grid: Map[Pos, Char], wrap: Wrap): (Pos, Char) =
@@ -43,7 +43,6 @@ object Day22:
         case Some('.') => moveForward(newPos, dir, distance - 1, grid, wrap)
         case None =>
           val (wrappedPos, wrappedDir) = wrap(pos, dir, grid)
-          println(s"$pos $dir $wrappedPos $wrappedDir")
           if grid(wrappedPos) == '#' then
             (pos, dir)
           else
@@ -62,13 +61,12 @@ object Day22:
 
   private def wrapPart2(pos: Pos, dir: Char, grid: Map[Pos, Char]): (Pos, Char) =
     val Pos(row, col) = pos
-    val face = (row - 1) / 50 -> (col - 1) / 50
+    val face = row / 50 -> col / 50
     val offset = dir match
-      case '>' => (row - 1) % 50
-      case '<' => (row - 1) % 50
-      case 'v' => (col - 1) % 50
-      case '^' => (col - 1) % 50
-    println(s"$pos $dir $face $offset")
+      case '>' => row % 50
+      case '<' => row % 50
+      case 'v' => col % 50
+      case '^' => col % 50
     val (newFace, newDir) = (face, dir) match
       case ((0, 1), '<') => ((2, 0), '>')
       case ((0, 1), '^') => ((3, 0), '>')
@@ -91,16 +89,15 @@ object Day22:
       else
         offset
     val newPos = newDir match
-      case '>' => Pos(newFace._1 * 50 + flippedOffset + 1, newFace._2 * 50 + 1)
-      case '<' => Pos(newFace._1 * 50 + flippedOffset + 1, newFace._2 * 50 + 50)
-      case 'v' => Pos(newFace._1 * 50 +  1, newFace._2 * 50 + flippedOffset + 1)
-      case '^' => Pos(newFace._1 * 50 + 50, newFace._2 * 50 + flippedOffset + 1)
-    //println(s"$face $offset $newFace $flippedOffset")
+      case '>' => Pos(newFace._1 * 50 + flippedOffset, newFace._2 * 50)
+      case '<' => Pos(newFace._1 * 50 + flippedOffset, newFace._2 * 50 + 49)
+      case 'v' => Pos(newFace._1 * 50, newFace._2 * 50 + flippedOffset)
+      case '^' => Pos(newFace._1 * 50 + 49, newFace._2 * 50 + flippedOffset)
     (newPos, newDir)
 
   private def parseGrid(input: String): Map[Pos, Char] =
     input.linesIterator.filterNot(_.isEmpty).zipWithIndex.flatMap{(line, row) =>
-      line.zipWithIndex.map{(elem, col) => (Pos(row + 1, col + 1), elem)}
+      line.zipWithIndex.map{(elem, col) => (Pos(row, col), elem)}
     }.toMap.filterNot(_._2 == ' ')
 
   enum Move:
