@@ -85,13 +85,13 @@ object Day22:
       case _ => ???
     val flippedOffset =
       if newDir == '>' && dir == '<' || newDir == '<' && dir == '>' then
-        50 - offset
+        49 - offset
       else
         offset
     val newPos = newDir match
       case '>' => Pos(newFace._1 * 50 + flippedOffset, newFace._2 * 50)
       case '<' => Pos(newFace._1 * 50 + flippedOffset, newFace._2 * 50 + 49)
-      case 'v' => Pos(newFace._1 * 50, newFace._2 * 50 + flippedOffset)
+      case 'v' => Pos(newFace._1 * 50     , newFace._2 * 50 + flippedOffset)
       case '^' => Pos(newFace._1 * 50 + 49, newFace._2 * 50 + flippedOffset)
     (newPos, newDir)
 
