@@ -19,14 +19,11 @@ object Day24:
     val endPos = input.find((pos, char) => pos.row == lastRow && char == '.').get._1
     val blizzards = Blizzards.fromGrid(input)
     val forwardAstar = new AStar[State, Int](_.pos == endPos, heuristic(endPos), (_, _) => 1, 0, getNeighbors(blizzards, lastRow, lastCol, startPos, endPos))
-    val backAstar = new AStar[State, Int](printGoal(startPos, endPos), heuristic(startPos), (_, _) => 1, 0, getNeighbors(blizzards, lastRow, lastCol, startPos, endPos))
+    val backAstar = new AStar[State, Int](_.pos == startPos, heuristic(startPos), (_, _) => 1, 0, getNeighbors(blizzards, lastRow, lastCol, startPos, endPos))
     val leg1 = forwardAstar.getMinCost(State(startPos, 0)).get
     val leg2 = backAstar.getMinCost(State(endPos, leg1)).get
     val leg3 = forwardAstar.getMinCost(State(startPos, leg1 + leg2)).get
     leg1 + leg2 + leg3
-
-  private def printGoal(start: Pos, end: Pos)(state: State): Boolean =
-    state.pos == start
 
   case class State(pos: Pos, time: Int)
 
