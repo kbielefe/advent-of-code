@@ -20,7 +20,32 @@ def branchAndBoundMax[I, N : Ordering](
           (bestI, bestN)
         case Some((i, queue)) if solution(i) && objective(i) > bestN =>
           helper(i, objective(i), queue)
+        case Some((i, queue)) if solution(i) =>
+          helper(bestI, bestN, queue)
+        case Some((i, queue)) if upperBound(i) >= bestN =>
+          val branches = branch(i)
+          val (branchBestI, branchBestN) =
+            if branches.isEmpty then
+              (bestI, bestN)
+            else
+              branches.map(b => (b, lowerBound(b))).maxBy(_._2)
+          val (newBestI, newBestN) =
+            if branchBestN > bestN then
+              (branchBestI, branchBestN)
+            else
+              (bestI, bestN)
+          helper(newBestI, newBestN, queue.appendedAll(branches.filter(upperBound(_) >= newBestN)))
         case Some((i, queue)) =>
-          helper(bestI, bestN, queue.appendedAll(branch(i).filter(upperBound(_) >= bestN)))
+          helper(bestI, bestN, queue)
 
     helper(i, lowerBound(i), Queue(i))
+
+// For a maximization problem:
+// Track a global lower bound (GLB), and individual upper and lower bounds.
+// If you see a LB that is greater than the GLB, update the GLB
+// If you see a UB that is lower than the GLB, prune
+
+// For a minimization problem:
+// Track a global upper bound (GUB), and individual upper and lower bounds.
+// If you see a UB that is less than the GUB, update the GUB
+// If you see a LB that is higher than the GUB, prune

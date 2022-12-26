@@ -29,14 +29,16 @@ object Day19:
       val builtStates = canBuild.map(robot => State(timeRemaining - 1, materialCounts - robot.costs + minedMaterials, robotCounts + Map(robot.material -> 1)))
       builtStates.toSet + State(timeRemaining - 1, materialCounts + minedMaterials, robotCounts)
 
+    // closest estimate that can be quickly calculated and is not above the actual answer
+    def lowerBound: Int =
+      // Don't build any more robots, just mine with what we've already got
+      materialCounts.getOrElse("ore", 0) + timeRemaining * robotCounts.getOrElse("ore", 0)
+
     // closest estimate that can be quickly calculated and is not below the actual answer
     def upperBound(robots: List[Robot]): Int =
-      // Start with solving a simpler problem. Maximize only ore production.
-      val result = (timeRemaining to 0 by -1).foldLeft((robotCounts("ore"), materialCounts.getOrElse("ore", 0))){case ((robots, ore), time) =>
+      (timeRemaining to 0 by -1).foldLeft((robotCounts("ore"), materialCounts.getOrElse("ore", 0))){case ((robots, ore), time) =>
         (robots + 1, ore + robots)
       }._2
-      println(result)
-      result
 
   case class Robot(material: String, costs: Map[String, Int]):
     def canBuild(materials: Map[String, Int]): Boolean =
@@ -45,7 +47,7 @@ object Day19:
   case class Blueprint(id: Int, robots: List[Robot]):
     def qualityLevel: Int =
       val initialState = State(24, Map.empty, Map("ore" -> 1))
-      val (finalState, maxGeodes) = branchAndBoundMax[State, Int](_.objective, _.branch(robots), _ => 0, _.upperBound(robots), _.solution)(initialState)
+      val (finalState, maxGeodes) = branchAndBoundMax[State, Int](_.objective, _.branch(robots), _.lowerBound, _.upperBound(robots), _.solution)(initialState)
       println(s"$finalState $maxGeodes")
       id * maxGeodes
 
