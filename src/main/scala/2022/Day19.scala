@@ -1,5 +1,5 @@
 package advent2022
-import algorithms.branchAndBoundMax
+import algorithms.branchAndBoundMaxFifo
 
 object Day19:
   def part1(input: List[String]): Int =
@@ -18,27 +18,32 @@ object Day19:
 
   case class State(timeRemaining: Int, materialCounts: Map[String, Int], robotCounts: Map[String, Int]):
     def objective: Int =
-      materialCounts.getOrElse("ore", 0) // TODO: change back to geode
+      materialCounts.getOrElse("geode", 0)
 
     def solution: Boolean =
       timeRemaining == 0
 
     def branch(robots: List[Robot]): Set[State] =
       val minedMaterials = robotCounts
-      val canBuild = robots.filter(_.canBuild(materialCounts))
+      val canBuild = robots.filter(_.canBuild(materialCounts)).filterNot(maxCount(robots))
       val builtStates = canBuild.map(robot => State(timeRemaining - 1, materialCounts - robot.costs + minedMaterials, robotCounts + Map(robot.material -> 1)))
       builtStates.toSet + State(timeRemaining - 1, materialCounts + minedMaterials, robotCounts)
 
-    // closest estimate that can be quickly calculated and is not above the actual answer
-    def lowerBound: Int =
-      // Don't build any more robots, just mine with what we've already got
-      materialCounts.getOrElse("ore", 0) + timeRemaining * robotCounts.getOrElse("ore", 0)
+    private def maxCount(robots: List[Robot])(robot: Robot): Boolean =
+      if robot.material == "geode" then
+        false
+      else
+        robotCounts.getOrElse(robot.material, 0) >= robots.iterator.map(_.costs.getOrElse(robot.material, 0)).max
 
-    // closest estimate that can be quickly calculated and is not below the actual answer
-    def upperBound(robots: List[Robot]): Int =
-      (timeRemaining to 0 by -1).foldLeft((robotCounts("ore"), materialCounts.getOrElse("ore", 0))){case ((robots, ore), time) =>
-        (robots + 1, ore + robots)
-      }._2
+    // Don't build any more geode robots, just mine with what we've already got
+    def lowerBound: Int =
+      materialCounts.getOrElse("geode", 0) + timeRemaining * robotCounts.getOrElse("geode", 0)
+
+    // How many geodes we would make if we built a geode robot every turn from now on.
+    def upperBound: Int =
+      materialCounts.getOrElse("geode", 0) +
+        robotCounts.getOrElse("geode", 0) * (timeRemaining + 1) +
+        timeRemaining * (timeRemaining + 1) / 2
 
   case class Robot(material: String, costs: Map[String, Int]):
     def canBuild(materials: Map[String, Int]): Boolean =
@@ -47,15 +52,15 @@ object Day19:
   case class Blueprint(id: Int, robots: List[Robot]):
     def qualityLevel: Int =
       val initialState = State(24, Map.empty, Map("ore" -> 1))
-      val (finalState, maxGeodes) = branchAndBoundMax[State, Int](_.objective, _.branch(robots), _.lowerBound, _.upperBound(robots), _.solution)(initialState)
-      println(s"$finalState $maxGeodes")
+      val (finalState, maxGeodes) = branchAndBoundMaxFifo[State, Int](_.objective, _.branch(robots), _.lowerBound, _.upperBound, _.solution)(initialState)
+      println(s"$robots $finalState $maxGeodes")
       id * maxGeodes
 
   private def parseBlueprint(input: String): Blueprint = input match
     case s"Blueprint $id: $robots" => Blueprint(id.toInt, parseRobots(robots))
 
   private def parseRobots(input: String): List[Robot] =
-    input.split("\\. ").map(parseRobot).filter(_.material == "ore").toList // TODO: remove filter
+    input.split("\\. ").map(parseRobot).toList
 
   private def parseRobot(input: String): Robot = input match
     case s"Each $material robot costs $costs" => Robot(material, parseCosts(costs))
