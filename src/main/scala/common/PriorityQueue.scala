@@ -12,7 +12,7 @@ sealed trait PriorityQueue[+A, +P : Ordering]:
     meld(Heap(element._1, element._2, List.empty), this)
 
   def enqueue[B >: A, Q >: P : Ordering](elements: IterableOnce[(B, Q)]): PriorityQueue[B, Q] =
-    elements.foldLeft[PriorityQueue[B, Q]](this)(_ enqueue _)
+    elements.iterator.foldLeft[PriorityQueue[B, Q]](this)(_ `enqueue` _)
 
   def isEmpty: Boolean = this match
     case Empty => true
