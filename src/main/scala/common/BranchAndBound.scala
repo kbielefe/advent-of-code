@@ -3,6 +3,32 @@ import scala.annotation.tailrec
 import scala.collection.immutable.Queue
 import math.Ordering.Implicits.given
 
+case class Variable[N : Ordering](name: String, value: Option[N], lowerBound: Option[N], upperBound: Option[N]):
+  override def toString: String =
+    s"$name: ${lowerBound.map(_.toString + " <= ").getOrElse("")}${value.map(_.toString).getOrElse("unassigned")}${upperBound.map(" <= " + _.toString).getOrElse("")}"
+
+type Variables[N] = Map[String, Variable[N]]
+
+// Problem-specific details for the implementation.
+trait BranchAndBound[N : Ordering]:
+  // The function being maximized
+  def objective(variables: Variables[N]): N
+
+  // Generate a set of (usually disjoint) candidate sub-solutions. Will not be
+  // called for leaves.
+  def branch(variables: Variables[N]): Set[Variables[N]]
+
+  // Find the lower bound on the value of any candidate solution
+  // (lowerBound(I) <= objective(x) for all x candidate solutions
+  def lowerBound(variables: Variables[N]): N
+
+  // Find the upper bound on the value of any candidate solution
+  // (upperBound(I) >= objective(x) for all x candidate solutions
+  def upperBound(variables: Variables[N]): N
+
+  // Do the variables represent a single candidate solution (leaf)?
+  def solution(variables: Variables[N]): Boolean
+
 trait QueueLike[Q[_]]:
   extension [A] (q: Q[A])
     def dequeueOption: Option[(A, Q[A])]
@@ -28,37 +54,22 @@ given QueueLike[List] with
 /** Find a solution state `I` that maximizes the objective function using a
  *  FIFO queue (BFS). Will return initial state if nothing better is found.
  */
-def branchAndBoundMaxFifo[I, N : Ordering](
-  objective:  I => N,        // The function being maximized
-  branch:     I => Set[I],   // Generate a set of (usually disjoint) candidate sub-solutions. Will not be called for leaves.
-  lowerBound: I => N,        // Find the lower bound on the value of any candidate solution in I (lowerBound(I) <= objective(x) for all x candidate solutions in I.
-  upperBound: I => N,        // Find the upper bound on the value of any candidate solution in I (upperBound(I) >= objective(x) for all x candidate solutions in I.
-  solution:   I => Boolean   // Returns if I represents a single candidate solution (leaf).
-)(i: I): (I, N) = branchAndBoundGeneric(objective, branch, lowerBound, upperBound, solution, Queue(i), i)
+def branchAndBoundMaxFifo[N : Ordering](i: Variables[N])(using BranchAndBound[N]): (Variables[N], N) =
+  branchAndBoundGeneric(Queue(i), i)
 
 /** Find a solution state `I` that maximizes the objective function using a
  *  LIFO queue (DFS). Will return initial state if nothing better is found.
  */
-def branchAndBoundMaxLifo[I, N : Ordering](
-  objective:  I => N,        // The function being maximized
-  branch:     I => Set[I],   // Generate a set of (usually disjoint) candidate sub-solutions. Will not be called for leaves.
-  lowerBound: I => N,        // Find the lower bound on the value of any candidate solution in I (lowerBound(I) <= objective(x) for all x candidate solutions in I.
-  upperBound: I => N,        // Find the upper bound on the value of any candidate solution in I (upperBound(I) >= objective(x) for all x candidate solutions in I.
-  solution:   I => Boolean   // Returns if I represents a single candidate solution (leaf).
-)(i: I): (I, N) = branchAndBoundGeneric(objective, branch, lowerBound, upperBound, solution, List(i), i)
+def branchAndBoundMaxLifo[N : Ordering](i: Variables[N])(using BranchAndBound[N]): (Variables[N], N) =
+  branchAndBoundGeneric(List(i), i)
 
 /** Find a solution state `I` that maximizes the objective function using a
  *  priority queue. States that come earliest according to the `Ordering[I]`
  *  will be visited first. Will return initial state if nothing better is
  *  found.
  */
-def branchAndBoundMaxPriority[I : Ordering, N : Ordering](
-  objective:  I => N,        // The function being maximized
-  branch:     I => Set[I],   // Generate a set of (usually disjoint) candidate sub-solutions. Will not be called for leaves.
-  lowerBound: I => N,        // Find the lower bound on the value of any candidate solution in I (lowerBound(I) <= objective(x) for all x candidate solutions in I.
-  upperBound: I => N,        // Find the upper bound on the value of any candidate solution in I (upperBound(I) >= objective(x) for all x candidate solutions in I.
-  solution:   I => Boolean   // Returns if I represents a single candidate solution (leaf).
-)(i: I): (I, N) =
+def branchAndBoundMaxPriority[N : Ordering](i: Variables[N])(using BranchAndBound[N], Ordering[Variables[N]]): (Variables[N], N) =
+  type I = Variables[N]
   type Q[A] = PriorityQueue[A, I]
   given QueueLike[Q] with
     extension [A] (q: Q[A])
@@ -66,43 +77,39 @@ def branchAndBoundMaxPriority[I : Ordering, N : Ordering](
         q.dequeue
       def appendedAll(items: IterableOnce[A]): Q[A] =
         q.enqueue(items.iterator.map(item => (item, item.asInstanceOf[I])))
-  branchAndBoundGeneric[I, N, Q](objective, branch, lowerBound, upperBound, solution, PriorityQueue[I, I](i -> i), i)
+  branchAndBoundGeneric[N, Q](PriorityQueue[I, I](i -> i), i)
 
-private[algorithms] def branchAndBoundGeneric[I, N : Ordering, Q[_] : QueueLike](
-  objective:  I => N,        // The function being maximized
-  branch:     I => Set[I],   // Generate a set of (usually disjoint) candidate sub-solutions. Will not be called for leaves.
-  lowerBound: I => N,        // Find the lower bound on the value of any candidate solution in I (lowerBound(I) <= objective(x) for all x candidate solutions in I.
-  upperBound: I => N,        // Find the upper bound on the value of any candidate solution in I (upperBound(I) >= objective(x) for all x candidate solutions in I.
-  solution:   I => Boolean,  // Returns if I represents a single candidate solution (leaf).
-  queue:      Q[I],          // The open queue containing the initial state.
-  i:          I              // The initial state
-  ): (I, N) =
+private[algorithms] def branchAndBoundGeneric[N : Ordering, Q[_] : QueueLike](
+  queue: Q[Variables[N]], // The open queue containing the initial state.
+  i: Variables[N]         // The initial state
+  )(using impl: BranchAndBound[N]): (Variables[N], N) =
+    type I = Variables[N]
     @tailrec
     def helper(bestI: I, bestN: N, queue: Q[I]): (I, N) =
       queue.dequeueOption match
         case None =>
           (bestI, bestN)
-        case Some((i, queue)) if solution(i) && objective(i) > bestN =>
-          helper(i, objective(i), queue)
-        case Some((i, queue)) if solution(i) =>
+        case Some((i, queue)) if impl.solution(i) && impl.objective(i) > bestN =>
+          helper(i, impl.objective(i), queue)
+        case Some((i, queue)) if impl.solution(i) =>
           helper(bestI, bestN, queue)
-        case Some((i, queue)) if upperBound(i) > bestN =>
-          val branches = branch(i)
+        case Some((i, queue)) if impl.upperBound(i) > bestN =>
+          val branches = impl.branch(i)
           val (branchBestI, branchBestN) =
             if branches.isEmpty then
               (bestI, bestN)
             else
-              branches.map(b => (b, lowerBound(b))).maxBy(_._2)
+              branches.map(b => (b, impl.lowerBound(b))).maxBy(_._2)
           val (newBestI, newBestN) =
             if branchBestN > bestN then
               (branchBestI, branchBestN)
             else
               (bestI, bestN)
-          helper(newBestI, newBestN, queue.appendedAll(branches.filter(upperBound(_) > newBestN)))
+          helper(newBestI, newBestN, queue.appendedAll(branches.filter(impl.upperBound(_) > newBestN)))
         case Some((i, queue)) =>
           helper(bestI, bestN, queue)
 
-    helper(i, lowerBound(i), queue)
+    helper(i, impl.lowerBound(i), queue)
 
 // For a maximization problem:
 // Track a global lower bound (GLB), and individual upper and lower bounds.
