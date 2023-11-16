@@ -1,12 +1,22 @@
-scalaVersion := "3.2.1"
-scalacOptions ++= Seq("-source", "future", "-language:strictEquality", "-deprecation", "-feature")
-libraryDependencies ++= Seq(
-  "com.softwaremill.sttp.client3" %% "core" % "3.8.3",
-  "com.lihaoyi"   %% "os-lib"    % "0.8.1",
-  "org.typelevel" %% "cats-core" % "2.9.0",
-  "kbielefe"      %% "puzzle"    % "0.1.0-SNAPSHOT",
-  "io.circe" %% "circe-core" % "0.14.1",
-  "io.circe" %% "circe-parser" % "0.14.1",
-  "org.scalactic" %% "scalactic" % "3.2.14",
-  "org.scalatest" %% "scalatest" % "3.2.14" % Test
+ThisBuild / scalaVersion := "3.3.1"
+ThisBuild / scalacOptions ++= Seq("-source", "future", "-language:strictEquality", "-deprecation", "-feature")
+
+lazy val advent2023 = (project in file("2023")).settings(
+  name := "advent2023"
+).dependsOn(runner, algorithms, parse)
+
+lazy val runner = (project in file("runner")).settings(
+  name := "runner",
+  libraryDependencies ++= Seq(
+    "com.softwaremill.sttp.client3" %% "core" % "3.9.1",
+    "com.lihaoyi"   %% "os-lib" % "0.9.2"
+  )
+)
+
+lazy val algorithms = (project in file("algorithms")).settings(
+  name := "algorithms"
+)
+
+lazy val parse = (project in file("parse")).settings(
+  name := "parse"
 )
