@@ -37,7 +37,9 @@ object Database:
     sql"INSERT INTO input (year, day, example, input) VALUES ($year, $day, $example, $input) ON CONFLICT(year, day, example) DO UPDATE set input=$input".update.run.transact(xa).void
 
   def setSession(session: String): IO[Unit] =
-    sql"INSERT INTO session (session) VALUES ($session) ON CONFLICT(session) DO UPDATE set session=$session".update.run.transact(xa).void
+    val truncate = sql"DELETE FROM session".update.run
+    val insert = sql"INSERT INTO session (session) VALUES ($session)".update.run
+    (truncate >> insert).transact(xa).void
 
   def getSession: IO[String] =
     sql"SELECT session FROM session".query[String].unique.transact(xa)

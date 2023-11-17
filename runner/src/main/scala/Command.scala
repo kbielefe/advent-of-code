@@ -39,11 +39,11 @@ case class RunPuzzle(year: Int, day: Int, part: Int, example: Option[String]) ex
   override def run: IO[Unit] = answer.flatMap(checkAnswer)
 
   def checkAnswer(answer: String): IO[Unit] =
-    Database.getAnswer(year, day, part, example.getOrElse("official")).flatMap {
-      case Some(correct) if answer == correct => Console[IO].println("Correct")
-      case Some(correct)                      => Console[IO].println(s"Incorrect, should be $correct")
-      case None                               => Console[IO].println("Unknown")
-    }
+    Database.getAnswer(year, day, part, example.getOrElse("official")).map {
+      case Some(correct) if answer == correct => "Correct"
+      case Some(correct)                      => s"Incorrect, should be $correct"
+      case None                               => "Unknown"
+    }.flatMap(Console[IO].println)
 
 case class Correct(year: Int, day: Int, part: Int, example: Option[String]) extends AnswerCommand(year, day, part, example)
 case class Incorrect(year: Int, day: Int, part: Int, example: Option[String]) extends AnswerCommand(year, day, part, example)
