@@ -1,17 +1,31 @@
 ThisBuild / scalaVersion := "3.3.1"
 ThisBuild / scalacOptions ++= Seq("-source", "future", "-language:strictEquality", "-deprecation", "-feature")
+ThisBuild / fork := true
+
+lazy val advent2022 = (project in file("2022")).settings(
+  name := "advent2022",
+  libraryDependencies ++= Seq(
+    "org.typelevel" %% "cats-effect" % "3.5.2"
+  )
+).dependsOn(runner, parse, algorithms)
 
 lazy val advent2023 = (project in file("2023")).settings(
-  name := "advent2023"
-).dependsOn(runner, algorithms, parse)
+  name := "advent2023",
+  libraryDependencies ++= Seq(
+    "org.typelevel" %% "cats-effect" % "3.5.2"
+  )
+).dependsOn(runner, parse, algorithms)
 
 lazy val runner = (project in file("runner")).settings(
   name := "runner",
   libraryDependencies ++= Seq(
-    "com.softwaremill.sttp.client3" %% "core" % "3.9.1",
-    "com.lihaoyi"   %% "os-lib" % "0.9.2"
+    "org.http4s" %% "http4s-ember-client" % "0.23.24",
+    "org.xerial" % "sqlite-jdbc" % "3.44.0.0",
+    "org.tpolecat" %% "doobie-core" % "1.0.0-RC4",
+    "com.monovore" %% "decline-effect" % "2.4.1",
+    "org.slf4j" % "slf4j-nop" % "2.0.9"
   )
-)
+).dependsOn(parse)
 
 lazy val algorithms = (project in file("algorithms")).settings(
   name := "algorithms"

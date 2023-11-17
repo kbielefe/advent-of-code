@@ -1,19 +1,35 @@
 # advent-of-code
 For sharing my adventofcode.com solutions
 
-To set up:
+# Runner
+Runs the puzzles. Run `run --help` from the sbt console of one of the project years for options.
 
- - Place your session cookie in a file called `input/session`.
- - Create a new Day file.
- - Add the new day to the `advent` function in `Runner.scala`.
- - Start the sbt console.
+# Algorithms
+A set of useful algorithms for solving the puzzles.
 
-Available sbt commands:
+# Parse
+Automatically parses puzzle input according to the given type.
 
- - `run <year> <day> <part>` Runs the specified puzzle against your official input.
- - `run <year> <day> <part> example 1` Runs the puzzle against an example input in file `input/<year>/<day>_example_1.txt`.
- - `run <year> <day> <part> example 1 <answer>` Remembers the correct answer for the specified example.
- - `run <year> <day> <part> correct` Remembers that the calculated answer is correct. Useful when refactoring.
- - `run <year> <day> <part> incorrect` Remembers that the calculated answer is incorrect.
- - `run <year> <day> <part> high` Remembers that the calculated answer is too high.
- - `run <year> <day> <part> low` Remembers that the calculated answer is too low.
+1: List[List[Int :| Positive] - "\n"] - "\n\n"
+2: List[(Char, Char) - " "] - "\n"
+3: List[String] - "\n"
+4: List[((Range - "-"), (Range - "-")) - ","] - "\n"
+5: (String, List[(Digit, Digit, Digit) ~ "move (\d) from (\d) to (\d)"] - "\n") - "\n\n"
+6: String
+7: List[(Cd ~ "$ cd (.+)") | "$ ls" | (Dir ~ "dir (.+)") | (File ~ "(\d+) (.+)")] - "\n"
+8: Grid[Digit]
+9: List[(Char, Int) - " "] - "\n"
+10: List[(Noop ~ "noop") | (Addx ~ "addx (-?\d+)")] - "\n"
+11: complex monkeys, but doable with this representation
+12: Grid[Char]
+13: List[(String, String) - "\n"] - "\n\n"
+14: List[List[(Int, Int) - ","] - " -> "] - "\n"
+15: List[Sensor ~ "Sensor at x=(-?\d+), y=(-?\d+): closest beacon is at x=(-?\d+), y=(-?\d+)"] - "\n"
+
+Parts of the type:
+ - Base type representation that has a Read type class instance
+ - Delimiter between list or product elements (-)
+ - Regex with match group per product element (~)
+
+How does iron make the IronType act like the base type?
+ - opaque type IronType[A, C] <: A = A

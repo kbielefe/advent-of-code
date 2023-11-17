@@ -1,4 +1,4 @@
-package puzzleparse
+package parse
 
 opaque type Nat <: Int = Int
 opaque type Digit <: Int = Int

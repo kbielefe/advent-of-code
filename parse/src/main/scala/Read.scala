@@ -1,9 +1,8 @@
-package puzzleparse
+package parse
+
 import scala.deriving.Mirror
 import scala.compiletime.{erasedValue, summonInline}
 import scala.reflect.ClassTag
-import io.circe.Json
-import io.circe.parser.parse
 
 trait Read[A]:
   def read(input: String): A
@@ -162,12 +161,6 @@ given [A : Read, B : Read]: Read[Header[A, B]] with
     val header = summon[Read[A]].read(input.linesIterator.next)
     val body = summon[Read[B]].read(input.linesIterator.drop(1).mkString("\n"))
     Header(header, body)
-
-given Read[Json] with
-  def read(input: String): Json =
-    parse(input) match
-      case Right(json) => json
-      case Left(error) => throw new Exception(s"couldn't parse json $input $error")
 
 object Read:
   inline given derived[T](using m: Mirror.ProductOf[T]): Read[T] =

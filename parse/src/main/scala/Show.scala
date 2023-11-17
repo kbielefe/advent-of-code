@@ -1,4 +1,5 @@
-package puzzleparse
+package parse
+
 import scala.compiletime.*
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.*
