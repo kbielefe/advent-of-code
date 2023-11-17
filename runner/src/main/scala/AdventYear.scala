@@ -1,8 +1,10 @@
 package runner
 
 import cats.effect.*
+import cats.effect.std.Console
 import cats.effect.unsafe.implicits.global
 import cats.implicits.given
+import cats.syntax.all.given
 import com.monovore.decline.*
 import com.monovore.decline.effect.*
 
@@ -26,9 +28,14 @@ trait AdventYear(year: Int):
   private val session = Opts.subcommand("session", "Copy the user's session cookie from the clipboard.")(Opts(Session()))
   private val database = Opts.subcommand("database", "Initialize the database at advent.db.")(Opts(InitDatabase()))
 
-  private val all = run `orElse` input `orElse` answer `orElse` correct `orElse` incorrect `orElse` high `orElse` low `orElse` session `orElse` database
+  private val all = List(run, input, answer, correct, incorrect, high, low, session, database).combineAll
 
-  private val opts = all.map(_.run.as(ExitCode.Success))
+  private val opts = all.map{command =>
+    command
+      .run
+      .as(ExitCode.Success)
+      .handleErrorWith(e => Console[IO].println(e.getMessage()).as(ExitCode.Error))
+  }
 
   def main(args: Array[String]): Unit =
     CommandIOApp
