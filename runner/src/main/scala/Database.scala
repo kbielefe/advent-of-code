@@ -16,14 +16,16 @@ object Database:
 
   def init: IO[Unit] =
     sql"CREATE TABLE IF NOT EXISTS session (session TEXT)".update.run.transact(xa) >>
-    sql"CREATE TABLE IF NOT EXISTS exampleinput (year INT, day Int, example TEXT, input TEXT)".update.run.transact(xa) >>
-    sql"CREATE TABLE IF NOT EXISTS input (year INT, day Int, input TEXT)".update.run.transact(xa).void
+    sql"CREATE TABLE IF NOT EXISTS input (year INT, day Int, example TEXT, input TEXT)".update.run.transact(xa).void
 
-  def officialInput(year: Int, day: Int): IO[String] =
-    sql"SELECT input FROM input WHERE year = $year AND day = $day".query[String].option.transact(xa).flatMap{
+  def getInput(year: Int, day: Int, example: String): IO[String] =
+    sql"SELECT input FROM input WHERE year = $year AND day = $day AND example = $example".query[String].option.transact(xa).flatMap{
       case Some(input) => IO.pure(input)
-      case None        => getSession.flatMap(downloadInput(year, day)).flatMap(insertOfficialInput(year, day))
+      case None        => getSession.flatMap(downloadInput(year, day)).flatMap(setInput(year, day, example))
     }
+
+  def setInput(year: Int, day: Int, example: String)(input: String): IO[String] =
+    sql"INSERT INTO input (year, day, example, input) VALUES ($year, $day, $example, $input)".update.run.transact(xa) >> IO.pure(input)
 
   def downloadInput(year: Int, day: Int)(session: String): IO[String] =
     val request = Request[IO](uri = Uri.unsafeFromString(s"https://adventofcode.com/$year/day/$day/input"))
@@ -34,12 +36,6 @@ object Database:
       .default[IO]
       .build
       .use{_.expect[String](request)}
-
-  def insertOfficialInput(year: Int, day: Int)(input: String): IO[String] =
-    sql"INSERT INTO input (year, day, input) VALUES ($year, $day, $input)".update.run.transact(xa) >> IO.pure(input)
-
-  def exampleInput(year: Int, day: Int, example: String): IO[String] =
-    sql"SELECT input FROM exampleinput WHERE year = $year AND day = $day AND example = $example".query[String].unique.transact(xa)
 
   def setSession(session: String): IO[Unit] =
     sql"DELETE FROM session".update.run.transact(xa) >>

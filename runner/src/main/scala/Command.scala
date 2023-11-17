@@ -24,10 +24,9 @@ sealed trait Command:
 
 sealed trait AnswerCommand(year: Int, day: Int, part: Int, example: Option[String]) extends Command:
   def answer: IO[String] =
-    val inputIO = example match
-      case Some(example) => Database.exampleInput(year, day, example)
-      case None          => Database.officialInput(year, day)
-    inputIO.map { input => if part == 1 then getDay.normalizedPart1(input) else getDay.normalizedPart2(input) }
+    Database
+      .getInput(year, day, example.getOrElse("official"))
+      .map(input => if part == 1 then getDay.normalizedPart1(input) else getDay.normalizedPart2(input))
       .flatTap(Console[IO].println)
 
   def getDay: NormalizedDay =

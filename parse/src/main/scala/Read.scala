@@ -11,6 +11,10 @@ given Read[Int] with
   def read(input: String): Int =
     input.toInt
 
+given Read[String] with
+  def read(input: String): String =
+    input
+
 given [A : Read : ClassTag, B <: String : ValueOf]: Read[-[List[A], B]] with
   def read(input: String): -[List[A], B] =
     input
