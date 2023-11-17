@@ -15,13 +15,13 @@ trait AdventYear(year: Int):
   private val day = Opts.argument[Int](metavar = "day")
   private val part = Opts.argument[Int](metavar = "part")
   private val answerArg = Opts.argument[String](metavar = "answer").orNone
-  private val example = Opts.option[String]("example", short = "e", metavar = "example name", help = "Use the given example input instead of the official input.").orNone
+  private val example = Opts.option[String]("example", short = "e", metavar = "example name", help = "Use the given example input instead of the official input.").orNone.map(_.getOrElse("official"))
   private val common = (Opts(year), day, part, example)
 
   private val run = Opts.subcommand("run", "Run the specified puzzle.")(common.mapN(RunPuzzle.apply))
   private val input = Opts.subcommand("input", "Copy the puzzle's input from the clipboard.")((Opts(year), day, example).mapN(Input.apply))
-  private val answer = Opts.subcommand("answer", "Specify the correct answer for the puzzle. Copies from the clipboard by default.")((Opts(year), day, part, example, answerArg).mapN(Answer.apply))
-  private val correct = Opts.subcommand("correct", "Mark the currently calculated answer as correct.")(common.mapN(Correct.apply))
+  private val answer = Opts.subcommand("answer", "Specify the correct answer for the puzzle and clears all guesses. Copies from the clipboard by default.")((Opts(year), day, part, example, answerArg).mapN(Answer.apply))
+  private val correct = Opts.subcommand("correct", "Mark the currently calculated answer as correct and clears all guesses.")(common.mapN(Correct.apply))
   private val incorrect = Opts.subcommand("incorrect", "Mark the currently calculated answer as incorrect.")(common.mapN(Incorrect.apply))
   private val high = Opts.subcommand("high", "Mark the currently calculated answer as too high.")(common.mapN(High.apply))
   private val low = Opts.subcommand("low", "Mark the currently calculated answer as too low.")(common.mapN(Low.apply))

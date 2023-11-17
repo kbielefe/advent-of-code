@@ -2,11 +2,13 @@ package runner
 
 import cats.effect.*
 import cats.effect.std.Console
+import cats.implicits.given
 import java.awt.Toolkit
 import java.awt.datatransfer.{DataFlavor, StringSelection}
+import scala.util.Try
 
 sealed trait Command:
-  def run: IO[Unit] = ???
+  def run: IO[Unit]
 
   def copy(string: String): Unit =
     Toolkit
@@ -22,10 +24,10 @@ sealed trait Command:
       .getTransferData(DataFlavor.stringFlavor)
       .asInstanceOf[String]
 
-sealed trait AnswerCommand(year: Int, day: Int, part: Int, example: Option[String]) extends Command:
+sealed trait AnswerCommand(year: Int, day: Int, part: Int, example: String) extends Command:
   def answer: IO[String] =
     Database
-      .getInput(year, day, example.getOrElse("official"))
+      .getInput(year, day, example)
       .map(input => if part == 1 then getDay.normalizedPart1(input) else getDay.normalizedPart2(input))
       .flatTap(Console[IO].println)
 
@@ -35,32 +37,75 @@ sealed trait AnswerCommand(year: Int, day: Int, part: Int, example: Option[Strin
       .get(null)
       .asInstanceOf[NormalizedDay]
 
-case class RunPuzzle(year: Int, day: Int, part: Int, example: Option[String]) extends AnswerCommand(year, day, part, example):
+case class RunPuzzle(year: Int, day: Int, part: Int, example: String) extends AnswerCommand(year, day, part, example):
   override def run: IO[Unit] = answer.flatMap(checkAnswer)
 
   def checkAnswer(answer: String): IO[Unit] =
-    Database.getAnswer(year, day, part, example.getOrElse("official")).map {
-      case Some(correct) if answer == correct => "Correct"
-      case Some(correct)                      => s"Incorrect, should be $correct"
-      case None                               => "Unknown"
+    (Database.getAnswer(year, day, part, example), Database.getGuesses(year, day, part, example)).tupled.flatMap {
+      case (Some(correct), _) if answer == correct => IO.pure("Correct")
+      case (Some(correct), _)                      => incorrect(answer, correct)
+      case (None, guesses)                         => unknown(answer, guesses)
     }.flatMap(Console[IO].println)
 
-case class Correct(year: Int, day: Int, part: Int, example: Option[String]) extends AnswerCommand(year, day, part, example)
-case class Incorrect(year: Int, day: Int, part: Int, example: Option[String]) extends AnswerCommand(year, day, part, example)
-case class High(year: Int, day: Int, part: Int, example: Option[String]) extends AnswerCommand(year, day, part, example)
-case class Low(year: Int, day: Int, part: Int, example: Option[String]) extends AnswerCommand(year, day, part, example)
+  def incorrect(answer: String, correct: String): IO[String] =
+    val highOrLow = for
+      answerInt  <- toBigInt(answer)
+      correctInt <- toBigInt(correct)
+    yield if answerInt < correctInt then "low" else "high"
+    val status = highOrLow.getOrElse("incorrect")
+    val result = status match
+      case "incorrect" => s"Incorrect, should be $correct"
+      case "high"      => "Too high"
+      case "low"       => "Too low"
+    Database.addGuess(year, day, part, example, status, answer) *> IO.pure(result)
 
-case class Input(year: Int, day: Int, example: Option[String]) extends Command:
+  def unknown(answer: String, guesses: List[(String, String)]): IO[String] =
+    val highOrLow = toBigInt(answer).flatMap { answer =>
+      val numericGuesses = guesses.flatMap((status, guess) => toBigInt(guess).map(status -> _))
+      val lows = numericGuesses.filter(_._1 == "low").map(_._2)
+      val highs = numericGuesses.filter(_._1 == "high").map(_._2)
+      (lows.isEmpty, highs.isEmpty) match
+        case (false, true) if answer <= lows.max  => Some("low")
+        case (true, false) if answer >= highs.max => Some("high")
+        case _ => None
+    }
+    val result = highOrLow match
+      case Some("low")  => "Too low"
+      case Some("high") => "Too high"
+      case _            => "Unknown"
+    val addGuess = highOrLow.map(status => Database.addGuess(year, day, part, example, status, answer)).getOrElse(IO.unit)
+    addGuess *> IO.pure(result)
+
+  def toBigInt(string: String): Option[BigInt] =
+    Try(BigInt(string)).toOption
+
+case class Correct(year: Int, day: Int, part: Int, example: String) extends AnswerCommand(year, day, part, example):
+  override def run: IO[Unit] =
+    answer.flatMap(Database.setAnswer(year, day, part, example, _))
+
+case class Incorrect(year: Int, day: Int, part: Int, example: String) extends AnswerCommand(year, day, part, example):
+  override def run: IO[Unit] =
+    answer.flatMap(Database.addGuess(year, day, part, example, "incorrect", _))
+
+case class High(year: Int, day: Int, part: Int, example: String) extends AnswerCommand(year, day, part, example):
+  override def run: IO[Unit] =
+    answer.flatMap(Database.addGuess(year, day, part, example, "high", _))
+
+case class Low(year: Int, day: Int, part: Int, example: String) extends AnswerCommand(year, day, part, example):
+  override def run: IO[Unit] =
+    answer.flatMap(Database.addGuess(year, day, part, example, "low", _))
+
+case class Input(year: Int, day: Int, example: String) extends Command:
   override def run: IO[Unit] =
     val input = paste
     Console[IO].println(s"Setting input to:\n$input") >>
-    Database.setInput(year, day, example.getOrElse("official"), input)
+    Database.setInput(year, day, example, input)
 
-case class Answer(year: Int, day: Int, part: Int, example: Option[String], answer: Option[String]) extends Command:
+case class Answer(year: Int, day: Int, part: Int, example: String, answer: Option[String]) extends Command:
   override def run: IO[Unit] =
     val result = answer.getOrElse(paste)
     Console[IO].println(s"Setting answer for day $day part $part example $example to $result") >>
-    Database.setAnswer(year, day, part, example.getOrElse("official"), result)
+    Database.setAnswer(year, day, part, example, result)
 
 case class Session() extends Command:
   override def run: IO[Unit] =
