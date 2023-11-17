@@ -28,9 +28,7 @@ sealed trait AnswerCommand(year: Int, day: Int, part: Int, example: Option[Strin
       case Some(example) => Database.exampleInput(year, day, example)
       case None          => Database.officialInput(year, day)
     inputIO.map { input => if part == 1 then getDay.normalizedPart1(input) else getDay.normalizedPart2(input) }
-      .timed
-      .flatTap{ (duration, result) => Console[IO].println(s"${duration.toMillis} ms\n$result") >> IO(copy(result)) }
-      .map(_._2)
+      .flatTap(Console[IO].println)
 
   def getDay: NormalizedDay =
     Class.forName(s"Day$day$$")

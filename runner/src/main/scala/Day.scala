@@ -8,7 +8,18 @@ private[runner] trait NormalizedDay:
 trait Day[I: Read, A: Show, B: Show] extends NormalizedDay:
   def part1(input: I): A
   def part2(input: I): B
+
   def normalizedPart1(input: String): String =
-    summon[Show[A]].show(part1(summon[Read[I]].read(input)))
+    val stringInput = summon[Read[I]].read(input)
+    summon[Show[A]].show(time(part1(stringInput)))
+
   def normalizedPart2(input: String): String =
-    summon[Show[B]].show(part2(summon[Read[I]].read(input)))
+    val stringInput = summon[Read[I]].read(input)
+    summon[Show[B]].show(time(part2(stringInput)))
+
+  def time[A](f: => A): A =
+    val start = System.currentTimeMillis()
+    val result = f
+    val end = System.currentTimeMillis()
+    println(s"${end - start} ms")
+    result
