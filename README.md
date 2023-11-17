@@ -4,6 +4,8 @@ For sharing my adventofcode.com solutions
 # Runner
 Runs the puzzles. Run `run --help` from the sbt console of one of the project years for options.
 
+You can manually manipulate the database with `sqlite3 advent.db`.
+
 # Algorithms
 A set of useful algorithms for solving the puzzles.
 
@@ -25,11 +27,3 @@ Automatically parses puzzle input according to the given type.
 13: List[(String, String) - "\n"] - "\n\n"
 14: List[List[(Int, Int) - ","] - " -> "] - "\n"
 15: List[Sensor ~ "Sensor at x=(-?\d+), y=(-?\d+): closest beacon is at x=(-?\d+), y=(-?\d+)"] - "\n"
-
-Parts of the type:
- - Base type representation that has a Read type class instance
- - Delimiter between list or product elements (-)
- - Regex with match group per product element (~)
-
-How does iron make the IronType act like the base type?
- - opaque type IronType[A, C] <: A = A
