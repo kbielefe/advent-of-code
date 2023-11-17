@@ -1,9 +1,5 @@
 package parse
 
-import scala.reflect.ClassTag
-
-opaque type -[A, B] <: A = A
-
 trait Read[A]:
   def read(input: String): A
 
@@ -15,9 +11,6 @@ given Read[String] with
   def read(input: String): String =
     input
 
-given [A : Read : ClassTag, B <: String : ValueOf]: Read[-[List[A], B]] with
-  def read(input: String): -[List[A], B] =
-    input
-      .split(valueOf[B])
-      .map(summon[Read[A]].read)
-      .toList
+given Read[Char] with
+  def read(input: String): Char =
+    if input.size == 1 then input.head else throw new Exception(s"Unable to parse $input into a Char")

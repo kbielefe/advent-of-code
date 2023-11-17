@@ -1,7 +1,12 @@
 import parse.{*, given}
 
-type Day2Input = List[(Char, Char) - " "] - "\n"
-object Day2 extends runner.Day[String, Int, String]:
-  def part1(input: String): Int = throw new Exception("Testing verbosity")
+case class Round(opponent: Char, me: Char) derives ReadProduct
 
-  def part2(input: String): String = input
+type Day2Input = List[Round - " "] - "\n"
+object Day2 extends runner.Day[Day2Input, Int, Int]:
+  def part1(input: Day2Input): Int =
+    input.foreach(println)
+    15
+
+  def part2(input: Day2Input): Int =
+    ???
