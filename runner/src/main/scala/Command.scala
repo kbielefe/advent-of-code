@@ -38,15 +38,30 @@ sealed trait AnswerCommand(year: Int, day: Int, part: Int, example: Option[Strin
 case class RunPuzzle(year: Int, day: Int, part: Int, example: Option[String]) extends AnswerCommand(year, day, part, example):
   override def run: IO[Unit] = answer.flatMap(checkAnswer)
 
-  def checkAnswer(answer: String): IO[Unit] = IO.unit
+  def checkAnswer(answer: String): IO[Unit] =
+    Database.getAnswer(year, day, part, example.getOrElse("official")).flatMap {
+      case Some(correct) if answer == correct => Console[IO].println("Correct")
+      case Some(correct)                      => Console[IO].println(s"Incorrect, should be $correct")
+      case None                               => Console[IO].println("Unknown")
+    }
 
 case class Correct(year: Int, day: Int, part: Int, example: Option[String]) extends AnswerCommand(year, day, part, example)
 case class Incorrect(year: Int, day: Int, part: Int, example: Option[String]) extends AnswerCommand(year, day, part, example)
 case class High(year: Int, day: Int, part: Int, example: Option[String]) extends AnswerCommand(year, day, part, example)
 case class Low(year: Int, day: Int, part: Int, example: Option[String]) extends AnswerCommand(year, day, part, example)
 
-case class Input(year: Int, day: Int, example: Option[String]) extends Command
-case class Answer(year: Int, day: Int, part: Int, example: Option[String], answer: Option[String]) extends Command
+case class Input(year: Int, day: Int, example: Option[String]) extends Command:
+  override def run: IO[Unit] =
+    val input = paste
+    Console[IO].println(s"Setting input to:\n$input") >>
+    Database.setInput(year, day, example.getOrElse("official"), input)
+
+case class Answer(year: Int, day: Int, part: Int, example: Option[String], answer: Option[String]) extends Command:
+  override def run: IO[Unit] =
+    val result = answer.getOrElse(paste)
+    Console[IO].println(s"Setting answer for day $day part $part example $example to $result") >>
+    Database.setAnswer(year, day, part, example.getOrElse("official"), result)
+
 case class Session() extends Command:
   override def run: IO[Unit] =
     val session = paste

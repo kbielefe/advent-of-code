@@ -6,3 +6,7 @@ trait Show[A]:
 given Show[Int] with
   def show(output: Int): String =
     output.toString
+
+given Show[String] with
+  def show(output: String): String =
+    output
