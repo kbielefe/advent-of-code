@@ -16,6 +16,7 @@ trait AdventYear(year: Int):
   private val part = Opts.argument[Int](metavar = "part")
   private val answerArg = Opts.argument[String](metavar = "answer").orNone
   private val example = Opts.option[String]("example", short = "e", metavar = "example name", help = "Use the given example input instead of the official input.").orNone.map(_.getOrElse("official"))
+  private val verbose = Opts.flag("verbose", short = "v", help = "Print full stack traces.").orFalse
   private val common = (Opts(year), day, part, example)
 
   private val run = Opts.subcommand("run", "Run the specified puzzle.")(common.mapN(RunPuzzle.apply))
@@ -30,11 +31,12 @@ trait AdventYear(year: Int):
 
   private val all = List(run, input, answer, correct, incorrect, high, low, session, database).combineAll
 
-  private val opts = all.map{command =>
-    command
-      .run
-      .as(ExitCode.Success)
-      .handleErrorWith(e => Console[IO].println(e.getMessage()).as(ExitCode.Error))
+  private val opts = (verbose, all).tupled.map{(verbose, command) =>
+    val result = command .run.as(ExitCode.Success)
+    if verbose then
+      result
+    else
+      result.handleErrorWith(e => Console[IO].println(e.getMessage()).as(ExitCode.Error))
   }
 
   def main(args: Array[String]): Unit =
