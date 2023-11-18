@@ -1,3 +1,4 @@
+package day2
 import parse.{*, given}
 
 enum RPS:
@@ -42,10 +43,11 @@ case class Round(opponent: RPS, me: RPS) derives ReadProduct:
   def score: Int = me.shapeScore + outcome
 end Round
 
-type Day2Input = List[Round - " "] - "\n"
-object Day2 extends runner.Day[Day2Input, Int, Int]:
-  def part1(input: Day2Input): Int =
+type I = List[Round - " "] - "\n"
+
+object Puzzle extends runner.Day[I, Int, Int]:
+  def part1(input: I): Int =
     input.map(_.score).sum
 
-  def part2(input: Day2Input): Int =
+  def part2(input: I): Int =
     ???

@@ -38,7 +38,7 @@ trait AdventYear(year: Int):
     if verbose then
       result
     else
-      result.handleErrorWith(e => Console[IO].println(e.getMessage()).as(ExitCode.Error))
+      result.handleErrorWith(e => Console[IO].println(s"${e.getClass().getName()}: ${e.getMessage()}").as(ExitCode.Error))
   }
 
   def main(args: Array[String]): Unit =

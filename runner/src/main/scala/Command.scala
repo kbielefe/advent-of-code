@@ -32,7 +32,7 @@ sealed trait AnswerCommand(year: Int, day: Int, part: Int, example: String) exte
       .flatTap(Console[IO].println)
 
   def getDay: NormalizedDay =
-    Class.forName(s"Day$day$$")
+    Class.forName(s"day$day.Puzzle$$")
       .getField("MODULE$")
       .get(null)
       .asInstanceOf[NormalizedDay]

@@ -3,6 +3,7 @@ package parse
 import scala.reflect.ClassTag
 
 opaque type -[A, B] <: A = A
+opaque type ~[A, B] <: A = A
 
 trait ReadSeq[C[_]]:
   def readSeq[A : Read : ClassTag](input: Array[String]): C[A]
