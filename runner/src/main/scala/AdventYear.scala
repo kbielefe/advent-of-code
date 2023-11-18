@@ -13,7 +13,9 @@ import com.monovore.decline.effect.*
  */
 trait AdventYear(year: Int):
   private val day = Opts.argument[Int](metavar = "day")
+    .validate("Day must be between 1 and 25.")(day => day >= 1 && day <= 25)
   private val part = Opts.argument[Int](metavar = "part")
+    .validate("Part must be 1 or 2.")(part => part == 1 || part == 2)
   private val answerArg = Opts.argument[String](metavar = "answer").orNone
   private val example = Opts.option[String]("example", short = "e", metavar = "example name", help = "Use the given example input instead of the official input.").orNone.map(_.getOrElse("official"))
   private val verbose = Opts.flag("verbose", short = "v", help = "Print full stack traces.").orFalse
