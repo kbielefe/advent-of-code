@@ -29,7 +29,7 @@ lazy val runner = (project in file("runner")).settings(
 
 lazy val algorithms = (project in file("algorithms")).settings(
   name := "algorithms"
-)
+).dependsOn(parse)
 
 lazy val parse = (project in file("parse")).settings(
   name := "parse"

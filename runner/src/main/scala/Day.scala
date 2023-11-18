@@ -18,8 +18,8 @@ trait Day[I: Read, A: Show, B: Show] extends NormalizedDay:
     summon[Show[B]].show(time(part2(stringInput)))
 
   def time[A](f: => A): A =
-    val start = System.currentTimeMillis()
+    val start = System.nanoTime()
     val result = f
-    val end = System.currentTimeMillis()
-    println(s"${end - start} ms")
+    val end = System.nanoTime()
+    println(s"${(end - start)/1e6} ms")
     result
