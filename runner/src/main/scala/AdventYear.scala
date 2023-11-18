@@ -34,7 +34,7 @@ trait AdventYear(year: Int):
   private val all = List(run, input, answer, correct, incorrect, high, low, session, database).combineAll
 
   private val opts = (verbose, all).tupled.map{(verbose, command) =>
-    val result = command .run.as(ExitCode.Success)
+    val result = command.run.as(ExitCode.Success)
     if verbose then
       result
     else
