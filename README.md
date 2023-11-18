@@ -1,29 +1,42 @@
 # advent-of-code
 For sharing my adventofcode.com solutions
 
-# Runner
+## Runner
 Runs the puzzles. Run `run --help` from the sbt console of one of the project years for options.
 
 You can manually manipulate the database with `sqlite3 advent.db`.
 
-# Algorithms
+## Algorithms
 A set of useful algorithms for solving the puzzles.
 
-# Parse
+## Parse
 Automatically parses puzzle input according to the given type.
 
-1: List[List[Int :| Positive] - "\n"] - "\n\n"
-2: List[(Char, Char) - " "] - "\n"
-3: List[String] - "\n"
-4: List[((Range - "-"), (Range - "-")) - ","] - "\n"
-5: (String, List[(Digit, Digit, Digit) ~ "move (\d) from (\d) to (\d)"] - "\n") - "\n\n"
-6: String
-7: List[(Cd ~ "$ cd (.+)") | "$ ls" | (Dir ~ "dir (.+)") | (File ~ "(\d+) (.+)")] - "\n"
-8: Grid[Digit]
-9: List[(Char, Int) - " "] - "\n"
-10: List[(Noop ~ "noop") | (Addx ~ "addx (-?\d+)")] - "\n"
-11: complex monkeys, but doable with this representation
-12: Grid[Char]
-13: List[(String, String) - "\n"] - "\n\n"
-14: List[List[(Int, Int) - ","] - " -> "] - "\n"
-15: List[Sensor ~ "Sensor at x=(-?\d+), y=(-?\d+): closest beacon is at x=(-?\d+), y=(-?\d+)"] - "\n"
+Adds four type classes that ease working with puzzle input:
+
+ - `Read[A]`: Converts a `String` to an `A`.
+ - `ReadSeq[C[_]]`: Converts a `String` to a container `C[A]`.
+ - `ReadProduct[T]`: Converts a `String` to a tuple or case class `T`.
+ - `Show[A]`: Converts an `A` into a `String`.
+
+Of these, `ReadProduct` is most likely to be useful to a puzzle solver,
+as you derive it to automatically parse a case class:
+
+```scala
+case class MyCaseClass(a: Int, b: String) derives ReadProduct
+```
+
+Also adds new type operators:
+
+ - `List[A] - "delimiter"`: splits a `String` by the delimiter, then parses it
+   into a `List[A]`. This uses the Scala 3 opaque type, so to your code, this
+   works exactly the same as a `List[A]`, but contains enough information to
+   automatically parse it.
+ - `MyCaseClass ~ """(\d+) (\w+)"""`: Uses the matched groups from the regex to
+   create an instance of `MyCaseClass` from an entire `String`.
+ - `List[MyCaseClass] ~ """(\d+) (\w+)"""`: Splits the `String` into
+   non-overlapping matches of the regex, then creates the `List[MyCaseClass]`.
+
+So if your input is a list of integers, one per line, you can designate that as
+`List[Int] - "\n"` and it will parse it out to what looks to your code like a
+regular `List[Int]`.
