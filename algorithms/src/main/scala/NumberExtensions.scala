@@ -103,3 +103,9 @@ object Number:
 
     n.fromInt(digits.sum - subtractive.sum * 2)
 
+extension[K, N](map: Map[K, N])(using n: Integral[N])
+  def increment(key: K, amount: N): Map[K, N] =
+    map + (key -> (map.getOrElse(key, n.zero) + amount))
+
+  def decrement(key: K, amount: N): Map[K, N] =
+    map + (key -> (map.getOrElse(key, n.zero) - amount))

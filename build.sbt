@@ -5,7 +5,8 @@ ThisBuild / fork := true
 lazy val advent2022 = (project in file("2022")).settings(
   name := "advent2022",
   libraryDependencies ++= Seq(
-    "org.typelevel" %% "cats-effect" % "3.5.2"
+    "org.typelevel" %% "cats-effect" % "3.5.2",
+    "com.google.ortools" % "ortools-java" % "9.8.3296"
   )
 ).dependsOn(runner, parse, algorithms)
 
