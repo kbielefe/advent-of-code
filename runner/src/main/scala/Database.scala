@@ -26,7 +26,7 @@ object Database:
       case Some(input)                   => IO.pure(input)
       case None if example == "official" => downloadInput(year, day, example)
       case _                             => IO.raiseError(InputNotFoundException)
-    }
+    }.map(_.trim)
 
   def downloadInput(year: Int, day: Int, example: String): IO[String] = for
     session <- getSession

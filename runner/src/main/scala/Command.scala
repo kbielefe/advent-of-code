@@ -74,6 +74,7 @@ case class RunPuzzle(year: Int, day: Int, part: Int, example: String) extends An
       case Some("high") => Console[IO].println("Too high")
       case None if guesses.contains(("incorrect", answer)) => Console[IO].println("Incorrect (already guessed)")
       case _ =>
+        IO(copy(answer)) >>
         Console[IO].print("[c]orrect, [i]ncorrect, [h]igh, or [l]ow? ") >>
         Console[IO].readLine.flatMap{
           case "c" => Database.setAnswer(year, day, part, example, answer)

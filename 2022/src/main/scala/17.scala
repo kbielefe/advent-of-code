@@ -5,27 +5,18 @@ import algorithms.{detectCycle, cycledEquivalentValue}
 
 object Puzzle extends runner.Day[String, Int, Long]:
   def part1(input: String): Int =
-    moves(input).map(_._1).drop(2022).next
+    heights(input).drop(2022).next
 
   def part2(input: String): Long =
-    val rockIndex = Iterator.continually((1 to 5).iterator).flatten
-    val jetIndex = Iterator.continually((1 to input.trim.size).iterator).flatten
-    val skylines = rockIndex.zip(jetIndex).zip(moves(input)).map(skyline)
-    val Some((start, period, repeated)) = detectCycle(skylines): @unchecked
-    cycledEquivalentValue(start, period, 1000000000000, n => moves(input).map(_._1).drop(n.toInt).next.toLong)
+    def heightDiffs = heights(input)
+      .sliding(2)
+      .map{case Seq(x, y) => y - x}
+    val Some((start, period)) = detectCycle(heightDiffs): @unchecked
+    cycledEquivalentValue(start, period, 1000000000000, n => heights(input).drop(n).next)
 
-  private def skyline(state: ((Int, Int), (Int, Set[(Int, Int)]))): (Int, Int, List[Int]) =
-    val ((rockIndex, jetIndex), (height, cubes)) = state
-    val highest = (1 to 7).toList.map{x =>
-      val cubesInColumn = cubes.filter(_._1 == x).map(_._2)
-      val max = if cubesInColumn.isEmpty then 0 else cubesInColumn.max
-      height - max
-    }
-    (rockIndex, jetIndex, highest)
-
-  private def moves(input: String): Iterator[(Int, Set[(Int, Int)])] =
+  private def heights(input: String): Iterator[Int] =
     val rocks = Iterator.continually(rockOrder.iterator).flatten
-    val jets = Iterator.continually(input.trim.iterator).flatten
+    val jets = Iterator.continually(input.iterator).flatten
     rocks.scanLeft((0, Set.empty[(Int, Int)])){case ((height, cubes), rock) =>
       @tailrec
       def moveUntilBlocked(rocks: Set[(Int, Int)]): (Int, Set[(Int, Int)]) =
@@ -46,16 +37,7 @@ object Puzzle extends runner.Day[String, Int, Long]:
           moveUntilBlocked(movedDownRocks)
       val initialRockCubes = rock.map{case (x, y) => (x + 3, y + height + 4)}
       moveUntilBlocked(initialRockCubes)
-    }
-
-  private def printRocks(height: Int, rocks: Set[(Int, Int)]): Unit =
-    val grid = (height to 1 by -1).map{y =>
-      val row = (1 to 7).map{x =>
-        if rocks.contains((x, y)) then '#' else '.'
-      }.mkString
-      "|" + row + "|"
-    }.mkString("\n")
-    println(grid + "\n|1234567|\n\n")
+    }.map(_._1)
 
   val rockOrder = List(
     Set((0, 0), (1, 0), (2, 0), (3, 0)),
@@ -64,4 +46,3 @@ object Puzzle extends runner.Day[String, Int, Long]:
     Set((0, 0), (0, 1), (0, 2), (0, 3)),
     Set((0, 0), (0, 1), (1, 0), (1, 1))
   )
-

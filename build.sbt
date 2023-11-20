@@ -29,7 +29,10 @@ lazy val runner = (project in file("runner")).settings(
 ).dependsOn(parse)
 
 lazy val algorithms = (project in file("algorithms")).settings(
-  name := "algorithms"
+  name := "algorithms",
+  libraryDependencies ++= Seq(
+    "org.scalatest" %% "scalatest" % "3.2.17" % Test
+  )
 ).dependsOn(parse)
 
 lazy val parse = (project in file("parse")).settings(
