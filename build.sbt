@@ -2,6 +2,13 @@ ThisBuild / scalaVersion := "3.3.1"
 ThisBuild / scalacOptions ++= Seq("-source", "future", "-language:strictEquality", "-deprecation", "-feature")
 ThisBuild / fork := false // needed for prompt to work when run from sbt console
 
+lazy val advent2019 = (project in file("2019")).settings(
+  name := "advent2019",
+  libraryDependencies ++= Seq(
+    "org.typelevel" %% "cats-core" % "2.10.0"
+  )
+).dependsOn(runner, parse, algorithms)
+
 lazy val advent2022 = (project in file("2022")).settings(
   name := "advent2022",
   libraryDependencies ++= Seq(
