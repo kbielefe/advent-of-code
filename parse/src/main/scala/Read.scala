@@ -7,6 +7,10 @@ given Read[Int] with
   def read(input: String): Int =
     input.toInt
 
+given Read[Long] with
+  def read(input: String): Long =
+    input.toLong
+
 given Read[String] with
   def read(input: String): String =
     input
