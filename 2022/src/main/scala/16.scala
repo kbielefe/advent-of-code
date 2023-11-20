@@ -46,6 +46,11 @@ object Puzzle extends runner.Day[I, Int, Int]:
           calculatePressure(valve, unvisited - valve, floyd, totalPressure + pressure, timeRemaining - travelTime)
         }.max
 
+  var maxPressure = 0
+
+  def canPrune(unvisited: Set[Valve], totalPressure: Int, timeRemaining: Int): Boolean =
+    unvisited.map(_.rate).sum * timeRemaining + totalPressure <= maxPressure
+
   def calculateElephantPressure(
     me: Valve,
     elephant: Valve,
@@ -57,7 +62,10 @@ object Puzzle extends runner.Day[I, Int, Int]:
     elephantTravelTime: Int
   ): Int =
     if timeRemaining <= 0 then
+      maxPressure = Math.max(maxPressure, totalPressure)
       totalPressure
+    else if canPrune(unvisited, totalPressure, timeRemaining) then
+      0
     else if meTravelTime <= 0 then
       val candidates = unvisited.map{valve =>
         val travelTime = floyd(Node(false, me) -> Node(true, valve))
