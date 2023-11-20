@@ -55,8 +55,8 @@ case class RunPuzzle(year: Int, day: Int, part: Int, example: String) extends An
     val status = highOrLow.getOrElse("incorrect")
     val result = status match
       case "incorrect" => s"Incorrect, should be $correct"
-      case "high"      => "Too high"
-      case "low"       => "Too low"
+      case "high"      => s"Too high, should be $correct"
+      case "low"       => s"Too low, should be $correct"
     Database.addGuess(year, day, part, example, status, answer) *> IO.pure(result)
 
   def unknown(answer: String, guesses: List[(String, String)]): IO[String] =
