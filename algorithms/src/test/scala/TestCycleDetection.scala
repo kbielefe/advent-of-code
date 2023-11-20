@@ -19,5 +19,9 @@ class TestCycleDetection extends AnyWordSpec with Matchers {
     "detect a cycle that repeats some numbers out of order" in {
       detectCycle(Iterator.from(1 to 4) ++ Iterator.continually((5 to 9) ++ (9 to 6 by -1)).flatten) should contain (4, 9)
     }
+
+    "detect the first repeated element when numReps is 0" in {
+      detectCycle(Iterator.from(1 to 10) ++ Iterator(5), numReps = 0) should contain (4, 6)
+    }
   }
 }

@@ -6,7 +6,8 @@ import scala.annotation.tailrec
  * Returns (number of elements before cycle starts, period of cycle)
  *
  * numReps indicates the number of times the cycle must repeat in order to be
- * considered a cycle.
+ * considered a cycle. When numReps = 0 it will detect the first repeated
+ * element, without needing the elements between to repeat.
  */
 def detectCycle[A](it: Iterator[A], numReps: Int = 4): Option[(Int, Int)] =
   def hasReps(list: LazyList[A], index: Int)(start: (Int, LazyList[A])): Boolean =
