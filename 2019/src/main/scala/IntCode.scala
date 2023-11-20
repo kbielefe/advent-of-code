@@ -23,6 +23,10 @@ class IntCode(memory: Vector[Int]):
     case 2  => multiply
     case 3  => readInput
     case 4  => writeOutput
+    case 5  => jumpIfTrue
+    case 6  => jumpIfFalse
+    case 7  => lessThan
+    case 8  => equals
     case 99 => halt
   }
 
@@ -51,6 +55,32 @@ class IntCode(memory: Vector[Int]):
     _ <- incPc(2)
   yield ()
 
+  val jumpIfTrue: IC[Unit] = for
+    x <- get(1)
+    y <- get(2)
+    _ <- if x != 0 then setPc(y) else incPc(3)
+  yield ()
+
+  val jumpIfFalse: IC[Unit] = for
+    x <- get(1)
+    y <- get(2)
+    _ <- if x == 0 then setPc(y) else incPc(3)
+  yield ()
+
+  val lessThan: IC[Unit] = for
+    x <- get(1)
+    y <- get(2)
+    _ <- set(3, if x < y then 1 else 0)
+    _ <- incPc(4)
+  yield ()
+
+  val equals: IC[Unit] = for
+    x <- get(1)
+    y <- get(2)
+    _ <- set(3, if x == y then 1 else 0)
+    _ <- incPc(4)
+  yield ()
+
   val halt: IC[Unit] = State.empty
 
   def opcode: IC[Int] =
@@ -72,3 +102,6 @@ class IntCode(memory: Vector[Int]):
 
   def incPc(offset: Int): IC[Unit] =
     State.modify[Data](data => data.copy(pc=data.pc + offset))
+
+  def setPc(newPc: Int): IC[Unit] =
+    State.modify[Data](_.copy(pc=newPc))
