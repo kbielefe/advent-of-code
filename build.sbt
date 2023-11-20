@@ -1,6 +1,6 @@
 ThisBuild / scalaVersion := "3.3.1"
 ThisBuild / scalacOptions ++= Seq("-source", "future", "-language:strictEquality", "-deprecation", "-feature")
-ThisBuild / fork := true
+ThisBuild / fork := false // needed for prompt to work when run from sbt console
 
 lazy val advent2022 = (project in file("2022")).settings(
   name := "advent2022",

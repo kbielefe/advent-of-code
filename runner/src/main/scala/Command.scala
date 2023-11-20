@@ -42,10 +42,10 @@ case class RunPuzzle(year: Int, day: Int, part: Int, example: String) extends An
 
   def checkAnswer(answer: String): IO[Unit] =
     (Database.getAnswer(year, day, part, example), Database.getGuesses(year, day, part, example)).tupled.flatMap {
-      case (Some(correct), _) if answer == correct => IO.pure("Correct")
-      case (Some(correct), _)                      => incorrect(answer, correct)
+      case (Some(correct), _) if answer == correct => Console[IO].println("Correct")
+      case (Some(correct), _)                      => incorrect(answer, correct).flatMap(Console[IO].println)
       case (None, guesses)                         => unknown(answer, guesses)
-    }.flatMap(Console[IO].println)
+    }
 
   def incorrect(answer: String, correct: String): IO[String] =
     val highOrLow = for
@@ -59,22 +59,29 @@ case class RunPuzzle(year: Int, day: Int, part: Int, example: String) extends An
       case "low"       => s"Too low, should be $correct"
     Database.addGuess(year, day, part, example, status, answer) *> IO.pure(result)
 
-  def unknown(answer: String, guesses: List[(String, String)]): IO[String] =
+  def unknown(answer: String, guesses: List[(String, String)]): IO[Unit] =
     val highOrLow = toBigInt(answer).flatMap { answer =>
       val numericGuesses = guesses.flatMap((status, guess) => toBigInt(guess).map(status -> _))
       val lows = numericGuesses.filter(_._1 == "low").map(_._2)
       val highs = numericGuesses.filter(_._1 == "high").map(_._2)
       (lows.isEmpty, highs.isEmpty) match
-        case (false, true) if answer <= lows.max  => Some("low")
-        case (true, false) if answer >= highs.max => Some("high")
+        case (false, _) if answer <= lows.max  => Some("low")
+        case (_, false) if answer >= highs.min => Some("high")
         case _ => None
     }
-    val result = highOrLow match
-      case Some("low")  => "Too low"
-      case Some("high") => "Too high"
-      case _            => "Unknown"
-    val addGuess = highOrLow.map(status => Database.addGuess(year, day, part, example, status, answer)).getOrElse(IO.unit)
-    addGuess *> IO.pure(result)
+    highOrLow match
+      case Some("low")  => Console[IO].println("Too low")
+      case Some("high") => Console[IO].println("Too high")
+      case None if guesses.contains(("incorrect", answer)) => Console[IO].println("Incorrect (already guessed)")
+      case _ =>
+        Console[IO].print("[c]orrect, [i]ncorrect, [h]igh, or [l]ow? ") >>
+        Console[IO].readLine.flatMap{
+          case "c" => Database.setAnswer(year, day, part, example, answer)
+          case "i" => Database.addGuess(year, day, part, example, "incorrect", answer)
+          case "h" => Database.addGuess(year, day, part, example, "high", answer)
+          case "l" => Database.addGuess(year, day, part, example, "low", answer)
+          case _   => IO.unit
+        }
 
   def toBigInt(string: String): Option[BigInt] =
     Try(BigInt(string)).toOption

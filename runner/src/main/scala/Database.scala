@@ -10,7 +10,7 @@ object Database:
 
   private val xa = Transactor.fromDriverManager[IO](
     driver = "org.sqlite.JDBC",
-    url = "jdbc:sqlite:../advent.db",
+    url = "jdbc:sqlite:advent.db",
     logHandler = None
   )
 
