@@ -1,9 +1,5 @@
 package algorithms
 
-import scala.compiletime.*
-import scala.deriving.Mirror
-import scala.reflect.{Typeable, TypeTest}
-
 trait Tree[A]:
   def children(node: A): Iterator[A]
 

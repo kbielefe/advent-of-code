@@ -1,22 +1,22 @@
 package year2019
 
-import cats.data.State
+import cats.*
+import cats.data.*
 import cats.syntax.all.*
-import java.util.concurrent.LinkedTransferQueue
+import java.util.concurrent.{LinkedTransferQueue, TimeUnit}
 
-class IntCode(memory: Vector[Long]):
+class IntCode[F[_]: Monad](memory: Vector[Long]):
   case class Data(pc: Long, relativeBase: Long, memory: Map[Long, Long])
-  type IC[A] = State[Data, A]
+  type IC[A] = StateT[F, Data, A]
 
   val input  = LinkedTransferQueue[Long]
   val output = LinkedTransferQueue[Long]
 
-  def runSync: Map[Long, Long] =
+  def run: F[Map[Long, Long]] =
     (runInstruction >> opcode)
       .iterateUntil(_ == 99)
       .runS(Data(0, 0, memory.zipWithIndex.map((data, index) => (index.toLong, data)).toMap.withDefaultValue(0L)))
-      .value
-      .memory
+      .map(_.memory)
 
   val runInstruction = opcode.map(_ % 100).flatMap{
     case 1 => add
@@ -46,7 +46,7 @@ class IntCode(memory: Vector[Long]):
   yield ()
 
   def readInput: IC[Unit] = for
-    _ <- set(1, input.take)
+    _ <- set(1, input.poll(2, TimeUnit.SECONDS))
     _ <- incPc(2)
   yield ()
 
@@ -84,14 +84,14 @@ class IntCode(memory: Vector[Long]):
 
   val adjustRelativeBase = for
     x <- get(1)
-    _ <- State.modify[Data](data => data.copy(relativeBase=data.relativeBase + x))
+    _ <- StateT.modify[F, Data](data => data.copy(relativeBase=data.relativeBase + x))
     _ <- incPc(2)
   yield ()
 
-  val halt: IC[Unit] = State.empty
+  val halt: IC[Unit] = StateT.empty
 
   def opcode: IC[Long] =
-    State.inspect(data => data.memory(data.pc))
+    StateT.inspect(data => data.memory(data.pc))
 
   val POSITION  = 0
   val IMMEDIATE = 1
@@ -101,18 +101,18 @@ class IntCode(memory: Vector[Long]):
     opcode.map(_ / Math.pow(10, offset.toDouble + 1).toLong % 10)
 
   def get(offset: Long): IC[Long] = parameterMode(offset).flatMap{
-    case POSITION  => State.inspect(data => data.memory(data.memory(data.pc + offset)))
-    case IMMEDIATE => State.inspect(data => data.memory(data.pc + offset))
-    case RELATIVE  => State.inspect(data => data.memory(data.memory(data.pc + offset) + data.relativeBase))
+    case POSITION  => StateT.inspect(data => data.memory(data.memory(data.pc + offset)))
+    case IMMEDIATE => StateT.inspect(data => data.memory(data.pc + offset))
+    case RELATIVE  => StateT.inspect(data => data.memory(data.memory(data.pc + offset) + data.relativeBase))
   }
 
   def set(offset: Long, value: Long): IC[Unit] = parameterMode(offset).flatMap{
-    case POSITION => State.modify[Data](data => data.copy(memory=data.memory.updated(data.memory(data.pc + offset), value)))
-    case RELATIVE => State.modify[Data](data => data.copy(memory=data.memory.updated(data.memory(data.pc + offset) + data.relativeBase, value)))
+    case POSITION => StateT.modify[F, Data](data => data.copy(memory=data.memory.updated(data.memory(data.pc + offset), value)))
+    case RELATIVE => StateT.modify[F, Data](data => data.copy(memory=data.memory.updated(data.memory(data.pc + offset) + data.relativeBase, value)))
   }
 
   def incPc(offset: Long): IC[Unit] =
-    State.modify[Data](data => data.copy(pc=data.pc + offset))
+    StateT.modify[F, Data](data => data.copy(pc=data.pc + offset))
 
   def setPc(newPc: Long): IC[Unit] =
-    State.modify[Data](_.copy(pc=newPc))
+    StateT.modify[F, Data](_.copy(pc=newPc))
