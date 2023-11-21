@@ -4,6 +4,7 @@ ThisBuild / fork := false // needed for prompt to work when run from sbt console
 
 lazy val advent2019 = (project in file("2019")).settings(
   name := "advent2019",
+  libraryDependencies += "co.fs2" %% "fs2-core" % "3.9.3"
 ).dependsOn(runner, parse, algorithms)
 
 lazy val advent2022 = (project in file("2022")).settings(

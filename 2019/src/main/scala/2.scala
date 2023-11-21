@@ -1,21 +1,22 @@
 package day2
-import cats.Eval
+
+import cats.effect.IO
+import fs2.Stream
 import parse.{*, given}
 import year2019.IntCode
 
 type I = Vector[Long] - ","
 
-object Puzzle extends runner.Day[I, Long, Long]:
-  def part1(input: I): Long =
-    IntCode[Eval](input.updated(1, 12L).updated(2, 2L)).run.value(0)
+object Puzzle extends runner.IODay[I, Long, Int]:
+  def part1(input: I): IO[Long] =
+    IntCode(input.updated(1, 12L).updated(2, 2L)).flatMap(_.run.map(_(0)))
 
-  def part2(input: I): Long =
-    val nounsAndVerbs = for
-      noun <- (0 to 99).iterator
-      verb <- (0 to 99).iterator
-    yield (noun, verb)
+  def part2(input: I): IO[Int] =
+    val stream = for
+      noun     <- Stream.range(0, 100)
+      verb     <- Stream.range(0, 100)
+      computer <- Stream.eval(IntCode(input.updated(1, noun.toLong).updated(2, verb.toLong)))
+      matches  <- Stream.eval(computer.run.map(_(0) == 19690720))
+    yield (matches, 100 * noun + verb)
 
-    nounsAndVerbs
-      .find((noun, verb) => IntCode[Eval](input.updated(1, noun.toLong).updated(2, verb.toLong)).run.value(0) == 19690720)
-      .map((noun, verb) => 100 * noun + verb)
-      .get
+    stream.find(_._1).map(_._2).compile.onlyOrError

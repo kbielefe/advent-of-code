@@ -3,19 +3,27 @@ package year2019
 import cats.*
 import cats.data.*
 import cats.syntax.all.*
-import java.util.concurrent.{LinkedTransferQueue, TimeUnit}
+import cats.effect.IO
+import cats.effect.std.*
 
-class IntCode[F[_]: Monad](memory: Vector[Long]):
+object IntCode:
+  def apply(memory: Vector[Long]): IO[IntCode] = for
+    input  <- Queue.unbounded[IO, Long]
+    output <- Queue.unbounded[IO, Long]
+    memMap  = memory.zipWithIndex.map((data, index) => (index.toLong, data)).toMap.withDefaultValue(0L)
+  yield new IntCode(input, output, memMap)
+
+class IntCode private (inputQueue: Queue[IO, Long], outputQueue: Queue[IO, Long], memory: Map[Long, Long]):
   case class Data(pc: Long, relativeBase: Long, memory: Map[Long, Long])
-  type IC[A] = StateT[F, Data, A]
+  type IC[A] = StateT[IO, Data, A]
 
-  val input  = LinkedTransferQueue[Long]
-  val output = LinkedTransferQueue[Long]
+  def input(x: Long): IO[Unit] = inputQueue.offer(x)
+  def output: IO[Long] = outputQueue.take
 
-  def run: F[Map[Long, Long]] =
+  def run: IO[Map[Long, Long]] =
     (runInstruction >> opcode)
       .iterateUntil(_ == 99)
-      .runS(Data(0, 0, memory.zipWithIndex.map((data, index) => (index.toLong, data)).toMap.withDefaultValue(0L)))
+      .runS(Data(0, 0, memory))
       .map(_.memory)
 
   val runInstruction = opcode.map(_ % 100).flatMap{
@@ -46,13 +54,14 @@ class IntCode[F[_]: Monad](memory: Vector[Long]):
   yield ()
 
   def readInput: IC[Unit] = for
-    _ <- set(1, input.poll(2, TimeUnit.SECONDS))
-    _ <- incPc(2)
+   input <- StateT[IO, Data, Long](data => inputQueue.take.map(data -> _))
+    _    <- set(1, input)
+    _    <- incPc(2)
   yield ()
 
   def writeOutput: IC[Unit] = for
     x <- get(1)
-    _  = output.put(x)
+    _ <- StateT[IO, Data, Unit](data => outputQueue.offer(x).map(data -> _))
     _ <- incPc(2)
   yield ()
 
@@ -84,7 +93,7 @@ class IntCode[F[_]: Monad](memory: Vector[Long]):
 
   val adjustRelativeBase = for
     x <- get(1)
-    _ <- StateT.modify[F, Data](data => data.copy(relativeBase=data.relativeBase + x))
+    _ <- StateT.modify[IO, Data](data => data.copy(relativeBase=data.relativeBase + x))
     _ <- incPc(2)
   yield ()
 
@@ -107,12 +116,12 @@ class IntCode[F[_]: Monad](memory: Vector[Long]):
   }
 
   def set(offset: Long, value: Long): IC[Unit] = parameterMode(offset).flatMap{
-    case POSITION => StateT.modify[F, Data](data => data.copy(memory=data.memory.updated(data.memory(data.pc + offset), value)))
-    case RELATIVE => StateT.modify[F, Data](data => data.copy(memory=data.memory.updated(data.memory(data.pc + offset) + data.relativeBase, value)))
+    case POSITION => StateT.modify[IO, Data](data => data.copy(memory=data.memory.updated(data.memory(data.pc + offset), value)))
+    case RELATIVE => StateT.modify[IO, Data](data => data.copy(memory=data.memory.updated(data.memory(data.pc + offset) + data.relativeBase, value)))
   }
 
   def incPc(offset: Long): IC[Unit] =
-    StateT.modify[F, Data](data => data.copy(pc=data.pc + offset))
+    StateT.modify[IO, Data](data => data.copy(pc=data.pc + offset))
 
   def setPc(newPc: Long): IC[Unit] =
-    StateT.modify[F, Data](_.copy(pc=newPc))
+    StateT.modify[IO, Data](_.copy(pc=newPc))

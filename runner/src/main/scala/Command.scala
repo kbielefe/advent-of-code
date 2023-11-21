@@ -28,7 +28,7 @@ sealed trait AnswerCommand(year: Int, day: Int, part: Int, example: String) exte
   def answer: IO[String] =
     Database
       .getInput(year, day, example)
-      .flatMap(input => if part == 1 then IO.blocking(getDay.normalizedPart1(input)) else IO.blocking(getDay.normalizedPart2(input)))
+      .flatMap(input => if part == 1 then getDay.normalizedPart1(input) else getDay.normalizedPart2(input))
       .flatTap(Console[IO].println)
 
   def getDay: NormalizedDay =
