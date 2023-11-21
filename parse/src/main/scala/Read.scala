@@ -11,6 +11,10 @@ given Read[Long] with
   def read(input: String): Long =
     input.toLong
 
+given Read[BigInt] with
+  def read(input: String): BigInt =
+    BigInt(input)
+
 given Read[String] with
   def read(input: String): String =
     input
