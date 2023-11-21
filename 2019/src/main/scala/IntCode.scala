@@ -7,17 +7,25 @@ import cats.effect.IO
 import cats.effect.std.*
 
 object IntCode:
-  def apply(memory: Vector[Long]): IO[IntCode] = for
+  def apply(memory: Vector[Long], blocking: Boolean = true): IO[IntCode] = for
     input  <- Queue.unbounded[IO, Long]
     output <- Queue.unbounded[IO, Long]
+    mutex  <- Mutex[IO]
     memMap  = memory.zipWithIndex.map((data, index) => (index.toLong, data)).toMap.withDefaultValue(0L)
-  yield new IntCode(input, output, memMap)
+  yield new IntCode(input, output, memMap, blocking, mutex)
 
-class IntCode private (inputQueue: Queue[IO, Long], outputQueue: Queue[IO, Long], memory: Map[Long, Long]):
+class IntCode private (
+  inputQueue: Queue[IO, Long],
+  outputQueue: Queue[IO, Long],
+  memory: Map[Long, Long],
+  blocking: Boolean,
+  inputMutex: Mutex[IO]):
   case class Data(pc: Long, relativeBase: Long, memory: Map[Long, Long])
   type IC[A] = StateT[IO, Data, A]
 
-  def input(x: Long): IO[Unit] = inputQueue.offer(x)
+  def input(xs: Long*): IO[Unit] =
+    inputMutex.lock.surround(xs.iterator.to(List).traverse(inputQueue.offer).void)
+
   def output: IO[Long] = outputQueue.take
 
   def run: IO[Map[Long, Long]] =
@@ -54,14 +62,14 @@ class IntCode private (inputQueue: Queue[IO, Long], outputQueue: Queue[IO, Long]
   yield ()
 
   def readInput: IC[Unit] = for
-   input <- StateT[IO, Data, Long](data => inputQueue.take.map(data -> _))
+   input <- readInputQueue
     _    <- set(1, input)
     _    <- incPc(2)
   yield ()
 
   def writeOutput: IC[Unit] = for
     x <- get(1)
-    _ <- StateT[IO, Data, Unit](data => outputQueue.offer(x).map(data -> _))
+    _ <- writeOutputQueue(x)
     _ <- incPc(2)
   yield ()
 
@@ -125,3 +133,14 @@ class IntCode private (inputQueue: Queue[IO, Long], outputQueue: Queue[IO, Long]
 
   def setPc(newPc: Long): IC[Unit] =
     StateT.modify[IO, Data](_.copy(pc=newPc))
+
+  val readInputQueue: IC[Long] = StateT{data =>
+    if blocking then
+      inputQueue.take.map(data -> _)
+    else
+      inputQueue.tryTake.map(data -> _.getOrElse(-1))
+  }
+
+  def writeOutputQueue(x: Long): IC[Unit] = StateT{data =>
+    outputQueue.offer(x).map(data -> _)
+  }
