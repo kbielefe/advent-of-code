@@ -5,22 +5,29 @@ import cats.data.*
 import cats.syntax.all.*
 import cats.effect.IO
 import cats.effect.std.*
+import java.io.PrintStream
+
+class IntCodeException(stack: List[String]) extends Exception("Error executing IntCode"):
+  override def printStackTrace(ps: PrintStream): Unit =
+    val trace = s"Error executing IntCode:\n  ${stack.reverse.mkString("\n  ")}"
+    ps.print(trace)
 
 object IntCode:
-  def apply(memory: Vector[Long], blocking: Boolean = true): IO[IntCode] = for
+  def apply(memory: Vector[Long], blocking: Boolean = true, trace: Boolean = false): IO[IntCode] = for
     input  <- Queue.unbounded[IO, Long]
     output <- Queue.unbounded[IO, Long]
     mutex  <- Mutex[IO]
     memMap  = memory.zipWithIndex.map((data, index) => (index.toLong, data)).toMap.withDefaultValue(0L)
-  yield new IntCode(input, output, memMap, blocking, mutex)
+  yield new IntCode(input, output, memMap, blocking, mutex, trace)
 
 class IntCode private (
   inputQueue: Queue[IO, Long],
   outputQueue: Queue[IO, Long],
   memory: Map[Long, Long],
   blocking: Boolean,
-  inputMutex: Mutex[IO]):
-  case class Data(pc: Long, relativeBase: Long, memory: Map[Long, Long])
+  inputMutex: Mutex[IO],
+  trace: Boolean):
+  case class Data(pc: Long, stack: List[String], relativeBase: Long, memory: Map[Long, Long])
   type IC[A] = StateT[IO, Data, A]
 
   def input(xs: Long*): IO[Unit] =
@@ -31,7 +38,7 @@ class IntCode private (
   def run: IO[Map[Long, Long]] =
     (runInstruction >> opcode)
       .iterateUntil(_ == 99)
-      .runS(Data(0, 0, memory))
+      .runS(Data(0, List.empty, 0, memory))
       .map(_.memory)
 
   val runInstruction = opcode.map(_ % 100).flatMap{
@@ -45,6 +52,7 @@ class IntCode private (
     case 8 => equals
     case 9 => adjustRelativeBase
     case 99 => halt
+    case _  => error
   }
 
   val add = for
@@ -54,6 +62,12 @@ class IntCode private (
     _ <- incPc(4)
   yield ()
 
+  val addString = for
+    x <- getString(1)
+    y <- getString(2)
+    r <- setString(3)
+  yield s"add $x $y $r"
+
   val multiply = for
     x <- get(1)
     y <- get(2)
@@ -61,11 +75,21 @@ class IntCode private (
     _ <- incPc(4)
   yield ()
 
+  val multiplyString = for
+    x <- getString(1)
+    y <- getString(2)
+    r <- setString(3)
+  yield s"multiply $x $y $r"
+
   def readInput: IC[Unit] = for
    input <- readInputQueue
     _    <- set(1, input)
     _    <- incPc(2)
   yield ()
+
+  val readInputString = for
+    x <- setString(1)
+  yield s"input $x"
 
   def writeOutput: IC[Unit] = for
     x <- get(1)
@@ -73,17 +97,31 @@ class IntCode private (
     _ <- incPc(2)
   yield ()
 
+  val writeOutputString = for
+    x <- getString(1)
+  yield s"output $x"
+
   val jumpIfTrue = for
     x <- get(1)
     y <- get(2)
     _ <- if x != 0 then setPc(y) else incPc(3)
   yield ()
 
+  val jumpIfTrueString = for
+    x <- getString(1)
+    y <- getString(2)
+  yield s"jumpIfTrue $x $y"
+
   val jumpIfFalse = for
     x <- get(1)
     y <- get(2)
     _ <- if x == 0 then setPc(y) else incPc(3)
   yield ()
+
+  val jumpIfFalseString = for
+    x <- getString(1)
+    y <- getString(2)
+  yield s"jumpIfFalse $x $y"
 
   val lessThan = for
     x <- get(1)
@@ -92,6 +130,12 @@ class IntCode private (
     _ <- incPc(4)
   yield ()
 
+  val lessThanString = for
+    x <- getString(1)
+    y <- getString(2)
+    z <- setString(3)
+  yield s"lessThan $x $y $z"
+
   val equals = for
     x <- get(1)
     y <- get(2)
@@ -99,13 +143,29 @@ class IntCode private (
     _ <- incPc(4)
   yield ()
 
+  val equalsString = for
+    x <- getString(1)
+    y <- getString(2)
+    z <- setString(3)
+  yield s"equals $x $y"
+
   val adjustRelativeBase = for
     x <- get(1)
     _ <- StateT.modify[IO, Data](data => data.copy(relativeBase=data.relativeBase + x))
     _ <- incPc(2)
   yield ()
 
+  val adjustRelativeBaseString = for
+    x <- getString(1)
+  yield s"adjustRelativeBase $x"
+
   val halt: IC[Unit] = StateT.empty
+
+  val haltString = StateT.pure[IO, Data, String]("halt")
+
+  val errorString = for
+    x <- opcode
+  yield s"invalid opcode $x"
 
   def opcode: IC[Long] =
     StateT.inspect(data => data.memory(data.pc))
@@ -123,16 +183,42 @@ class IntCode private (
     case RELATIVE  => StateT.inspect(data => data.memory(data.memory(data.pc + offset) + data.relativeBase))
   }
 
+  def getString(offset: Long): IC[String] = parameterMode(offset).flatMap{
+    case POSITION  => StateT.inspect(data => s"p[${data.pc}, $offset]<-${data.memory(data.memory(data.pc + offset))}")
+    case IMMEDIATE => StateT.inspect(data => s"i[${data.pc}, $offset]<-${data.memory(data.pc + offset)}")
+    case RELATIVE  => StateT.inspect(data => s"r[${data.pc}, $offset, ${data.relativeBase}]<-${data.memory(data.memory(data.pc + offset) + data.relativeBase)}")
+  }
+
   def set(offset: Long, value: Long): IC[Unit] = parameterMode(offset).flatMap{
     case POSITION => StateT.modify[IO, Data](data => data.copy(memory=data.memory.updated(data.memory(data.pc + offset), value)))
     case RELATIVE => StateT.modify[IO, Data](data => data.copy(memory=data.memory.updated(data.memory(data.pc + offset) + data.relativeBase, value)))
   }
 
+  def setString(offset: Long): IC[String] = parameterMode(offset).flatMap{
+    case POSITION  => StateT.inspect(data => s"p[${data.pc}, $offset]->${data.memory(data.memory(data.pc + offset))}")
+    case RELATIVE  => StateT.inspect(data => s"r[${data.pc}, $offset, ${data.relativeBase}]->${data.memory(data.memory(data.pc + offset) + data.relativeBase)}")
+  }
+
   def incPc(offset: Long): IC[Unit] =
-    StateT.modify[IO, Data](data => data.copy(pc=data.pc + offset))
+    StateT.inspect[IO, Data, Long](_.pc).flatMap(pc => setPc(pc + offset))
 
   def setPc(newPc: Long): IC[Unit] =
+    pushStack >>
     StateT.modify[IO, Data](_.copy(pc=newPc))
+
+  val pushStack: IC[Unit] = opcode.map(_ % 100).flatMap{
+    case 1 => addString
+    case 2 => multiplyString
+    case 3 => readInputString
+    case 4 => writeOutputString
+    case 5 => jumpIfTrueString
+    case 6 => jumpIfFalseString
+    case 7 => lessThanString
+    case 8 => equalsString
+    case 9 => adjustRelativeBaseString
+    case 99 => haltString
+    case _  => errorString
+  }.flatMap(string => StateT.modify[IO, Data](data => if trace then data.copy(stack=s"${data.pc}: $string"::data.stack) else data))
 
   val readInputQueue: IC[Long] = StateT{data =>
     if blocking then
@@ -143,4 +229,8 @@ class IntCode private (
 
   def writeOutputQueue(x: Long): IC[Unit] = StateT{data =>
     outputQueue.offer(x).map(data -> _)
+  }
+
+  def error: IC[Unit] = pushStack >> StateT{data =>
+    IO.raiseError(IntCodeException(data.stack))
   }

@@ -11,28 +11,23 @@ type I = Vector[Long] - ","
 
 object Puzzle extends runner.IODay[I, Long, Long]:
   def part1(input: I): IO[Long] = for
-    computers <- IntCode(input, blocking = false).parReplicateA(50).map(_.toVector)
     deferred  <- Deferred[IO, Long]
-    _         <- List.range(0, 50).parTraverse(nic(computers, deferred))
-    result    <- deferred.get
+    computers <- IntCode(input, blocking = false).parReplicateA(50).map(_.toVector)
+    _              <- List.range(0, 50).parTraverse(index => computers(index).input(index))
+    computerFibers <- List.range(0, 50).parTraverse(index => computers(index).run.start)
+    routerFibers   <- List.range(0, 50).parTraverse(index => routePackets(computers, deferred, computers(index)).foreverM.start)
+    result         <- deferred.get
+    _ <- computerFibers.parTraverse(_.cancel)
+    _ <- routerFibers.parTraverse(_.cancel)
   yield result
 
   def part2(input: I): IO[Long] =
     ???
 
-  def nic(computers: Vector[IntCode], deferred: Deferred[IO, Long])(index: Int): IO[Unit] = for
-    computer <- IO.pure(computers(index))
-    _ <- computer.input(index)
-    _ <- computer.run.start
-    _ <- routePackets(computers, deferred, index).foreverM.start
-  yield ()
-
-  def routePackets(computers: Vector[IntCode], deferred: Deferred[IO, Long], index: Int): IO[Unit] = for
-    computer    <- IO.pure(computers(index))
+  def routePackets(computers: Vector[IntCode], deferred: Deferred[IO, Long], computer: IntCode): IO[Unit] = for
     destination <- computer.output
     x <- computer.output
     y <- computer.output
-    _ <- Console[IO].println(s"$index: $destination $x $y")
     _ <- IO.whenA(destination >= 0 && destination < 50)(computers(destination.toInt).input(x, y))
     _ <- IO.whenA(destination == 255)(deferred.complete(y).void)
   yield ()
