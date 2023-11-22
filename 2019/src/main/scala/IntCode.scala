@@ -221,20 +221,20 @@ class IntCode private (
     case _  => errorString
   }.flatMap(string => StateT.modify[IO, Data](data => if trace then data.copy(stack=s"${data.pc}: $string"::data.stack) else data))
 
-  val readInputQueue: IC[Long] = StateT{data =>
-    val input = onInputBlock match
+  val readInputQueue: IC[Long] = StateT.liftF(
+    onInputBlock match
       case Some(f) => inputQueue.tryTake.flatMap {
         case Some(input) => IO.pure(input)
         case None        => f(id)
       }
       case None => inputQueue.take
-    input.map(data -> _)
-  }
+  )
 
-  def writeOutputQueue(x: Long): IC[Unit] = StateT{data =>
-    outputQueue.offer(x).map(data -> _)
-  }
+  def writeOutputQueue(x: Long): IC[Unit] =
+    StateT.liftF(outputQueue.offer(x))
 
-  def error: IC[Unit] = pushStack >> StateT{data =>
-    IO.raiseError(IntCodeException(data.stack))
-  }
+  def error: IC[Unit] = for
+    _     <- pushStack
+    stack <- StateT.inspect[IO, Data, List[String]](_.stack)
+    _     <- StateT.liftF(IO.raiseError(IntCodeException(stack)))
+  yield ()
