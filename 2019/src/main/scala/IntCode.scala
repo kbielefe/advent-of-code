@@ -13,12 +13,12 @@ class IntCodeException(stack: List[String]) extends Exception("Error executing I
     ps.print(trace)
 
 object IntCode:
-  def apply(memory: Vector[Long], trace: Boolean = false, id: Int = 0, onInputBlock: Option[Int => IO[Long]] = None): IO[IntCode] = for
+  def apply(memory: Vector[Long], trace: Boolean = false): IO[IntCode] = for
     input  <- Queue.unbounded[IO, Long]
     output <- Queue.unbounded[IO, Long]
     mutex  <- Mutex[IO]
     memMap  = memory.zipWithIndex.map((data, index) => (index.toLong, data)).toMap.withDefaultValue(0L)
-  yield new IntCode(input, output, memMap, mutex, trace, id, onInputBlock)
+  yield new IntCode(input, output, memMap, mutex, trace, None)
 
 class IntCode private (
   inputQueue: Queue[IO, Long],
@@ -26,13 +26,18 @@ class IntCode private (
   memory: Map[Long, Long],
   inputMutex: Mutex[IO],
   trace: Boolean,
-  id: Int,
-  onInputBlock: Option[Int => IO[Long]]):
+  onInputBlockOpt: Option[IO[Long]]):
   case class Data(pc: Long, stack: List[String], relativeBase: Long, memory: Map[Long, Long])
   type IC[A] = StateT[IO, Data, A]
 
+  def onInputBlock(newInputBlock: IO[Long]): IntCode =
+    new IntCode(inputQueue, outputQueue, memory, inputMutex, trace, Some(newInputBlock))
+
   def input(xs: Long*): IO[Unit] =
     inputMutex.lock.surround(xs.iterator.to(List).traverse(inputQueue.offer).void)
+
+  def inputIsEmpty: IO[Boolean] =
+    inputMutex.lock.surround(inputQueue.size.map(_ == 0))
 
   def output: IO[Long] = outputQueue.take
 
@@ -228,10 +233,10 @@ class IntCode private (
     StateT.modify[IO, Data](data => data.copy(stack=s"${data.pc}: $string"::data.stack))
 
   val readInputQueue: IC[Long] = StateT.liftF(
-    onInputBlock match
-      case Some(f) => inputQueue.tryTake.flatMap {
+    onInputBlockOpt match
+      case Some(io) => inputQueue.tryTake.flatMap {
         case Some(input) => IO.pure(input)
-        case None        => f(id)
+        case None        => io
       }
       case None => inputQueue.take
   )

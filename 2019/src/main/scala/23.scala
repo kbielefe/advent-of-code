@@ -1,7 +1,7 @@
 package day23
 
-import cats.effect.IO
-import cats.effect.kernel.Deferred
+import cats.effect.{FiberIO, IO}
+import cats.effect.kernel.{Deferred, Ref}
 import cats.effect.std.Console
 import cats.syntax.all.*
 import parse.{*, given}
@@ -11,28 +11,75 @@ type I = Vector[Long] - ","
 
 object Puzzle extends runner.IODay[I, Long, Long]:
   def part1(input: I): IO[Long] = for
-    deferred       <- Deferred[IO, Long]
-    computers      <- forAllComputers(i => IntCode(input, id = i, onInputBlock = Some(provideNegativeOne))).map(_.toVector)
-    _              <- forAllComputers(i => computers(i).input(i))
-    computerFibers <- forAllComputers(i => computers(i).run.start)
-    routerFibers   <- forAllComputers(i => routePackets(computers, deferred, computers(i)).foreverM.start)
-    result         <- deferred.get
-    _ <- computerFibers.parTraverse(_.cancel)
-    _ <- routerFibers.parTraverse(_.cancel)
+    nics   <- forAllNics(i => IntCode(input).flatMap(Nic(i)))
+    nat    <- Part1Nat(nics)
+    _      <- forAllNics(i => nics(i).start(nat))
+    result <- nat.result
   yield result
 
-  def part2(input: I): IO[Long] =
+  def part2(input: I): IO[Long] = for
+    nics   <- forAllNics(i => IntCode(input).flatMap(Nic(i)))
+    nat    <- Part2Nat(nics)
+    _      <- forAllNics(i => nics(i).start(nat))
+    result <- nat.result
+  yield result
+
+case class Packet(destination: Long, x: Long, y: Long)
+
+object Nic:
+  def apply(networkAddress: Int)(computer: IntCode): IO[Nic] =
+    computer.input(networkAddress) >> IO.pure(new Nic(computer))
+
+class Nic private (inputBlockedComputer: IntCode):
+  val computer = inputBlockedComputer.onInputBlock(triedToReceive)
+
+  def start(nat: Nat): IO[FiberIO[Nothing]] =
+    computer.run.start >> routePackets(nat).foreverM.start
+
+  def triedToReceive: IO[Long] =
+    IO.pure(-1)
+
+  def send(packet: Packet): IO[Unit] =
+    computer.input(packet.x, packet.y)
+
+  def idle: IO[Boolean] =
+    (computer.inputIsEmpty, receivingWithoutSending).mapN(_ && _)
+
+  def receivingWithoutSending: IO[Boolean] =
     ???
 
-  def provideNegativeOne(i: Int): IO[Long] = IO.pure(-1)
-
-  def forAllComputers[A](io: Int => IO[A]): IO[List[A]] =
-    List.range(0, 50).parTraverse(io)
-
-  def routePackets(computers: Vector[IntCode], deferred: Deferred[IO, Long], computer: IntCode): IO[Unit] = for
+  def routePackets(nat: Nat): IO[Unit] = for
     destination <- computer.output
     x <- computer.output
     y <- computer.output
-    _ <- IO.whenA(destination >= 0 && destination < 50)(computers(destination.toInt).input(x, y))
-    _ <- IO.whenA(destination == 255)(deferred.complete(y).void)
+    _ <- nat.send(Packet(destination, x, y))
   yield ()
+
+sealed trait Nat(deferred: Deferred[IO, Long]):
+  def send(packet: Packet): IO[Unit]
+  def result: IO[Long] = deferred.get
+
+object Part1Nat:
+  def apply(nics: Vector[Nic]): IO[Nat] =
+    Deferred[IO, Long].map(new Part1Nat(nics, _))
+
+object Part2Nat:
+  def apply(nics: Vector[Nic]): IO[Nat] =
+    Deferred[IO, Long].map(new Part2Nat(nics, _))
+
+class Part1Nat private (nics: Vector[Nic], deferred: Deferred[IO, Long]) extends Nat(deferred):
+  override def send(packet: Packet): IO[Unit] =
+    if packet.destination == 255 then
+      deferred.complete(packet.y).void
+    else
+      nics(packet.destination.toInt).send(packet)
+
+class Part2Nat(nics: Vector[Nic], deferred: Deferred[IO, Long]) extends Nat(deferred):
+  override def send(packet: Packet): IO[Unit] =
+    if packet.destination == 255 then
+      ???
+    else
+      nics(packet.destination.toInt).send(packet)
+
+def forAllNics[A](io: Int => IO[A]): IO[Vector[A]] =
+  List.range(0, 50).parTraverse(io).map(_.toVector)
