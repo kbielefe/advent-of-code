@@ -20,10 +20,10 @@ trait Day[I: Read, A: Show, B: Show] extends NormalizedDay:
   def part2(input: I): B
 
   override def normalizedPart1(input: String): IO[String] =
-    normalize[I, A](input, i => IO.blocking(part1(i)))
+    normalize[I, A](input, i => IO.interruptible(part1(i)))
 
   override def normalizedPart2(input: String): IO[String] =
-    normalize[I, B](input, i => IO.blocking(part2(i)))
+    normalize[I, B](input, i => IO.interruptible(part2(i)))
 
 trait IODay[I: Read, A: Show, B: Show] extends NormalizedDay:
   def part1(input: I): IO[A]

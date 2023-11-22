@@ -43,6 +43,7 @@ class Nic private (networkAddress: Int, inputBlockedComputer: IntCode, receiveCo
     (computer.run.void.start, routePackets(nat).foreverM.start).tupled
 
   def triedToReceive: IO[Long] =
+    Console[IO].println("Why does this help?") >>
     receiveCountSinceSend.update(_ + 1) >>
     IO.pure(-1)
 
