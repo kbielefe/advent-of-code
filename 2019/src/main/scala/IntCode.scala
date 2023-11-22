@@ -13,20 +13,21 @@ class IntCodeException(stack: List[String]) extends Exception("Error executing I
     ps.print(trace)
 
 object IntCode:
-  def apply(memory: Vector[Long], blocking: Boolean = true, trace: Boolean = false): IO[IntCode] = for
+  def apply(memory: Vector[Long], trace: Boolean = false, id: Int = 0, onInputBlock: Option[Int => IO[Long]] = None): IO[IntCode] = for
     input  <- Queue.unbounded[IO, Long]
     output <- Queue.unbounded[IO, Long]
     mutex  <- Mutex[IO]
     memMap  = memory.zipWithIndex.map((data, index) => (index.toLong, data)).toMap.withDefaultValue(0L)
-  yield new IntCode(input, output, memMap, blocking, mutex, trace)
+  yield new IntCode(input, output, memMap, mutex, trace, id, onInputBlock)
 
 class IntCode private (
   inputQueue: Queue[IO, Long],
   outputQueue: Queue[IO, Long],
   memory: Map[Long, Long],
-  blocking: Boolean,
   inputMutex: Mutex[IO],
-  trace: Boolean):
+  trace: Boolean,
+  id: Int,
+  onInputBlock: Option[Int => IO[Long]]):
   case class Data(pc: Long, stack: List[String], relativeBase: Long, memory: Map[Long, Long])
   type IC[A] = StateT[IO, Data, A]
 
@@ -221,10 +222,13 @@ class IntCode private (
   }.flatMap(string => StateT.modify[IO, Data](data => if trace then data.copy(stack=s"${data.pc}: $string"::data.stack) else data))
 
   val readInputQueue: IC[Long] = StateT{data =>
-    if blocking then
-      inputQueue.take.map(data -> _)
-    else
-      inputQueue.tryTake.map(data -> _.getOrElse(-1))
+    val input = onInputBlock match
+      case Some(f) => inputQueue.tryTake.flatMap {
+        case Some(input) => IO.pure(input)
+        case None        => f(id)
+      }
+      case None => inputQueue.take
+    input.map(data -> _)
   }
 
   def writeOutputQueue(x: Long): IC[Unit] = StateT{data =>

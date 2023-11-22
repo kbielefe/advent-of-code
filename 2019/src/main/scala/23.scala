@@ -11,11 +11,11 @@ type I = Vector[Long] - ","
 
 object Puzzle extends runner.IODay[I, Long, Long]:
   def part1(input: I): IO[Long] = for
-    deferred  <- Deferred[IO, Long]
-    computers <- IntCode(input, blocking = false).parReplicateA(50).map(_.toVector)
-    _              <- List.range(0, 50).parTraverse(index => computers(index).input(index))
-    computerFibers <- List.range(0, 50).parTraverse(index => computers(index).run.start)
-    routerFibers   <- List.range(0, 50).parTraverse(index => routePackets(computers, deferred, computers(index)).foreverM.start)
+    deferred       <- Deferred[IO, Long]
+    computers      <- forAllComputers(i => IntCode(input, id = i, onInputBlock = Some(provideNegativeOne))).map(_.toVector)
+    _              <- forAllComputers(i => computers(i).input(i))
+    computerFibers <- forAllComputers(i => computers(i).run.start)
+    routerFibers   <- forAllComputers(i => routePackets(computers, deferred, computers(i)).foreverM.start)
     result         <- deferred.get
     _ <- computerFibers.parTraverse(_.cancel)
     _ <- routerFibers.parTraverse(_.cancel)
@@ -23,6 +23,11 @@ object Puzzle extends runner.IODay[I, Long, Long]:
 
   def part2(input: I): IO[Long] =
     ???
+
+  def provideNegativeOne(i: Int): IO[Long] = IO.pure(-1)
+
+  def forAllComputers[A](io: Int => IO[A]): IO[List[A]] =
+    List.range(0, 50).parTraverse(io)
 
   def routePackets(computers: Vector[IntCode], deferred: Deferred[IO, Long], computer: IntCode): IO[Unit] = for
     destination <- computer.output
