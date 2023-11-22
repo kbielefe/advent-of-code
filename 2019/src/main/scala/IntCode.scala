@@ -207,7 +207,10 @@ class IntCode private (
     pushStack >>
     StateT.modify[IO, Data](_.copy(pc=newPc))
 
-  val pushStack: IC[Unit] = opcode.map(_ % 100).flatMap{
+  val pushStack: IC[Unit] =
+    if trace then generateString.flatMap(pushString) else StateT.empty
+
+  val generateString: IC[String] = opcode.map(_ % 100).flatMap{
     case 1 => addString
     case 2 => multiplyString
     case 3 => readInputString
@@ -219,7 +222,10 @@ class IntCode private (
     case 9 => adjustRelativeBaseString
     case 99 => haltString
     case _  => errorString
-  }.flatMap(string => StateT.modify[IO, Data](data => if trace then data.copy(stack=s"${data.pc}: $string"::data.stack) else data))
+  }
+
+  def pushString(string: String): IC[Unit] =
+    StateT.modify[IO, Data](data => data.copy(stack=s"${data.pc}: $string"::data.stack))
 
   val readInputQueue: IC[Long] = StateT.liftF(
     onInputBlock match
