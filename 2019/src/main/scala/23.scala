@@ -13,40 +13,46 @@ object Puzzle extends runner.IODay[I, Long, Long]:
   def part1(input: I): IO[Long] = for
     nics   <- forAllNics(i => IntCode(input).flatMap(Nic(i)))
     nat    <- Part1Nat(nics)
-    _      <- forAllNics(i => nics(i).start(nat))
+    fibers <- forAllNics(i => nics(i).start(nat))
     result <- nat.result
+    _      <- fibers.traverse((x, y) => x.cancel >> y.cancel)
   yield result
 
   def part2(input: I): IO[Long] = for
     nics   <- forAllNics(i => IntCode(input).flatMap(Nic(i)))
     nat    <- Part2Nat(nics)
-    _      <- forAllNics(i => nics(i).start(nat))
+    fibers <- forAllNics(i => nics(i).start(nat))
     result <- nat.result
+    _      <- fibers.traverse((x, y) => x.cancel >> y.cancel)
   yield result
 
 case class Packet(destination: Long, x: Long, y: Long)
 
 object Nic:
-  def apply(networkAddress: Int)(computer: IntCode): IO[Nic] =
-    computer.input(networkAddress) >> IO.pure(new Nic(computer))
+  def apply(networkAddress: Int)(computer: IntCode): IO[Nic] = for
+    _   <- computer.input(networkAddress)
+    ref <- Ref.of[IO, Int](0)
+  yield new Nic(computer, ref)
 
-class Nic private (inputBlockedComputer: IntCode):
+class Nic private (inputBlockedComputer: IntCode, receiveCountSinceSend: Ref[IO, Int]):
   val computer = inputBlockedComputer.onInputBlock(triedToReceive)
 
-  def start(nat: Nat): IO[FiberIO[Nothing]] =
-    computer.run.start >> routePackets(nat).foreverM.start
+  def start(nat: Nat): IO[(FiberIO[Unit], FiberIO[Nothing])] =
+    (computer.run.void.start, routePackets(nat).foreverM.start).tupled
 
   def triedToReceive: IO[Long] =
+    receiveCountSinceSend.update(_ + 1) >>
     IO.pure(-1)
 
   def send(packet: Packet): IO[Unit] =
+    receiveCountSinceSend.set(0) >>
     computer.input(packet.x, packet.y)
 
   def idle: IO[Boolean] =
     (computer.inputIsEmpty, receivingWithoutSending).mapN(_ && _)
 
   def receivingWithoutSending: IO[Boolean] =
-    ???
+    receiveCountSinceSend.get.map(_ >= 2)
 
   def routePackets(nat: Nat): IO[Unit] = for
     destination <- computer.output
