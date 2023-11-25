@@ -21,15 +21,22 @@ object Puzzle extends runner.Day[Grid, Int, Int]:
   def part2(input: Grid): Int =
     ???
 
-  def findAllKeys(current: Char, pairs: Map[Char, List[(Char, Int, Set[Char])]], allKeys: Set[Char], foundKeys: Set[Char]): Int =
-    if (foundKeys + current) == allKeys then
+  given Cache[(Char, Set[Char]), Int] = Cache.empty
+
+  def findAllKeys(
+    current: Char,
+    pairs: Map[Char, List[(Char, Int, Set[Char])]],
+    allKeys: Set[Char],
+    foundKeys: Set[Char]): Memoized[(Char, Set[Char]), Int] =
+    val found = foundKeys + current
+    if found == allKeys then
       0
     else
-      val unlockedDoors = foundKeys.map(_.toUpper) + current.toUpper
+      val unlockedDoors = found.map(_.toUpper)
       val unblockedPaths = pairs(current)
-        .filterNot(path => foundKeys.contains(path._1))
+        .filterNot(path => found.contains(path._1))
         .filter(path => (path._3 -- unlockedDoors).isEmpty)
         .map(x => (x._1, x._2))
       unblockedPaths.map{case (next, distance) =>
-        distance + findAllKeys(next, pairs, allKeys, foundKeys + current)
+        distance + Memoize((next, found), findAllKeys(next, pairs, allKeys, found))
       }.min
