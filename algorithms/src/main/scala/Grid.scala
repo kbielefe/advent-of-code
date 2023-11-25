@@ -22,6 +22,9 @@ class Grid private (cells: Map[Pos, Char]):
   def apply(pos: Pos): Char =
     cells(pos)
 
+  def updated(p: Pos, c: Char): Grid =
+    new Grid(cells.updated(p, c))
+
   def charSet: Set[Char] =
     cells.valuesIterator.toSet
 
@@ -47,9 +50,12 @@ object Grid:
   extension (p: Pos)
     def row: Int = p._1
     def col: Int = p._2
-    def neighbors: Set[Pos] =
-      Set((row + 1, col), (row -1 , col), (row, col + 1), (row, col - 1))
+    def neighbors: Set[Pos] = Set(p.north, p.south, p.east, p.west)
     def manhattan(other: Pos): Int = Math.abs(row - other.row) + Math.abs(col - other.col)
+    def north: Pos = (p._1 - 1, p._2)
+    def south: Pos = (p._1 + 1, p._2)
+    def east:  Pos = (p._1, p._2 + 1)
+    def west:  Pos = (p._1, p._2 - 1)
 
   def apply(string: String): Grid =
     val cells = string.linesIterator.zipWithIndex.flatMap{(line, row) =>
