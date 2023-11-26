@@ -2,17 +2,19 @@ package algorithms
 
 import parse.Read
 import Grid.Pos
+import scala.util.matching.Regex
 
 given Read[Grid] with
   def read(input: String): Grid =
     Grid(input)
 
 class Grid private (cells: Map[Pos, Char]):
+  lazy val minRow = cells.keys.map(_.row).min
+  lazy val maxRow = cells.keys.map(_.row).max
+  lazy val minCol = cells.keys.map(_.col).min
+  lazy val maxCol = cells.keys.map(_.col).max
+
   override def toString: String =
-    val minRow = cells.keys.map(_.row).min
-    val maxRow = cells.keys.map(_.row).max
-    val minCol = cells.keys.map(_.col).min
-    val maxCol = cells.keys.map(_.col).max
     (minRow to maxRow).map{row =>
       (minCol to maxCol).map{col =>
         cells.getOrElse(Pos(row, col), ' ')
@@ -30,6 +32,26 @@ class Grid private (cells: Map[Pos, Char]):
 
   def find(char: Char): Option[Pos] =
     cells.find(_._2 == char).map(_._1)
+
+  def findAll(length: Int, regex: Regex): Set[Pos] =
+    cells.keySet.flatMap{pos =>
+      val sequence = (pos.col until (pos.col + length)).map(col => cells.get(Pos(pos.row, col)))
+      if sequence.forall(_.isDefined) then
+        val string = sequence.flatten.mkString
+        Option.when(regex.matches(string))(pos)
+      else
+        None
+    }
+
+  def findAllVertical(length: Int, regex: Regex): Set[Pos] =
+    cells.keySet.flatMap{pos =>
+      val sequence = (pos.row until (pos.row + length)).map(row => cells.get(Pos(row, pos.col)))
+      if sequence.forall(_.isDefined) then
+        val string = sequence.flatten.mkString
+        Option.when(regex.matches(string))(pos)
+      else
+        None
+    }
 
   def vTree(obstacle: Char => Boolean = _ == '#'): VTree[Pos] = new VTree{
     override def children(node: Pos, visited: Set[Pos]): Iterator[Pos] =
