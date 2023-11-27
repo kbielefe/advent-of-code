@@ -48,7 +48,10 @@ def cycledEquivalentIterations(start: Long, cycle: Long, target: Long): Long =
  * that returns the value after the given number of iterations, return the
  * smaller value after the huge target of iterations.
  *
- * Assumes a constant increase in N every period.
+ * Use this when the cycle is increasing by a constant every period. Just drop
+ * cycledEquivalentIterations if the cycle repeats exactly every
+ * period. (i.e. if you didn't do some sort of mapping on detectCycle
+ * that you won't apply here.)
  */
 def cycledEquivalentValue(start: Long, cycle: Long, target: Long, f: Int => Int): Long =
   def longF(in: Long): Long = f(in.toInt).toLong

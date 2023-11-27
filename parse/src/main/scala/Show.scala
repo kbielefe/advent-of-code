@@ -15,3 +15,6 @@ given Show[Long] with
   def show(output: Long): String =
     output.toString
 
+given Show[BigInt] with
+  def show(output: BigInt): String =
+    output.toString
