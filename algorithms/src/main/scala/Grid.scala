@@ -8,7 +8,7 @@ given Read[Grid] with
   def read(input: String): Grid =
     Grid(input)
 
-class Grid private (cells: Map[Pos, Char]):
+class Grid private (protected val cells: Map[Pos, Char]) derives CanEqual:
   lazy val minRow = cells.keys.map(_.row).min
   lazy val maxRow = cells.keys.map(_.row).max
   lazy val minCol = cells.keys.map(_.col).min
@@ -61,6 +61,16 @@ class Grid private (cells: Map[Pos, Char]):
 
   def aStar(goal: Pos, obstacle: Char => Boolean = _ == '#'): AStar[Pos, Int] =
     new AStar[Pos, Int](_ == goal, _.manhattan(goal), (_, _) => 1, 0, _.neighbors.filter(cells.contains).filterNot(pos => obstacle(cells(pos))))
+
+  def allPos: Set[Pos] = cells.keySet
+
+  def neighborCount(pos: Pos, p: Char => Boolean = _ == '#'): Int =
+    pos.neighbors.toList.flatMap(cells.get).count(p)
+
+  override def equals(other: Any): Boolean =
+    cells == other.asInstanceOf[Grid].cells
+
+  override def hashCode: Int = cells.##
 
 object Grid:
   opaque type Pos = (Int, Int)
