@@ -88,22 +88,6 @@ case class RunPuzzle(year: Int, day: Int, part: Int, example: String) extends An
   def toBigInt(string: String): Option[BigInt] =
     Try(BigInt(string)).toOption
 
-case class Correct(year: Int, day: Int, part: Int, example: String) extends AnswerCommand(year, day, part, example):
-  override def run: IO[Unit] =
-    answer.flatMap(Database.setAnswer(year, day, part, example, _))
-
-case class Incorrect(year: Int, day: Int, part: Int, example: String) extends AnswerCommand(year, day, part, example):
-  override def run: IO[Unit] =
-    answer.flatMap(Database.addGuess(year, day, part, example, "incorrect", _))
-
-case class High(year: Int, day: Int, part: Int, example: String) extends AnswerCommand(year, day, part, example):
-  override def run: IO[Unit] =
-    answer.flatMap(Database.addGuess(year, day, part, example, "high", _))
-
-case class Low(year: Int, day: Int, part: Int, example: String) extends AnswerCommand(year, day, part, example):
-  override def run: IO[Unit] =
-    answer.flatMap(Database.addGuess(year, day, part, example, "low", _))
-
 case class Input(year: Int, day: Int, example: String) extends Command:
   override def run: IO[Unit] =
     val input = paste
@@ -128,3 +112,7 @@ case class InitDatabase() extends Command:
 case class Scrape(year: Int, day: Int) extends Command:
   override def run: IO[Unit] =
     Database.scrapeExamples(year, day)
+
+case class ListExamples(year: Int, day: Int) extends Command:
+  override def run: IO[Unit] =
+    Database.listExamples(year, day)

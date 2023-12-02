@@ -24,15 +24,14 @@ trait AdventYear(year: Int):
   private val run = Opts.subcommand("run", "Run the specified puzzle.")(common.mapN(RunPuzzle.apply))
   private val input = Opts.subcommand("input", "Copy the puzzle's input from the clipboard.")((Opts(year), day, example).mapN(Input.apply))
   private val answer = Opts.subcommand("answer", "Specify the correct answer for the puzzle and clears all guesses. Copies from the clipboard by default.")((Opts(year), day, part, example, answerArg).mapN(Answer.apply))
-  private val correct = Opts.subcommand("correct", "Mark the currently calculated answer as correct and clears all guesses.")(common.mapN(Correct.apply))
-  private val incorrect = Opts.subcommand("incorrect", "Mark the currently calculated answer as incorrect.")(common.mapN(Incorrect.apply))
-  private val high = Opts.subcommand("high", "Mark the currently calculated answer as too high.")(common.mapN(High.apply))
-  private val low = Opts.subcommand("low", "Mark the currently calculated answer as too low.")(common.mapN(Low.apply))
   private val session = Opts.subcommand("session", "Copy the user's session cookie from the clipboard.")(Opts(Session()))
   private val database = Opts.subcommand("database", "Initialize the database at advent.db.")(Opts(InitDatabase()))
-  private val scrapeExamples = Opts.subcommand("scrape-examples", "Scrape examples from <code></code> tags in the puzzle description.")((Opts(year), day).mapN(Scrape.apply))
 
-  private val all = List(run, input, answer, correct, incorrect, high, low, session, database, scrapeExamples).combineAll
+  private val scrape = Opts.subcommand("scrape", "Scrape examples from <code></code> tags in the puzzle description.")((Opts(year), day).mapN(Scrape.apply))
+  private val list = Opts.subcommand("list", "List all examples in the database for this day.")((Opts(year), day).mapN(ListExamples.apply))
+  private val examples = Opts.subcommand("examples", "Commands dealing with examples.")(scrape <+> list)
+
+  private val all = List(run, input, answer, session, database, examples).combineAll
 
   private val opts = (verbose, all).tupled.map{(verbose, command) =>
     val result = command.run.as(ExitCode.Success)
