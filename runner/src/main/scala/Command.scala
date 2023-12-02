@@ -28,7 +28,7 @@ sealed trait AnswerCommand(year: Int, day: Int, part: Int, example: String) exte
   def answer: IO[String] = for
     input  <- Database.getInput(year, day, example)
     _      <- Database.scrapeMissingExamples(year, day)
-    answer <- if part == 1 then getDay.normalizedPart1(input) else getDay.normalizedPart2(input)
+    answer <- if part == 1 then getDay.normalizedPart1(input.stripTrailing()) else getDay.normalizedPart2(input.stripTrailing())
     _      <- Console[IO].println(answer)
   yield answer
 
