@@ -25,11 +25,12 @@ sealed trait Command:
       .asInstanceOf[String]
 
 sealed trait AnswerCommand(year: Int, day: Int, part: Int, example: String) extends Command:
-  def answer: IO[String] =
-    Database
-      .getInput(year, day, example)
-      .flatMap(input => if part == 1 then getDay.normalizedPart1(input) else getDay.normalizedPart2(input))
-      .flatTap(Console[IO].println)
+  def answer: IO[String] = for
+    input  <- Database.getInput(year, day, example)
+    _      <- Database.scrapeExamples(year, day)
+    answer <- if part == 1 then getDay.normalizedPart1(input) else getDay.normalizedPart2(input)
+    _      <- Console[IO].println(answer)
+  yield answer
 
   def getDay: NormalizedDay =
     Class.forName(s"day$day.Puzzle$$")

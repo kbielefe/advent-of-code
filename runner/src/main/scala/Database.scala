@@ -1,6 +1,7 @@
 package runner
 
 import cats.effect.*
+import cats.effect.std.Console
 import cats.implicits.given
 import doobie.*
 import doobie.implicits.given
@@ -58,3 +59,16 @@ object Database:
 
   def getGuesses(year: Int, day: Int, part: Int, example: String): IO[List[(String, String)]] =
     sql"SELECT status, guess FROM guesses WHERE year=$year AND day=$day AND part=$part AND example=$example".query[(String, String)].to[List].transact(xa)
+
+  def scrapeExamples(year: Int, day: Int): IO[Unit] = for
+    count   <- sql"SELECT COUNT(input) FROM input WHERE year = $year AND day = $day AND example != 'official'".query[Int].unique.transact(xa)
+    session <- getSession
+    _       <- IO.unlessA(count > 0)(Http.scrapeExamples(year, day, session).zipWithIndex.foreach(saveExample(year, day)).compile.drain)
+  yield ()
+
+  def saveExample(year: Int, day: Int)(example: (String, Long)): IO[Unit] =
+    val (input, index) = example
+    val exampleString = (index + 1).toString
+    Console[IO].println("") >>
+    Console[IO].println(s"Saving example $exampleString to database:\n$input") >>
+    setInput(year, day, exampleString, input)
