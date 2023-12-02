@@ -37,7 +37,9 @@ lazy val runner = (project in file("runner")).settings(
     "org.xerial" % "sqlite-jdbc" % "3.44.0.0",
     "org.tpolecat" %% "doobie-core" % "1.0.0-RC4",
     "com.monovore" %% "decline-effect" % "2.4.1",
-    "org.slf4j" % "slf4j-nop" % "2.0.9"
+    "org.slf4j" % "slf4j-nop" % "2.0.9",
+    "org.scalatest" %% "scalatest" % "3.2.17" % Test,
+    "org.typelevel" %% "cats-effect-testing-scalatest" % "1.5.0" % Test
   )
 ).dependsOn(parse)
 

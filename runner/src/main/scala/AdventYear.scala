@@ -30,8 +30,9 @@ trait AdventYear(year: Int):
   private val low = Opts.subcommand("low", "Mark the currently calculated answer as too low.")(common.mapN(Low.apply))
   private val session = Opts.subcommand("session", "Copy the user's session cookie from the clipboard.")(Opts(Session()))
   private val database = Opts.subcommand("database", "Initialize the database at advent.db.")(Opts(InitDatabase()))
+  private val scrapeExamples = Opts.subcommand("scrape-examples", "Scrape examples from <code></code> tags in the puzzle description.")((Opts(year), day).mapN(Scrape.apply))
 
-  private val all = List(run, input, answer, correct, incorrect, high, low, session, database).combineAll
+  private val all = List(run, input, answer, correct, incorrect, high, low, session, database, scrapeExamples).combineAll
 
   private val opts = (verbose, all).tupled.map{(verbose, command) =>
     val result = command.run.as(ExitCode.Success)

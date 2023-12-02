@@ -123,3 +123,9 @@ case class Session() extends Command:
 
 case class InitDatabase() extends Command:
   override def run: IO[Unit] = Database.init
+
+case class Scrape(year: Int, day: Int) extends Command:
+  override def run: IO[Unit] =
+    Database.getSession.flatMap{session =>
+      Http.scrapeExamples(year, day, session).foreach(Console[IO].println).compile.drain
+    }
