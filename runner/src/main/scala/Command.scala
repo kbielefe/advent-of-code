@@ -27,7 +27,7 @@ sealed trait Command:
 sealed trait AnswerCommand(year: Int, day: Int, part: Int, example: String) extends Command:
   def answer: IO[String] = for
     input  <- Database.getInput(year, day, example)
-    _      <- Database.scrapeExamples(year, day)
+    _      <- Database.scrapeMissingExamples(year, day)
     answer <- if part == 1 then getDay.normalizedPart1(input) else getDay.normalizedPart2(input)
     _      <- Console[IO].println(answer)
   yield answer
@@ -127,6 +127,4 @@ case class InitDatabase() extends Command:
 
 case class Scrape(year: Int, day: Int) extends Command:
   override def run: IO[Unit] =
-    Database.getSession.flatMap{session =>
-      Http.scrapeExamples(year, day, session).foreach(Console[IO].println).compile.drain
-    }
+    Database.scrapeExamples(year, day)

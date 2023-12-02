@@ -60,11 +60,19 @@ object Database:
   def getGuesses(year: Int, day: Int, part: Int, example: String): IO[List[(String, String)]] =
     sql"SELECT status, guess FROM guesses WHERE year=$year AND day=$day AND part=$part AND example=$example".query[(String, String)].to[List].transact(xa)
 
-  def scrapeExamples(year: Int, day: Int): IO[Unit] = for
+  def scrapeMissingExamples(year: Int, day: Int): IO[Unit] = for
     count   <- sql"SELECT COUNT(input) FROM input WHERE year = $year AND day = $day AND example != 'official'".query[Int].unique.transact(xa)
-    session <- getSession
-    _       <- IO.unlessA(count > 0)(Http.scrapeExamples(year, day, session).zipWithIndex.foreach(saveExample(year, day)).compile.drain)
+    _       <- IO.unlessA(count > 0)(scrapeExamples(year, day))
   yield ()
+
+  def scrapeExamples(year: Int, day: Int): IO[Unit] =
+    getSession.flatMap{session =>
+      Http.scrapeExamples(year, day, session)
+        .zipWithIndex
+        .foreach(saveExample(year, day))
+        .compile
+        .drain
+    }
 
   def saveExample(year: Int, day: Int)(example: (String, Long)): IO[Unit] =
     val (input, index) = example
