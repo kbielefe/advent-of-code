@@ -17,6 +17,10 @@ given ReadSeq[Vector] with
   def readSeq[A : Read : ClassTag](input: Array[String]): Vector[A] =
     input.map(summon[Read[A]].read).toVector
 
+given ReadSeq[Set] with
+  def readSeq[A : Read : ClassTag](input: Array[String]): Set[A] =
+    input.map(summon[Read[A]].read).toSet
+
 given delimitedSeq[C[_]: ReadSeq, A : Read : ClassTag, B <: String : ValueOf]: Read[C[A] - B] with
   def read(input: String): C[A] - B =
     summon[ReadSeq[C]].readSeq[A](input.split(valueOf[B]))
