@@ -1,7 +1,7 @@
 package algorithms
 
 import parse.Read
-import Grid.Pos
+import Grid.{Pos, Group}
 import scala.util.matching.Regex
 
 given Read[Grid] with
@@ -62,6 +62,17 @@ class Grid private (protected val cells: Map[Pos, Char]) derives CanEqual:
         None
     }
 
+  /** Find consecutive characters that satisfy the predicate.  */
+  def findGroups(p: Char => Boolean): List[Group] =
+    cells.filter((pos, char) => p(char) && (!cells.contains(pos.west) || !p(apply(pos.west))))
+      .map(_._1)
+      .map{pos =>
+        val lastPos = Iterator.iterate(pos)(_.east).takeWhile(cells.contains).takeWhile(pos => p(apply(pos))).toList.last
+        val length = lastPos.col - pos.col + 1
+        val string = (pos.col until (pos.col + length)).map(col => apply(Pos(pos.row, col))).mkString
+        new Group(pos, length, string)
+      }.toList
+
   def vTree(obstacle: Char => Boolean = _ == '#')(using Grid.Neighbors): VTree[Pos] = new VTree{
     override def children(node: Pos, visited: Set[Pos]): Iterator[Pos] =
       val allNeighbors = node.neighbors.filter(cells.contains).filterNot(pos => obstacle(cells(pos)))
@@ -112,6 +123,13 @@ object Grid:
       }
     }.toMap
     new Grid(cells)
+
+  class Group(val firstPos: Pos, val length: Int, val string: String):
+    def allPos: Set[Pos] =
+      (firstPos.col until (firstPos.col + length)).toSet.map(col => Pos(firstPos.row, col))
+
+    def neighbors(using n: Neighbors): Set[Pos] =
+      allPos.flatMap(n.neighbors) -- allPos
 
   trait Neighbors:
     def neighbors(p: Pos): Set[Pos]
