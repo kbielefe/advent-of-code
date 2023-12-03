@@ -94,6 +94,10 @@ case class Input(year: Int, day: Int, example: String) extends Command:
     Console[IO].println(s"Setting input to:\n$input") >>
     Database.setInput(year, day, example, input)
 
+case class ShowInput(year: Int, day: Int, example: String) extends Command:
+  override def run: IO[Unit] =
+    Database.getInput(year, day, example).flatMap(Console[IO].println)
+
 case class Answer(year: Int, day: Int, part: Int, example: String, answer: Option[String]) extends Command:
   override def run: IO[Unit] =
     val result = answer.getOrElse(paste)

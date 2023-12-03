@@ -22,10 +22,13 @@ trait AdventYear(year: Int):
   private val common = (Opts(year), day, part, example)
 
   private val run = Opts.subcommand("run", "Run the specified puzzle.")(common.mapN(RunPuzzle.apply))
-  private val input = Opts.subcommand("input", "Copy the puzzle's input from the clipboard.")((Opts(year), day, example).mapN(Input.apply))
   private val answer = Opts.subcommand("answer", "Specify the correct answer for the puzzle and clears all guesses. Copies from the clipboard by default.")((Opts(year), day, part, example, answerArg).mapN(Answer.apply))
   private val session = Opts.subcommand("session", "Copy the user's session cookie from the clipboard.")(Opts(Session()))
   private val database = Opts.subcommand("database", "Initialize the database at advent.db.")(Opts(InitDatabase()))
+
+  private val showInput = Opts.subcommand("show", "Print the input to the console.")((Opts(year), day, example).mapN(ShowInput.apply))
+  private val copyInput = Opts.subcommand("copy", "Copy the puzzle's input from the clipboard.")((Opts(year), day, example).mapN(Input.apply))
+  private val input = Opts.subcommand("input", "Copy the puzzle's input from the clipboard.")(copyInput <+> showInput)
 
   private val scrape = Opts.subcommand("scrape", "Scrape examples from <code></code> tags in the puzzle description.")((Opts(year), day).mapN(Scrape.apply))
   private val list = Opts.subcommand("list", "List all examples in the database for this day.")((Opts(year), day).mapN(ListExamples.apply))
