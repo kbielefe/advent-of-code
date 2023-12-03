@@ -24,11 +24,17 @@ class Grid private (protected val cells: Map[Pos, Char]) derives CanEqual:
   def apply(pos: Pos): Char =
     cells(pos)
 
+  def get(pos: Pos): Option[Char] =
+    cells.get(pos)
+
   def updated(p: Pos, c: Char): Grid =
     new Grid(cells.updated(p, c))
 
   def charSet: Set[Char] =
     cells.valuesIterator.toSet
+
+  def contains(pos: Pos): Boolean =
+    cells.contains(pos)
 
   def count(p: Char => Boolean): Int =
     cells.valuesIterator.count(p)
