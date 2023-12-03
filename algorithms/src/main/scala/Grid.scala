@@ -30,6 +30,9 @@ class Grid private (protected val cells: Map[Pos, Char]) derives CanEqual:
   def charSet: Set[Char] =
     cells.valuesIterator.toSet
 
+  def count(p: Char => Boolean): Int =
+    cells.valuesIterator.count(p)
+
   def find(char: Char): Option[Pos] =
     cells.find(_._2 == char).map(_._1)
 
@@ -53,24 +56,31 @@ class Grid private (protected val cells: Map[Pos, Char]) derives CanEqual:
         None
     }
 
-  def vTree(obstacle: Char => Boolean = _ == '#'): VTree[Pos] = new VTree{
+  def vTree(obstacle: Char => Boolean = _ == '#')(using Grid.Neighbors): VTree[Pos] = new VTree{
     override def children(node: Pos, visited: Set[Pos]): Iterator[Pos] =
       val allNeighbors = node.neighbors.filter(cells.contains).filterNot(pos => obstacle(cells(pos)))
       (allNeighbors -- visited).iterator
   }
 
-  def aStar(goal: Pos, obstacle: Char => Boolean = _ == '#'): AStar[Pos, Int] =
+  def aStar(goal: Pos, obstacle: Char => Boolean = _ == '#')(using Grid.Neighbors): AStar[Pos, Int] =
     new AStar[Pos, Int](_ == goal, _.manhattan(goal), (_, _) => 1, 0, _.neighbors.filter(cells.contains).filterNot(pos => obstacle(cells(pos))))
 
   def allPos: Set[Pos] = cells.keySet
 
-  def neighborCount(pos: Pos, p: Char => Boolean = _ == '#'): Int =
+  def neighborCount(pos: Pos, p: Char => Boolean = _ == '#')(using Grid.Neighbors): Int =
     pos.neighbors.toList.flatMap(cells.get).count(p)
 
   override def equals(other: Any): Boolean =
     cells == other.asInstanceOf[Grid].cells
 
   override def hashCode: Int = cells.##
+
+  def life(rule: (Char, Int) => Char)(using Grid.Neighbors): Grid =
+    allPos.foldLeft(this){(accum, pos) =>
+      val current = apply(pos)
+      val count = neighborCount(pos)
+      accum.updated(pos, rule(current, count))
+    }
 
 object Grid:
   opaque type Pos = (Int, Int)
@@ -82,7 +92,7 @@ object Grid:
   extension (p: Pos)
     def row: Int = p._1
     def col: Int = p._2
-    def neighbors: Set[Pos] = Set(p.north, p.south, p.east, p.west)
+    def neighbors(using n: Neighbors): Set[Pos] = n.neighbors(p)
     def manhattan(other: Pos): Int = Math.abs(row - other.row) + Math.abs(col - other.col)
     def north: Pos = (p._1 - 1, p._2)
     def south: Pos = (p._1 + 1, p._2)
@@ -96,3 +106,14 @@ object Grid:
       }
     }.toMap
     new Grid(cells)
+
+  trait Neighbors:
+    def neighbors(p: Pos): Set[Pos]
+
+  object NSEWNeighbors extends Neighbors:
+    def neighbors(p: Pos): Set[Pos] =
+      Set(p.north, p.south, p.east, p.west)
+
+  object DiagonalNeighbors extends Neighbors:
+    def neighbors(p: Pos): Set[Pos] =
+      Set(p.north, p.south, p.east, p.west, p.north.west, p.north.east, p.south.west, p.south.east)
