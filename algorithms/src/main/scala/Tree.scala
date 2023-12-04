@@ -1,4 +1,9 @@
 package algorithms
+import scala.annotation.tailrec
+
+import cats.*
+import cats.data.*
+import cats.syntax.all.*
 
 trait Tree[A]:
   def children(node: A): Iterator[A]
@@ -24,3 +29,12 @@ object Tree:
 
     def bfs(p: A => Boolean): Option[A] =
       breadthFirstTraverse.find(p)
+
+    def depth(p: A => Boolean): Option[Int] =
+      def helper(a: A, depth: Int): Eval[Option[Int]] =
+        if p(a) then
+          Eval.now(Some(depth))
+        else
+          a.children.toList.traverse(child => helper(child, depth + 1))
+            .map(childrenDepth => childrenDepth.find(_.isDefined).flatten)
+      helper(a, 0).value

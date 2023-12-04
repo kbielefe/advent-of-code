@@ -46,6 +46,7 @@ lazy val runner = (project in file("runner")).settings(
 lazy val algorithms = (project in file("algorithms")).settings(
   name := "algorithms",
   libraryDependencies ++= Seq(
+    "org.typelevel" %% "cats-core" % "2.10.0",
     "org.scalatest" %% "scalatest" % "3.2.17" % Test
   )
 ).dependsOn(parse)
