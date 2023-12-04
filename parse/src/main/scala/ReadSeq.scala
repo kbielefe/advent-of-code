@@ -23,7 +23,7 @@ given ReadSeq[Set] with
 
 given delimitedSeq[C[_]: ReadSeq, A : Read : ClassTag, B <: String : ValueOf]: Read[C[A] - B] with
   def read(input: String): C[A] - B =
-    summon[ReadSeq[C]].readSeq[A](input.split(valueOf[B]).filterNot(_.isEmpty))
+    summon[ReadSeq[C]].readSeq[A](input.split(valueOf[B]))
 
 given regexSeq[C[_]: ReadSeq, A : ClassTag, B <: String : ValueOf](using Read[A ~ B]): Read[C[A] ~ B] with
   def read(input: String): C[A] ~ B =
