@@ -1,12 +1,14 @@
 package algorithms
 
 import math.Numeric.Implicits.infixNumericOps
+import math.Ordering.Implicits.infixOrderingOps
+import scala.annotation.tailrec
 import scala.compiletime.error
 import scala.compiletime.ops.int.*
 import scala.compiletime.ops.boolean.*
 import scala.reflect.{Typeable, TypeTest}
 
-sealed class Matrix[R <: Int, C <: Int, A : Numeric](val rows: Vector[Vector[A]])(using CanEqual[A, A]) derives CanEqual:
+sealed class Matrix[R <: Int : ValueOf, C <: Int : ValueOf, A : Numeric](val rows: Vector[Vector[A]])(using CanEqual[A, A]) derives CanEqual:
   private val r = rows.size
   private val c = rows.head.size
 
@@ -22,7 +24,7 @@ sealed class Matrix[R <: Int, C <: Int, A : Numeric](val rows: Vector[Vector[A]]
     rows.map(_.map(pad).mkString("│ ", " ", " │")).mkString("\n") +
     "\n└ " + (" " * width) + " ┘"
 
-  def *[C2 <: Int](other: Matrix[C, C2, A]): Matrix[R, C2, A] =
+  def *[C2 <: Int : ValueOf](other: Matrix[C, C2, A]): Matrix[R, C2, A] =
     val cols = other.rows.transpose
     val resultRows = rows.map(row =>
       cols.map(col =>
@@ -48,24 +50,49 @@ sealed class Matrix[R <: Int, C <: Int, A : Numeric](val rows: Vector[Vector[A]]
     inline if valueOf[||[<[C2, 0],>=[C2, C]]] then error("Column number is out of range")
     rows(valueOf[R2])(valueOf[C2])
 
-object Matrix:
-  /** Given a dynamically constructed set of rows whose size is known at compile time, construct a Matrix. */
-  inline def apply[R <: Int : ValueOf, C <: Int : ValueOf, A : Numeric](uncheckedRows: IterableOnce[IterableOnce[A]])(using CanEqual[A, A]): Either[MatrixError, Matrix[R, C, A]] =
-    inline if valueOf[<=[R, 0]] then error("A Matrix must have at least one row.")
-    inline if valueOf[<=[C, 0]] then error("A Matrix must have at least one column.")
+  def pow[N](e: N)(using R =:= C)(using CanEqual[N, N])(using n: Integral[N]): Matrix[C, C, A] =
+    assert(e >= n.zero, "power must be greater than or equal to 0")
+    @tailrec
+    def helper(e: N, x: Matrix[C, C, A], result: Matrix[C, C, A]): Matrix[C, C, A] =
+      if e == n.zero then
+        result
+      else if n.rem(e, n.fromInt(2)) == n.one then
+        helper(e - n.one, x, x * result)
+      else
+        helper(n.quot(e, n.fromInt(2)), x * x, result)
+    helper(e, this.asInstanceOf[Matrix[C, C, A]], Matrix.identity[C, A])
 
-    val rows = uncheckedRows.map(_.toVector).toVector
+object Matrix:
+  def apply[R <: Int : ValueOf, C <: Int : ValueOf, A : Numeric](uncheckedRows: IterableOnce[A]*)(using CanEqual[A, A]): Matrix[R, C, A] =
     val r = valueOf[R]
     val c = valueOf[C]
+    assert(r > 0, "A matrix must have at least one row.")
+    assert(c > 0, "A matrix must have at least one column.")
+
+    val rows = uncheckedRows.iterator.map(_.iterator.to(Vector)).toVector
 
     if r != rows.size then
-      Left(MatrixError.MismatchedRows(r, rows.size))
+      throw MismatchedRows(r, rows.size)
     else if rows.exists(_.size != c) then
-      Left(MatrixError.MismatchedCols(c, rows.map(_.size).find(_ != c).get))
+      throw MismatchedCols(c, rows.map(_.size).find(_ != c).get)
     else
-      Right(new Matrix(rows))
+      new Matrix(rows)
 
-  inline def apply[B <: NonEmptyTuple, A: Numeric](rows: B*): Matrix[3, 3, A] = ???
-enum MatrixError derives CanEqual:
-  case MismatchedRows(expected: Int, actual: Int)
-  case MismatchedCols(expected: Int, actual: Int)
+  def colVector[D <: Int : ValueOf, A : Numeric](elements: A*)(using CanEqual[A, A]): Matrix[D, 1, A] =
+    apply[D, 1, A](List(elements).transpose*)
+
+  def rowVector[D <: Int : ValueOf, A : Numeric](elements: A*)(using CanEqual[A, A]): Matrix[1, D, A] =
+    apply[1, D, A](List(elements)*)
+
+  def identity[D <: Int : ValueOf, A](using CanEqual[A, A])(using n: Numeric[A]): Matrix[D, D, A] =
+    val d = valueOf[D]
+    val rows = (1 to d).map{row =>
+      (1 to d).map{col =>
+        if row == col then n.one else n.zero
+      }.toVector
+    }.toVector
+
+    new Matrix[D, D, A](rows)
+
+  case class MismatchedRows(expected: Int, actual: Int) extends Exception(s"Expected $expected rows, found $actual")
+  case class MismatchedCols(expected: Int, actual: Int) extends Exception(s"Expected $expected columns, found $actual")
