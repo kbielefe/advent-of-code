@@ -1,11 +1,11 @@
-package datastructures
+package algorithms
 import math.Numeric.Implicits.given
 import math.Ordering.Implicits.given
 import scala.annotation.tailrec
 
 // TODO: Optimize with something like R-tree or Interval tree
 // pairs are always sorted and disjoint and inclusive
-class Intervals[A] private (private[datastructures] val pairs: List[(A, A)])(using n: Numeric[A]):
+class Intervals[A] private (private[algorithms] val pairs: List[(A, A)])(using n: Numeric[A]):
   def |(other: Intervals[A]): Intervals[A] =
     @tailrec
     def merge(unmerged: List[(A, A)], merged: List[(A, A)]): List[(A, A)] = unmerged match
@@ -69,12 +69,42 @@ class Intervals[A] private (private[datastructures] val pairs: List[(A, A)])(usi
   override def toString: String =
     pairs.map((start, end) => s"$start -> $end").mkString(", ")
 
+  def flatMap[B : Numeric](f: (A, A) => Intervals[B]): Intervals[B] =
+    if isEmpty then
+      Intervals.empty[B]
+    else
+      pairs.map(f.tupled).reduceLeft(_ | _)
+
+  def isEmpty: Boolean =
+    pairs.isEmpty
+
+  def min: A =
+    pairs.head._1
+
+  def max: A =
+    pairs.last._2
+
+  def trimBelow(a: A): Intervals[A] =
+    if !isEmpty && min < a then
+      this - Intervals(min, a - n.one)
+    else
+      this
+
+  def trimAbove(a: A): Intervals[A] =
+    if !isEmpty && max > a then
+      this - Intervals(a + n.one, max)
+    else
+      this
+
 object Intervals:
   def apply[A : Numeric](start: A, end: A): Intervals[A] =
     new Intervals(List(start -> end))
 
   def apply[A : Numeric](pair: (A, A)): Intervals[A] =
     new Intervals(List(pair))
+
+  def empty[A : Numeric]: Intervals[A] =
+    new Intervals(List.empty)
 
 extension [A : Numeric] (number: A)
   def +-(other: A): Intervals[A] =
