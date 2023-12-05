@@ -1,6 +1,7 @@
 package parse
 
 import io.circe.*, io.circe.parser.*
+import scala.util.matching.Regex
 
 trait Read[A]:
   def read(input: String): A
@@ -28,3 +29,10 @@ given Read[Char] with
 given Read[Json] with
   def read(input: String): Json =
     parse(input).getOrElse(throw new Exception(s"Unable to parse $input as Json"))
+
+object Read:
+  def apply[T <: Product : ReadProduct](regex: Regex): Read[T] = new Read[T]:
+    def read(input: String): T =
+      regex.unapplySeq(input) match
+        case Some(fields) => summon[ReadProduct[T]].readProduct(fields.toArray)
+        case None         => throw new Exception(s"Regex '${regex.regex}' did not match '$input'")
