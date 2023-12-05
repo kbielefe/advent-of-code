@@ -42,6 +42,12 @@ class Grid private (protected val cells: Map[Pos, Char]) derives CanEqual:
   def find(char: Char): Option[Pos] =
     cells.find(_._2 == char).map(_._1)
 
+  def row(row: Int): String =
+    cells.filter(_._1.row == row).toList.sortBy(_._1.col).map(_._2).mkString
+
+  def col(col: Int): String =
+    cells.filter(_._1.col == col).toList.sortBy(_._1.row).map(_._2).mkString
+
   def findAll(length: Int, regex: Regex): Set[Pos] =
     cells.keySet.flatMap{pos =>
       val sequence = (pos.col until (pos.col + length)).map(col => cells.get(Pos(pos.row, col)))

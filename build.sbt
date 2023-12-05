@@ -15,6 +15,10 @@ lazy val advent2019 = (project in file("2019")).settings(
   libraryDependencies += "co.fs2" %% "fs2-core" % "3.9.3"
 ).dependsOn(runner, parse, algorithms)
 
+lazy val advent2020 = (project in file("2020")).settings(
+  name := "advent2020"
+).dependsOn(runner, parse, algorithms)
+
 lazy val advent2022 = (project in file("2022")).settings(
   name := "advent2022",
   libraryDependencies ++= Seq(
