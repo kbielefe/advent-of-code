@@ -94,5 +94,20 @@ object Matrix:
 
     new Matrix[D, D, A](rows)
 
+  def translate[A](x: A, y: A)(using n: Numeric[A])(using CanEqual[A, A]): Matrix[3, 3, A] =
+    apply[3, 3, A](List(n.one, n.zero, x), List(n.zero, n.one, y), List(n.zero, n.zero, n.one))
+
+  def rotateCCW[A](using n: Numeric[A])(using CanEqual[A, A]): Matrix[3, 3, A] =
+    apply[3, 3, A](List(n.zero, -n.one, n.zero), List(n.one, n.zero, n.zero), List(n.zero, n.zero, n.one))
+
+  def rotateCW[A](using n: Numeric[A])(using CanEqual[A, A]): Matrix[3, 3, A] =
+    apply[3, 3, A](List(n.zero, n.one, n.zero), List(-n.one, n.zero, n.zero), List(n.zero, n.zero, n.one))
+
+  def reflectX[A](using n: Numeric[A])(using CanEqual[A, A]): Matrix[3, 3, A] =
+    apply[3, 3, A](List(n.one, n.zero, n.zero), List(n.zero, -n.one, n.zero), List(n.zero, n.zero, n.one))
+
+  def reflectY[A](using n: Numeric[A])(using CanEqual[A, A]): Matrix[3, 3, A] =
+    apply[3, 3, A](List(-n.one, n.zero, n.zero), List(n.zero, n.one, n.zero), List(n.zero, n.zero, n.one))
+
   case class MismatchedRows(expected: Int, actual: Int) extends Exception(s"Expected $expected rows, found $actual")
   case class MismatchedCols(expected: Int, actual: Int) extends Exception(s"Expected $expected columns, found $actual")

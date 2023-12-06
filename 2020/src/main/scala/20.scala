@@ -1,6 +1,6 @@
 package day20
 
-import algorithms.{Grid, given}
+import algorithms.{Grid, Matrix, given}
 import algorithms.Grid.Pos
 import algorithms.Grid.Neighbors
 import parse.{*, given}
@@ -9,16 +9,45 @@ import scala.annotation.tailrec
 case class Tile(number: Int, grid: Grid):
   override def toString: String = s"Tile $number"
 
-  def edges: Set[(Tile, String)] = Set(
+  def removeEdges: Grid =
+    grid
+      .removeRow(grid.minRow)
+      .removeRow(grid.maxRow)
+      .removeCol(grid.minCol)
+      .removeCol(grid.maxCol)
+
+  def edges: Set[String] = Set(
     grid.row(grid.minRow),
     grid.row(grid.maxRow),
-    grid.row(grid.minRow).reverse,
-    grid.row(grid.maxRow).reverse,
     grid.col(grid.minCol),
     grid.col(grid.maxCol),
+    grid.row(grid.minRow).reverse,
+    grid.row(grid.maxRow).reverse,
     grid.col(grid.minCol).reverse,
     grid.col(grid.maxCol).reverse
-  ).map((this, _))
+  )
+
+  def rightEdge: String =
+    grid.col(grid.maxCol)
+
+  def leftEdge: String =
+    grid.col(grid.minCol)
+
+  def bottomEdge: String =
+    grid.row(grid.maxRow)
+
+  def topEdge: String =
+    grid.row(grid.minRow)
+
+  def commonEdgesWith(other: Tile): Set[String] =
+    edges & other.edges
+
+  @tailrec
+  final def transformUntil(t: Matrix[3, 3, Int], p: Tile => Boolean): Tile =
+    if p(this) then
+      this
+    else
+      Tile(number, grid.transform(t)).transformUntil(t, p)
 
 given Read[Tile] = Read("""(?s)Tile (\d+):\n(.+)""".r)
 
@@ -34,21 +63,60 @@ object Puzzle extends runner.Day[I, Long, Int]:
   def part2(tiles: I): Int =
     val neighbors = getNeighbors(tiles)
     val corner = neighbors.find(_._2.size == 2).get._1
-    val edge = neighbors(corner).head
+    val edgePiece = neighbors(corner).head
     val initialPlaced = Map(
       Pos(0, 0) -> corner,
-      Pos(0, 1) -> edge
+      Pos(0, 1) -> edgePiece
     )
     val possibilities = Map(
-      Pos(1, 0) -> (neighbors(corner) - edge),
-      Pos(1, 1) -> (neighbors(edge) - corner),
-      Pos(0, 2) -> (neighbors(edge) - corner)
+      Pos(1, 0) -> (neighbors(corner) - edgePiece),
+      Pos(1, 1) -> (neighbors(edgePiece) - corner),
+      Pos(0, 2) -> (neighbors(edgePiece) - corner)
     )
     val placed = placeTiles(neighbors, possibilities, initialPlaced)
-    placed.toList.sortBy((pos, _) => (pos.row, pos.col)).foreach(println)
+    val commonRight  = corner.commonEdgesWith(placed(Pos(0, 1)))
+    val commonBottom = corner.commonEdgesWith(placed(Pos(1, 0)))
+    val transformedCorner =
+      corner
+        .transformUntil(Matrix.rotateCW, tile => commonRight.contains(tile.rightEdge))
+        .transformUntil(Matrix.reflectX, tile => commonBottom.contains(tile.bottomEdge))
+    val transformed = transformTiles(placed, Map(Pos(0, 0) -> transformedCorner), Pos(0, 1))
+    val assembled = assemble(transformed)
+    println(assembled)
     ???
 
   given Neighbors = Grid.NSEWNeighbors
+
+  def assemble(tiles: Map[Pos, Tile]): Grid =
+    tiles.foldLeft(Grid.empty){case (grid, (pos, tile)) =>
+      val tileGrid = tile.removeEdges
+      val rowOffset = pos.row * 8 - tileGrid.minRow
+      val colOffset = pos.col * 8 - tileGrid.minCol
+      val transformed = tileGrid.transform(Matrix.translate(colOffset, rowOffset))
+      grid ++ transformed
+    }
+
+  @tailrec
+  def transformTiles(placed: Map[Pos, Tile], transformed: Map[Pos, Tile], pos: Pos): Map[Pos, Tile] =
+    if transformed.size == placed.size then
+      transformed
+    else
+      if pos.row == 0 then
+        val goal = transformed(pos.west).rightEdge
+        val transformedTile = placed(pos)
+          .transformUntil(Matrix.rotateCW, tile => tile.leftEdge == goal || tile.leftEdge == goal.reverse)
+          .transformUntil(Matrix.reflectX, tile => tile.leftEdge == goal)
+        val newTransformed = transformed + (pos -> transformedTile)
+        val newPos = if pos.col == 11 then Pos(pos.row + 1, 0) else pos.east
+        transformTiles(placed, newTransformed, newPos)
+      else
+        val goal = transformed(pos.north).bottomEdge
+        val transformedTile = placed(pos)
+          .transformUntil(Matrix.rotateCW, tile => tile.topEdge == goal || tile.topEdge == goal.reverse)
+          .transformUntil(Matrix.reflectY, tile => tile.topEdge == goal)
+        val newTransformed = transformed + (pos -> transformedTile)
+        val newPos = if pos.col == 11 then Pos(pos.row + 1, 0) else pos.east
+        transformTiles(placed, newTransformed, newPos)
 
   @tailrec
   def placeTiles(neighbors: Map[Tile, Set[Tile]], possibilities: Map[Pos, Set[Tile]], placed: Map[Pos, Tile]): Map[Pos, Tile] =
@@ -70,7 +138,7 @@ object Puzzle extends runner.Day[I, Long, Int]:
 
   def getNeighbors(tiles: I): Map[Tile, Set[Tile]] =
     tiles
-      .flatMap(_.edges)
+      .flatMap(tile => tile.edges.map(edge => (tile, edge)))
       .groupMap(_._2)(_._1)
       .values
       .collect{case List(x, y) => List((x, y), (y, x))}
