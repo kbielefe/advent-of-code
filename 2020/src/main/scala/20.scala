@@ -53,6 +53,11 @@ given Read[Tile] = Read("""(?s)Tile (\d+):\n(.+)""".r)
 
 type I = List[Tile] - "\n\n"
 
+val monster = Grid(
+  """                  #
+    |#    ##    ##    ###
+    | #  #  #  #  #  #   """.stripMargin).filter(_ == '#')
+
 object Puzzle extends runner.Day[I, Long, Int]:
   def part1(tiles: I): Long =
     getNeighbors(tiles)
@@ -82,10 +87,18 @@ object Puzzle extends runner.Day[I, Long, Int]:
         .transformUntil(Matrix.reflectX, tile => commonBottom.contains(tile.bottomEdge))
     val transformed = transformTiles(placed, Map(Pos(0, 0) -> transformedCorner), Pos(0, 1))
     val assembled = assemble(transformed)
-    println(assembled)
-    ???
+    val monstersRemoved = findMonsters(assembled).foldLeft(assembled)((grid: Grid, monsterPos: Pos) => grid -- monster.transform(Matrix.translate(monsterPos.col, monsterPos.row)))
+    monstersRemoved.count(_ == '#')
 
   given Neighbors = Grid.NSEWNeighbors
+
+  def findMonsters(grid: Grid): List[Pos] =
+    (grid.minRow to grid.maxRow).toList.flatMap{row =>
+      (grid.minCol to grid.maxCol).flatMap{col =>
+        val transformed = monster.transform(Matrix.translate(col, row))
+        Option.when((transformed & grid) == transformed)(Pos(row, col))
+      }
+    }
 
   def assemble(tiles: Map[Pos, Tile]): Grid =
     tiles.foldLeft(Grid.empty){case (grid, (pos, tile)) =>

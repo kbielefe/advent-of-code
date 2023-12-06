@@ -61,6 +61,16 @@ class Grid private (protected val cells: Map[Pos, Char]) derives CanEqual:
   def ++(other: Grid): Grid =
     new Grid(cells ++ other.cells)
 
+  def --(other: Grid): Grid =
+    new Grid(cells -- other.cells.keySet)
+
+  def &(other: Grid): Grid =
+    val commonPos = cells.keySet & other.cells.keySet
+    new Grid(commonPos.filter(pos => cells(pos) == other.cells(pos)).map(pos => (pos, cells(pos))).toMap)
+
+  def filter(p: Char => Boolean): Grid =
+    new Grid(cells.filter((pos, char) => p(char)))
+
   def findAll(length: Int, regex: Regex): Set[Pos] =
     cells.keySet.flatMap{pos =>
       val sequence = (pos.col until (pos.col + length)).map(col => cells.get(Pos(pos.row, col)))
