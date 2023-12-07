@@ -3,6 +3,8 @@ package day24
 import parse.{*, given}
 import algorithms.{*, given}
 
+given Grid.Neighbors = Grid.NSEWNeighbors
+
 object Puzzle extends runner.Day[Grid, Int, Int]:
   def part1(input: Grid): Int =
     def grids = Iterator.iterate(input)(life)

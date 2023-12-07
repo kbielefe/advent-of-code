@@ -4,6 +4,8 @@ import parse.given
 import algorithms.{AStar, Grid, given}
 import algorithms.Grid.Pos
 
+given Grid.Neighbors = Grid.NSEWNeighbors
+
 object Puzzle extends runner.Day[Grid, Int, Int]:
   def part1(input: Grid): Int =
     val (labelByPos, posByLabel) = getLabels(input)

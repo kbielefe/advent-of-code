@@ -2,9 +2,11 @@ package day18
 
 import parse.given
 import algorithms.{*, given}
-import algorithms.Grid.Pos
+import algorithms.Grid.{Neighbors, Pos}
 
 object Puzzle extends runner.Day[Grid, Int, Int]:
+
+  given Neighbors = Grid.NSEWNeighbors
   def part1(input: Grid): Int =
     val allKeys = input.charSet.filter(_.isLower) + '@'
     val pairs = allKeys.map(input.find(_).get).toList.combinations(2).flatMap{
