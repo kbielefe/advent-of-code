@@ -40,3 +40,16 @@ Also adds new type operators:
 So if your input is a list of integers, one per line, you can designate that as
 `List[Int] - "\n"` and it will parse it out to what looks to your code like a
 regular `List[Int]`.
+
+## Automation Guidelines
+
+This repo follows the [automation guidelines](https://www.reddit.com/r/adventofcode/wiki/faqs/automation)
+on the [/r/adventofcode](https://www.reddit.com/r/adventofcode) community wiki.
+
+Specifically:
+
+ - Does not require throttling because does not make outbound calls except when a human requests to run a new puzzle.
+ - Once inputs are downloaded, they are cached locally ([setInput](https://github.com/kbielefe/advent-of-code/blob/9e23cd6d6cbd5b6739268de42393e7d07d194a04/runner/src/main/scala/Database.scala#L38)).
+ - The User-Agent header is set to me ([request](https://github.com/kbielefe/advent-of-code/blob/9e23cd6d6cbd5b6739268de42393e7d07d194a04/runner/src/main/scala/Http.scala#L21)).
+ - Includes this notice in the README.
+ - Only stores inputs and examples in a local database file that is not committed to source control.
