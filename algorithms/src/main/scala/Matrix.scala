@@ -33,6 +33,16 @@ sealed class Matrix[R <: Int : ValueOf, C <: Int : ValueOf, A : Numeric](val row
     )
     new Matrix(resultRows)
 
+  def mulMod[C2 <: Int : ValueOf](other: Matrix[C, C2, A], mod: A)(using n: Integral[A]): Matrix[R, C2, A] =
+    assert(mod != n.zero, "modulus must not be zero")
+    val cols = other.rows.transpose
+    val resultRows = rows.map(row =>
+      cols.map(col =>
+        n.rem(row.zip(col).map((x, y) => n.rem(x * y, mod)).sum, mod)
+      )
+    )
+    new Matrix(resultRows)
+
   def transpose: Matrix[C, R, A] = new Matrix(rows.transpose)
 
   def elements: Vector[A] = rows.flatten
@@ -50,16 +60,29 @@ sealed class Matrix[R <: Int : ValueOf, C <: Int : ValueOf, A : Numeric](val row
     inline if valueOf[||[<[C2, 0],>=[C2, C]]] then error("Column number is out of range")
     rows(valueOf[R2])(valueOf[C2])
 
-  def pow[N](e: N)(using R =:= C)(using CanEqual[N, N])(using n: Integral[N]): Matrix[C, C, A] =
+  def pow(e: A)(using R =:= C)(using n: Integral[A]): Matrix[C, C, A] =
     assert(e >= n.zero, "power must be greater than or equal to 0")
     @tailrec
-    def helper(e: N, x: Matrix[C, C, A], result: Matrix[C, C, A]): Matrix[C, C, A] =
+    def helper(e: A, x: Matrix[C, C, A], result: Matrix[C, C, A]): Matrix[C, C, A] =
       if e == n.zero then
         result
       else if n.rem(e, n.fromInt(2)) == n.one then
         helper(e - n.one, x, x * result)
       else
         helper(n.quot(e, n.fromInt(2)), x * x, result)
+    helper(e, this.asInstanceOf[Matrix[C, C, A]], Matrix.identity[C, A])
+
+  def powMod(e: A, mod: A)(using R =:= C)(using n: Integral[A]): Matrix[C, C, A] =
+    assert(e >= n.zero, "power must be greater than or equal to 0")
+    assert(mod != n.zero, "modulus must not be zero")
+    @tailrec
+    def helper(e: A, x: Matrix[C, C, A], result: Matrix[C, C, A]): Matrix[C, C, A] =
+      if e == n.zero then
+        result
+      else if n.rem(e, n.fromInt(2)) == n.one then
+        helper(e - n.one, x, x.mulMod(result, mod))
+      else
+        helper(n.quot(e, n.fromInt(2)), x.mulMod(x, mod), result)
     helper(e, this.asInstanceOf[Matrix[C, C, A]], Matrix.identity[C, A])
 
 object Matrix:
