@@ -33,16 +33,6 @@ sealed class Matrix[R <: Int : ValueOf, C <: Int : ValueOf, A : Numeric](val row
     )
     new Matrix(resultRows)
 
-  def mulMod[C2 <: Int : ValueOf](other: Matrix[C, C2, A], mod: A)(using n: Integral[A]): Matrix[R, C2, A] =
-    assert(mod != n.zero, "modulus must not be zero")
-    val cols = other.rows.transpose
-    val resultRows = rows.map(row =>
-      cols.map(col =>
-        n.rem(row.zip(col).map((x, y) => n.rem(x * y, mod)).sum, mod)
-      )
-    )
-    new Matrix(resultRows)
-
   def transpose: Matrix[C, R, A] = new Matrix(rows.transpose)
 
   def elements: Vector[A] = rows.flatten
@@ -60,7 +50,7 @@ sealed class Matrix[R <: Int : ValueOf, C <: Int : ValueOf, A : Numeric](val row
     inline if valueOf[||[<[C2, 0],>=[C2, C]]] then error("Column number is out of range")
     rows(valueOf[R2])(valueOf[C2])
 
-  def pow(e: A)(using R =:= C)(using n: Integral[A]): Matrix[C, C, A] =
+  def ^(e: A)(using R =:= C)(using n: Integral[A]): Matrix[C, C, A] =
     assert(e >= n.zero, "power must be greater than or equal to 0")
     @tailrec
     def helper(e: A, x: Matrix[C, C, A], result: Matrix[C, C, A]): Matrix[C, C, A] =
@@ -72,18 +62,15 @@ sealed class Matrix[R <: Int : ValueOf, C <: Int : ValueOf, A : Numeric](val row
         helper(n.quot(e, n.fromInt(2)), x * x, result)
     helper(e, this.asInstanceOf[Matrix[C, C, A]], Matrix.identity[C, A])
 
-  def powMod(e: A, mod: A)(using R =:= C)(using n: Integral[A]): Matrix[C, C, A] =
-    assert(e >= n.zero, "power must be greater than or equal to 0")
-    assert(mod != n.zero, "modulus must not be zero")
-    @tailrec
-    def helper(e: A, x: Matrix[C, C, A], result: Matrix[C, C, A]): Matrix[C, C, A] =
-      if e == n.zero then
-        result
-      else if n.rem(e, n.fromInt(2)) == n.one then
-        helper(e - n.one, x, x.mulMod(result, mod))
-      else
-        helper(n.quot(e, n.fromInt(2)), x.mulMod(x, mod), result)
-    helper(e, this.asInstanceOf[Matrix[C, C, A]], Matrix.identity[C, A])
+  def inverse(using R =:= 2)(using C =:= 2)(using n: Fractional[A]): Matrix[2, 2, A] =
+    import math.Fractional.Implicits.infixFractionalOps
+    val a = rows(0)(0)
+    val b = rows(0)(1)
+    val c = rows(1)(0)
+    val d = rows(1)(1)
+    val det = a * d - b * c
+    assert(det != n.zero)
+    Matrix[2, 2, A](List(d/det, -b/det), List(-c/det, a/det))
 
 object Matrix:
   def apply[R <: Int : ValueOf, C <: Int : ValueOf, A : Numeric](uncheckedRows: IterableOnce[A]*)(using CanEqual[A, A]): Matrix[R, C, A] =
