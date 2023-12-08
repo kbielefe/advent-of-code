@@ -8,8 +8,11 @@ import scala.annotation.tailrec
  * numReps indicates the number of times the cycle must repeat in order to be
  * considered a cycle. When numReps = 0 it will detect the first repeated
  * element, without needing the elements between to repeat.
+ *
+ * The predicate allows specifying that the cycle must start with an element
+ * that meets specific criteria.
  */
-def detectCycle[A](it: Iterator[A], numReps: Int = 4): Option[(Int, Int)] =
+def detectCycle[A](it: Iterator[A], numReps: Int = 4, p: A => Boolean = (_: A) => true): Option[(Int, Int)] =
   def hasReps(list: LazyList[A], index: Int)(start: (Int, LazyList[A])): Boolean =
     val (startIndex, startList) = start
     val size = (index - startIndex) * numReps
@@ -23,6 +26,7 @@ def detectCycle[A](it: Iterator[A], numReps: Int = 4): Option[(Int, Int)] =
       val element = list.head
       val result = for
         starts <- seen.get(element)
+        if p(element)
         start  <- starts.find(hasReps(list, index))
         startIndex = start._1
       yield (startIndex, index - startIndex)
