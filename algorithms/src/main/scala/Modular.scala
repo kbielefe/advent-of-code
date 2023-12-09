@@ -17,7 +17,9 @@ extension [N](n: Mod[N])
   def value: N = n
 
 object Mod:
-  def apply[N](n: N): Mod[N] = n
+  def apply[N](n: N)(using N: Integral[N])(using m: Modulus[N]): Mod[N] =
+    N.rem(N.plus(N.rem(n, m.mod), m.mod), m.mod)
+
 
   def lcm[N](xs: Iterable[N])(using n: Integral[N])(using CanEqual[N, N]): N =
     xs.reduceLeft((x, y) => (x * y) / gcd(x, y))
@@ -60,7 +62,7 @@ object Mod:
     result % prod
 
 given [N](using CanEqual[N, N]): CanEqual[Mod[N], Mod[N]] = CanEqual.derived
-given [N](using N: Integral[N]): Conversion[Int, Mod[N]] = (i: Int) => Mod(N.fromInt(i))
+given [N](using N: Integral[N])(using Modulus[N]): Conversion[Int, Mod[N]] = (i: Int) => Mod(N.fromInt(i))
 
 given [N](using n: Integral[N])(using CanEqual[N, N])(using m: Modulus[N]): Integral[Mod[N]] with
   def quot(x: Mod[N], y: Mod[N]): Mod[N] =
