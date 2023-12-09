@@ -13,6 +13,9 @@ object Modulus:
 
 opaque type Mod[N] = N
 
+extension [N](n: Mod[N])
+  def value: N = n
+
 object Mod:
   def apply[N](n: N): Mod[N] = n
 
@@ -23,8 +26,7 @@ object Mod:
   def gcd[N](a: N, b: N)(using n: Integral[N])(using CanEqual[N, N]): N =
     if a == n.zero then b else gcd(b % a, a)
 
-  def modInverse[N](a: N, m: N)(using n: Integral[N])(using CanEqual[N, N]): N =
-    assert(m != n.one)
+  def modInverse[N](a: N)(using n: Integral[N])(using m: Modulus[N])(using CanEqual[N, N]): N =
     @tailrec
     def helper(a: N, m: N, x: N, y: N): N =
       if a <= n.one then
@@ -33,9 +35,9 @@ object Mod:
         val q = a / m
         helper(m, a % m, y, x - q * y)
 
-    val result = helper(a, m, n.one, n.zero)
+    val result = helper(a, m.mod, n.one, n.zero)
     if result < n.zero then
-      result + m
+      result + m.mod
     else
       result
 
@@ -51,8 +53,9 @@ object Mod:
     assert(coprime, "numbers must be coprime")
     val prod = remAndNum.map(_._2).product
     val result = remAndNum.map{(rem, num) =>
+      given Modulus[N] = Modulus(num)
       val pp = prod / num
-      rem * modInverse(pp, num) * pp
+      rem * modInverse(pp) * pp
     }.sum
     result % prod
 
@@ -67,17 +70,28 @@ given [N](using n: Integral[N])(using CanEqual[N, N])(using m: Modulus[N]): Inte
     n.rem(n.rem(x, y), m.mod)
 
   def minus(x: Mod[N], y: Mod[N]): Mod[N] =
-    n.rem(n.minus(x, y), m.mod)
+    normalize(n.rem(n.minus(x, y), m.mod))
 
   def plus(x: Mod[N], y: Mod[N]): Mod[N] =
     n.rem(n.plus(x, y), m.mod)
 
-  // TODO: Prevent overflow
   def times(x: Mod[N], y: Mod[N]): Mod[N] =
-    n.rem(n.times(x, y), m.mod)
+    val two = n.fromInt(2)
+    @tailrec
+    def helper(x: N, y: N, result: N): Mod[N] =
+      if y == n.zero then
+        result
+      else if n.rem(y, two) == n.one then
+        helper(x, n.minus(y, n.one), n.rem(n.plus(result, x), m.mod))
+      else
+        helper(n.rem(n.times(x, two), m.mod), n.quot(y, two), result)
+    helper(normalize(x), normalize(y), n.zero)
 
   def negate(x: Mod[N]): Mod[N] =
-    n.rem(n.negate(x), m.mod)
+    normalize(n.rem(n.negate(x), m.mod))
+
+  def normalize(x: Mod[N]): Mod[N] =
+    n.rem(n.plus(x, m.mod), m.mod)
 
   def toDouble(x: Mod[N]): Double = n.toDouble(x)
   def toFloat(x: Mod[N]): Float = n.toFloat(x)
