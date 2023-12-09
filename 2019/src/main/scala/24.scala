@@ -15,10 +15,7 @@ object Puzzle extends runner.Day[Grid, Int, Int]:
 
   def part2(input: Grid): Int =
     val bugs = input.filter(_ == '#').allPos.map(pos => (0, pos))
-    val result = Iterator.iterate(bugs)(plutonianLife).drop(1).next
-    println(bugString(bugs))
-    println()
-    println(bugString(result))
+    val result = Iterator.iterate(bugs)(plutonianLife).drop(200).next
     result.size
 
   def biodiversityRating(grid: Grid): Int =
@@ -55,15 +52,17 @@ object Puzzle extends runner.Day[Grid, Int, Int]:
 
   def neighbors(bug: (Int, Pos)): Set[(Int, Pos)] =
     val (level, p) = bug
-    val outer = level + 1
-    val inner = level - 1
-    // TODO: Corners have both
-    val outerNeighbors =
+    val outer = level - 1
+    val inner = level + 1
+    val outerRowNeighbors =
       if p.row == 0 then
         Set(outer -> Pos(1, 2))
       else if p.row == 4 then
         Set(outer -> Pos(3, 2))
-      else if p.col == 0 then
+      else
+        Set.empty
+    val outerColNeighbors =
+      if p.col == 0 then
         Set(outer -> Pos(2, 1))
       else if p.col == 4 then
         Set(outer -> Pos(2, 3))
@@ -81,8 +80,8 @@ object Puzzle extends runner.Day[Grid, Int, Int]:
       else
         Set.empty
     val levelNeighbors =
-      p.neighbors.filter(p => p.row >= 0 && p.row <= 4 && p.col >= 0 && p.row <= 4).map(p => (level -> p)) - (level -> Pos(2, 2))
-    outerNeighbors ++ innerNeighbors ++ levelNeighbors
+      p.neighbors.filter(p => p.row >= 0 && p.row <= 4 && p.col >= 0 && p.col <= 4).map(p => (level -> p)) - (level -> Pos(2, 2))
+    outerRowNeighbors ++ outerColNeighbors ++ innerNeighbors ++ levelNeighbors
 
   def bugString(bugs: Set[(Int, Pos)]): String =
     val minLevel = bugs.map(_._1).min
@@ -91,7 +90,12 @@ object Puzzle extends runner.Day[Grid, Int, Int]:
       s"Depth $level\n" +
       (0 to 4).map{row =>
         (0 to 4).map{col =>
-          if bugs.contains((level -> Pos(row, col))) then '#' else '.'
+          if ((row, col)) == (2, 2) then
+            '?'
+          else if bugs.contains((level -> Pos(row, col))) then
+            '#'
+          else
+            '.'
         }.mkString
       }.mkString("\n")
     }.mkString("\n\n")
