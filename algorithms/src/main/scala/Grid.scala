@@ -121,13 +121,6 @@ class Grid private (protected val cells: Map[Pos, Char]) derives CanEqual:
 
   override def hashCode: Int = cells.##
 
-  def life(rule: (Char, Int) => Char)(using Grid.Neighbors): Grid =
-    allPos.foldLeft(this){(accum, pos) =>
-      val current = apply(pos)
-      val count = neighborCount(pos)
-      accum.updated(pos, rule(current, count))
-    }
-
 object Grid:
   opaque type Pos = (Int, Int)
   given CanEqual[Pos, Pos] = CanEqual.derived
