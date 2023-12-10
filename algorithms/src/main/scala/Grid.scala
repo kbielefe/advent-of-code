@@ -25,11 +25,17 @@ class Grid private (protected val cells: Map[Pos, Char]) derives CanEqual:
   def transform(m: Matrix[3, 3, Int]): Grid =
     new Grid(cells.map((pos, char) => (Pos.fromAffine(m * pos.toAffine), char)))
 
+  def map(f: Char => Char): Grid =
+    new Grid(cells.view.mapValues(f).toMap)
+
   def apply(pos: Pos): Char =
     cells(pos)
 
   def get(pos: Pos): Option[Char] =
     cells.get(pos)
+
+  def getOrElse(pos: Pos, orElse: Char): Char =
+    cells.getOrElse(pos, orElse)
 
   def updated(p: Pos, c: Char): Grid =
     new Grid(cells.updated(p, c))
@@ -47,10 +53,16 @@ class Grid private (protected val cells: Map[Pos, Char]) derives CanEqual:
     cells.find(_._2 == char).map(_._1)
 
   def row(row: Int): String =
-    cells.filter(_._1.row == row).toList.sortBy(_._1.col).map(_._2).mkString
+    (minCol to maxCol).map(col => cells.getOrElse(Pos(row, col), ' ')).mkString
+
+  def rows: Iterator[String] =
+    (minRow to maxRow).iterator.map(row)
 
   def col(col: Int): String =
     cells.filter(_._1.col == col).toList.sortBy(_._1.row).map(_._2).mkString
+
+  def cols: Iterator[String] =
+    (minCol to maxCol).iterator.map(col)
 
   def removeRow(row: Int): Grid =
     new Grid(cells.filterNot(_._1.row == row))
@@ -63,6 +75,15 @@ class Grid private (protected val cells: Map[Pos, Char]) derives CanEqual:
 
   def --(other: Grid): Grid =
     new Grid(cells -- other.cells.keySet)
+
+  def --(xs: Set[Pos]): Grid =
+    new Grid(cells -- xs)
+
+  def +(cell: (Pos, Char)): Grid =
+    new Grid(cells + cell)
+
+  def keepOnlyPositionsIn(positions: Set[Pos]): Grid =
+    new Grid(cells.filter((pos, _) => positions.contains(pos)))
 
   def &(other: Grid): Grid =
     val commonPos = cells.keySet & other.cells.keySet
@@ -148,6 +169,9 @@ object Grid:
         (row, col) -> char
       }
     }.toMap
+    new Grid(cells)
+
+  def apply(cells: Map[Pos, Char]): Grid =
     new Grid(cells)
 
   def empty: Grid = new Grid(Map.empty)
