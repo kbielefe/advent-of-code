@@ -24,6 +24,9 @@ sealed class Matrix[R <: Int : ValueOf, C <: Int : ValueOf, A : Numeric](val row
     rows.map(_.map(pad).mkString("│ ", " ", " │")).mkString("\n") +
     "\n└ " + (" " * width) + " ┘"
 
+  def map[B: Numeric](f: A => B)(using CanEqual[B, B]): Matrix[R, C, B] =
+    new Matrix[R, C, B](rows.map(_.map(f)))
+
   def *[C2 <: Int : ValueOf](other: Matrix[C, C2, A]): Matrix[R, C2, A] =
     val cols = other.rows.transpose
     val resultRows = rows.map(row =>

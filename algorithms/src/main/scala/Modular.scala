@@ -1,5 +1,7 @@
 package algorithms
 
+import cats.Functor
+import cats.syntax.all.*
 import math.Integral.Implicits.infixIntegralOps
 import math.Ordering.Implicits.infixOrderingOps
 import scala.annotation.tailrec
@@ -62,7 +64,9 @@ object Mod:
     result % prod
 
 given [N](using CanEqual[N, N]): CanEqual[Mod[N], Mod[N]] = CanEqual.derived
-given [N](using N: Integral[N])(using Modulus[N]): Conversion[Int, Mod[N]] = (i: Int) => Mod(N.fromInt(i))
+given [N: Modulus](using N: Integral[N]): Conversion[Int, Mod[N]] = (i: Int) => Mod(N.fromInt(i))
+given [F[_]: Functor, A: Integral: Modulus]: Conversion[F[A], F[Mod[A]]] =
+  (xs: F[A]) => xs.map(Mod(_))
 
 given [N](using n: Integral[N])(using CanEqual[N, N])(using m: Modulus[N]): Integral[Mod[N]] with
   def quot(x: Mod[N], y: Mod[N]): Mod[N] =
