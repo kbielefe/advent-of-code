@@ -1,13 +1,26 @@
 package algorithms
 
+import math.Ordering.Implicits.infixOrderingOps
 import math.Integral.Implicits.*
+import scala.annotation.tailrec
 
-extension [N](value: N)(using n: Integral[N])
+extension [N](value: N)(using n: Integral[N])(using CanEqual[N, N])
   def digits = value.toString map {_.asDigit}
 
   def isPrime = ???
 
   def primeFactors: List[N] = ???
+
+  def allFactors: Set[N] =
+    @tailrec
+    def helper(accum: Set[N], factor: N): Set[N] =
+      if value / factor < factor then
+        accum
+      else if value % factor == n.zero then
+        helper(accum + factor + (value / factor), factor + n.one)
+      else
+        helper(accum, factor + n.one)
+    helper(Set.empty, n.one)
 
   infix def gcd(other: N): N =
     if n.equiv(other, n.zero) then
