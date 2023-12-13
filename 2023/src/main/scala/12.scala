@@ -10,49 +10,51 @@ case class Row(springs: String, counts: List[Int] - ","):
   def unfold: Row =
     Row(Iterator.fill(5)(springs).mkString("?"), Iterator.fill(5)(counts.iterator).flatten.toList.asInstanceOf[List[Int] - ","])
 
-  type CacheKey = (Set[Spring], List[Spring], List[Int], List[Spring])
-  given Cache[CacheKey, Set[List[Spring]]] = Cache.empty
+  type CacheKey = (Set[Spring], List[Spring], List[Int])
+  given Cache[CacheKey, Int] = Cache.empty
 
-  def arrangements: Set[List[Spring]] =
-    def helper(allowed: Set[Spring], springs: List[Spring], counts: List[Int], accum: List[Spring]): Memoized[CacheKey, Set[List[Spring]]] =
+  def arrangements: Int =
+    def helper(allowed: Set[Spring], springs: List[Spring], counts: List[Int]): Memoized[CacheKey, Int] =
       if springs.isEmpty then
         if counts.isEmpty then
-          Set(accum.reverse)
+          1
         else
-          Set.empty
+          0
       else if !allowed.contains(springs.head) then
-        Set.empty
+        0
       else springs.head match
         case Damaged =>
           if counts.isEmpty then
-            Set.empty
+            0
           else
             if counts.head == 1 then
-              Memoize((Set(Operational, Unknown), springs.tail, counts.tail, Damaged :: accum), helper(Set(Operational, Unknown), springs.tail, counts.tail, Damaged :: accum))
+              helper(Set(Operational, Unknown), springs.tail, counts.tail)
             else
-              Memoize((Set(Damaged, Unknown), springs.tail, (counts.head - 1) :: counts.tail, Damaged :: accum), helper(Set(Damaged, Unknown), springs.tail, (counts.head - 1) :: counts.tail, Damaged :: accum))
+              helper(Set(Damaged, Unknown), springs.tail, (counts.head - 1) :: counts.tail)
         case Operational =>
-          Memoize((Set(Damaged, Operational, Unknown), springs.tail, counts, Operational :: accum), helper(Set(Damaged, Operational, Unknown), springs.tail, counts, Operational :: accum))
+          helper(Set(Damaged, Operational, Unknown), springs.tail, counts)
         case Unknown =>
-          (allowed - Unknown).flatMap(x => Memoize((Set(x), x :: springs.tail, counts, accum), helper(Set(x), x :: springs.tail, counts, accum)))
-    helper(Set(Damaged, Operational, Unknown), springs.toList.map(charToSpring), counts, List.empty)
+          (allowed - Unknown).map(x => helper(Set(x), x :: springs.tail, counts)).sum
+    helper(Set(Damaged, Operational, Unknown), springs.toList.map(charToSpring), counts)
 
   def charToSpring(char: Char): Spring = char match
     case '#' => Damaged
     case '.' => Operational
     case '?' => Unknown
 
+  def springToChar(spring: Spring): Char = spring match
+    case Spring.Damaged     => '#'
+    case Spring.Operational => '.'
+    case Spring.Unknown     => '?'
+
 given Read[Row] = Read("(.*) (.*)".r)
 type I = List[Row] - "\n"
 
 object Puzzle extends runner.Day[I, Int, Int]:
   def part1(rows: I): Int =
-    rows.map(_.arrangements.size).sum
+    rows.drop(1).take(1).map(_.arrangements).foreach(println)
+    //rows.map(_.arrangements).sum
+    ???
 
   def part2(rows: I): Int =
-    rows.map(_.unfold).map(_.arrangements.size).sum
-
-  def springToChar(spring: Spring): Char = spring match
-    case Spring.Damaged     => '#'
-    case Spring.Operational => '.'
-    case Spring.Unknown     => '?'
+    rows.map(_.unfold).map(_.arrangements).sum
