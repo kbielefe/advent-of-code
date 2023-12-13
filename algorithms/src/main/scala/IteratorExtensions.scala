@@ -15,3 +15,13 @@ extension [A](i: Iterator[A])
       else
         last
     helper(None)
+
+  def group(using CanEqual[A, A]): Iterator[Iterator[A]] =
+    def helper(i: Iterator[A]): Iterator[Iterator[A]] =
+      if i.hasNext then
+        val next = i.next
+        val (prefix, suffix) = i.span(_ == next)
+        Iterator(Iterator(next) ++ prefix) ++ helper(suffix)
+      else
+        Iterator.empty
+    helper(i)
