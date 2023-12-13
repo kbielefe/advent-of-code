@@ -85,9 +85,15 @@ class Grid private (protected val cells: Map[Pos, Char]) derives CanEqual:
   def keepOnlyPositionsIn(positions: Set[Pos]): Grid =
     new Grid(cells.filter((pos, _) => positions.contains(pos)))
 
+  // Returns a new Grid with only the overlapping cells that match
   def &(other: Grid): Grid =
     val commonPos = cells.keySet & other.cells.keySet
     new Grid(commonPos.filter(pos => cells(pos) == other.cells(pos)).map(pos => (pos, cells(pos))).toMap)
+
+  // Returns if the overlapping positions of each grid are equal
+  def overlapEquals(other: Grid): Boolean =
+    val commonPos = cells.keySet & other.cells.keySet
+    commonPos.forall(pos => cells(pos) == other.cells(pos))
 
   def filter(p: Char => Boolean): Grid =
     new Grid(cells.filter((pos, char) => p(char)))
