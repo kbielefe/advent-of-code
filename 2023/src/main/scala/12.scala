@@ -11,10 +11,10 @@ case class Row(springs: String, counts: List[Int] - ","):
     Row(Iterator.fill(5)(springs).mkString("?"), Iterator.fill(5)(counts.iterator).flatten.toList.asInstanceOf[List[Int] - ","])
 
   type CacheKey = (Set[Spring], List[Spring], List[Int])
-  given Cache[CacheKey, Int] = Cache.empty
+  given Cache[CacheKey, Long] = Cache.empty
 
-  def arrangements: Int =
-    def helper(allowed: Set[Spring], springs: List[Spring], counts: List[Int]): Memoized[CacheKey, Int] =
+  def arrangements: Long =
+    def helper(allowed: Set[Spring], springs: List[Spring], counts: List[Int]): Memoized[CacheKey, Long] =
       if springs.isEmpty then
         if counts.isEmpty then
           1
@@ -28,13 +28,13 @@ case class Row(springs: String, counts: List[Int] - ","):
             0
           else
             if counts.head == 1 then
-              helper(Set(Operational, Unknown), springs.tail, counts.tail)
+              Memoize((Set(Operational, Unknown), springs.tail, counts.tail), helper(Set(Operational, Unknown), springs.tail, counts.tail))
             else
-              helper(Set(Damaged, Unknown), springs.tail, (counts.head - 1) :: counts.tail)
+              Memoize((Set(Damaged, Unknown), springs.tail, (counts.head - 1) :: counts.tail), helper(Set(Damaged, Unknown), springs.tail, (counts.head - 1) :: counts.tail))
         case Operational =>
-          helper(Set(Damaged, Operational, Unknown), springs.tail, counts)
+          Memoize((Set(Damaged, Operational, Unknown), springs.tail, counts), helper(Set(Damaged, Operational, Unknown), springs.tail, counts))
         case Unknown =>
-          (allowed - Unknown).map(x => helper(Set(x), x :: springs.tail, counts)).sum
+          (allowed - Unknown).toList.map(x => Memoize((Set(x), x :: springs.tail, counts), helper(Set(x), x :: springs.tail, counts))).sum
     helper(Set(Damaged, Operational, Unknown), springs.toList.map(charToSpring), counts)
 
   def charToSpring(char: Char): Spring = char match
@@ -50,11 +50,9 @@ case class Row(springs: String, counts: List[Int] - ","):
 given Read[Row] = Read("(.*) (.*)".r)
 type I = List[Row] - "\n"
 
-object Puzzle extends runner.Day[I, Int, Int]:
-  def part1(rows: I): Int =
-    rows.drop(1).take(1).map(_.arrangements).foreach(println)
-    //rows.map(_.arrangements).sum
-    ???
+object Puzzle extends runner.Day[I, Long, Long]:
+  def part1(rows: I): Long =
+    rows.map(_.arrangements).sum
 
-  def part2(rows: I): Int =
+  def part2(rows: I): Long =
     rows.map(_.unfold).map(_.arrangements).sum
