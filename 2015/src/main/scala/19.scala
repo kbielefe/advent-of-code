@@ -1,7 +1,7 @@
 package day19
 import parse.{*, given}
-import algorithms.Tree
-import algorithms.Tree.*
+import scala.util.Random
+import scala.annotation.tailrec
 
 case class Replacement(lhs: String, rhs: String):
   def singleReplacement(molecule: String): Set[String] =
@@ -10,16 +10,22 @@ case class Replacement(lhs: String, rhs: String):
   def reverseReplacement(molecule: String): Set[String] =
     rhs.r.findAllMatchIn(molecule).map(m => molecule.patch(m.start, lhs, rhs.size)).toSet
 
-case class Input(replacements: Set[Replacement ~ """(.+) => (.+)"""] - "\n", molecule: String):
-  def singleReplacements: Set[String] =
+given Read[Replacement] = Read("""(.+) => (.+)""".r)
+
+case class Input(replacements: List[Replacement] - "\n", molecule: String):
+  def singleReplacements: List[String] =
     replacements.flatMap(_.singleReplacement(molecule))
 
-  given Tree[String] = new Tree[String]:
-    def children(node: String): Iterator[String] =
-      replacements.iterator.flatMap(_.reverseReplacement(node).iterator)
-
-  def medicineSteps: Int =
-    molecule.depth(_ == "e").get
+  def synthesizeMolecule: Int =
+    @tailrec
+    def helper(count: Int, accum: String): Int =
+      if accum == "e" then
+        count
+      else
+        Random.shuffle(replacements).flatMap(_.reverseReplacement(accum)).headOption match
+          case Some(newAccum) => helper(count + 1, newAccum)
+          case None           => helper(0, molecule)
+    helper(0, molecule)
 
 type I = Input - "\n\n"
 
@@ -28,4 +34,4 @@ object Puzzle extends runner.Day[I, Int, Int]:
     input.singleReplacements.size
 
   def part2(input: I): Int =
-    input.medicineSteps
+    input.synthesizeMolecule
