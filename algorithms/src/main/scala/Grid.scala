@@ -154,6 +154,7 @@ object Grid:
 
   object Pos:
     def apply(row: Int, col: Int): Pos = (row, col)
+    def unapply(pos: Pos): Option[(Int, Int)] = Some(pos.row, pos.col)
     def fromAffine(m: Matrix[3, 1, Int]): Pos =
       Pos(m.element[1, 0], m.element[0, 0])
 
