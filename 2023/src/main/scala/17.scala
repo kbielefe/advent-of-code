@@ -11,14 +11,14 @@ object Puzzle extends runner.Day[Grid, Int, Int]:
     val startSouth = Crucible(Pos(0, 0), 's', 1)
     val goal = Pos(grid.maxRow, grid.maxCol)
     val astar = new AStar[Crucible, Int](_.pos == goal, _.pos.manhattan(goal), (_, neighbor) => grid(neighbor.pos).asDigit, 0, getNeighbors(grid))
-    math.min(astar.getMinCost(startEast).get, astar.getMinCost(startSouth).get)
+    astar.getMinCost(startEast, startSouth).get
 
   def part2(grid: Grid): Int =
     val startEast =  Crucible(Pos(0, 0), 'e', 1)
     val startSouth = Crucible(Pos(0, 0), 's', 1)
     val goal = Pos(grid.maxRow, grid.maxCol)
     val astar = new AStar[Crucible, Int](c => c.pos == goal && c.distance >= 4, _.pos.manhattan(goal), (_, neighbor) => grid(neighbor.pos).asDigit, 0, ultraNeighbors(grid))
-    math.min(astar.getMinCost(startEast).get, astar.getMinCost(startSouth).get)
+    astar.getMinCost(startEast, startSouth).get
 
   def getNeighbors(grid: Grid)(crucible: Crucible): Set[Crucible] =
     val Crucible(pos, dir, dist) = crucible

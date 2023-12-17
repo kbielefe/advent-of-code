@@ -44,9 +44,8 @@ class AStar[Position, Weight : Numeric](
     helper(open, cameFrom, g)
   }
 
-  // TODO: Allow taking a list of start positions that all get added to the open queue.
   // TODO: Add visualization
-  def getMinCost(start: Position): Option[Weight] = {
+  def getMinCost(starts: Position*): Option[Weight] = {
     @tailrec
     def helper(open: PriorityQueue[Position, Weight], g: Map[Position, Weight]): Option[Weight] = {
 
@@ -70,8 +69,8 @@ class AStar[Position, Weight : Numeric](
       helper(newOpen, newG)
     }
 
-    val open = PriorityQueue(start -> heuristic(start))
-    val g = Map[Position, Weight](start -> initial)
+    val open = starts.map(start => (start -> heuristic(start))).foldLeft(PriorityQueue.Empty: PriorityQueue[Position, Weight])((queue, value) => queue.enqueue(value))
+    val g = starts.map(start => start -> initial).toMap
     helper(open, g)
   }
 
