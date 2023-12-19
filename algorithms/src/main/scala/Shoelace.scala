@@ -10,6 +10,7 @@ def shoelace[N](points: Vector[(N, N)])(using n: Integral[N]): N =
     (points(i)._1 * points(next)._2) - (points(next)._1 * points(i)._2)
   }.sum / n.fromInt(2))
 
-/** Pick's theorem: Find total area of a polygon given number of interior points and points on the boundary */
+/** Pick's theorem: Find total area of a polygon, including the perimeter,
+ *  given number of interior points and points on the boundary */
 def picks[N](interior: N, boundary: N)(using n: Integral[N]): N =
-  interior + boundary / n.fromInt(2) - n.one
+  interior + boundary / n.fromInt(2) + n.one

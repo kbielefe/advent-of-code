@@ -31,5 +31,5 @@ object Puzzle extends runner.Day[I, Long, Long]:
         case 'L' => (row, col - dig.dist)
         case 'R' => (row, col + dig.dist)
     }.toVector.drop(1)
-    val border = input.map(_.dist).sum + 4
+    val border = input.map(_.dist).sum
     picks(shoelace(vertices), border)
