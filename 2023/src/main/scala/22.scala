@@ -1,8 +1,9 @@
 package day22
-import algorithms.{Grid, Matrix}
+import algorithms.*
 import algorithms.Grid.{*, given}
 import parse.{*, given}
 import scala.annotation.tailrec
+import scala.collection.immutable.Queue
 import scala.util.Random
 
 case class Point(x: Int, y: Int, z: Int) derives CanEqual:
@@ -45,7 +46,34 @@ object Puzzle extends runner.Day[I, Long, Long]:
     settled.count(_.safeToDisintegrate(bricksByPoint))
 
   def part2(bricks: I): Long =
-    ???
+    val settled = settle(bricks.asInstanceOf[Set[Brick]])
+    val bricksByPoint = settled.flatMap(brick => brick.points.map(point => point -> brick)).toMap
+    settled.map(brick => chainReaction(bricksByPoint, Queue(brick))).sum
+
+  @tailrec
+  def chainReaction(
+    bricksByPoint: Map[Point, Brick],
+    toVisit: Queue[Brick],
+    disintegrated: Set[Brick] = Set.empty,
+    queued: Set[Brick] = Set.empty
+  ): Int =
+    toVisit.dequeueOption match
+      case Some((brick, remaining)) if brick.below(bricksByPoint).isEmpty || queued.isEmpty =>
+        chainReaction(
+          bricksByPoint -- brick.points,
+          remaining ++ brick.above(bricksByPoint),
+          disintegrated + brick,
+          queued ++ brick.above(bricksByPoint)
+        )
+      case Some((brick, remaining)) =>
+        chainReaction(
+          bricksByPoint,
+          remaining,
+          disintegrated,
+          queued
+        )
+      case None =>
+        disintegrated.size - 1
 
   def settle(bricks: Set[Brick]): Set[Brick] =
     bricks.toList.sortBy(_.minZ).foldLeft(Map.empty[Pos, Int] -> Set.empty[Brick]){case ((skyline, result), brick) =>
