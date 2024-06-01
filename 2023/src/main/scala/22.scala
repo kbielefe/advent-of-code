@@ -5,9 +5,12 @@ import parse.{*, given}
 import scala.annotation.tailrec
 import scala.util.Random
 
-case class Point(x: Int, y: Int, z: Int):
-  def withOffset(offset: Int): Point =
-    Point(x, y, z - offset)
+case class Point(x: Int, y: Int, z: Int) derives CanEqual:
+  def -(amount: Int): Point =
+    Point(x, y, z - amount)
+
+  def +(amount: Int): Point =
+    Point(x, y, z + amount)
 
 case class Brick(start: Point - ",", end: Point - ",") derives CanEqual:
   def points: Set[Point] = for
@@ -16,19 +19,20 @@ case class Brick(start: Point - ",", end: Point - ",") derives CanEqual:
     z <- (start.z to end.z).toSet
   yield Point(x, y, z)
 
-  def minZ: Int = Math.min(start.z, end.z)
+  def minZ: Int =
+    Math.min(start.z, end.z)
 
-  def settle(heights: Map[(Int, Int), Set[Int]]): Brick =
-    val offset = points.map(point => point.z - heights.getOrElse((point.x, point.y), List(0)).filter(_ < point.z).max - 1).min
-    Brick(start.withOffset(offset).asInstanceOf[Point - ","], end.withOffset(offset).asInstanceOf[Point - ","])
+  def -(amount: Int): Brick =
+    Brick((start - amount).asInstanceOf[Point - ","], (end - amount).asInstanceOf[Point - ","])
 
-  def supportedBy(brick: Brick): Boolean =
-    brick != this && (brick.points.map(_.withOffset(-1)) & points).size >= 1
+  def above(bricksByPoint: Map[Point, Brick]): Set[Brick] =
+    points.flatMap(point => bricksByPoint.get(point + 1)) - this
 
-  def canDisintegrate(bricks: Set[Brick]): Boolean =
-    val above = bricks.filter(_.supportedBy(this))
-    val supporting = above.flatMap(top => bricks.filter(bottom => top.supportedBy(bottom)))
-    above.isEmpty || supporting.size > 1
+  def below(bricksByPoint: Map[Point, Brick]): Set[Brick] =
+    points.flatMap(point => bricksByPoint.get(point - 1)) - this
+
+  def safeToDisintegrate(bricksByPoint: Map[Point, Brick]): Boolean =
+    above(bricksByPoint).isEmpty || above(bricksByPoint).forall(_.below(bricksByPoint).exists(_ != this))
 
 end Brick
 
@@ -37,30 +41,22 @@ type I = Set[Brick - "~"] - "\n"
 object Puzzle extends runner.Day[I, Long, Long]:
   def part1(bricks: I): Long =
     val settled = settle(bricks.asInstanceOf[Set[Brick]])
-    println(bricksToString(settled))
-    //settled.count(_.canDisintegrate(settled))
-    ???
+    val bricksByPoint = settled.flatMap(brick => brick.points.map(point => point -> brick)).toMap
+    settled.count(_.safeToDisintegrate(bricksByPoint))
 
   def part2(bricks: I): Long =
     ???
 
-  def bricksToString(bricks: Set[Brick]): String =
-    val random = Random(0)
-    val points = bricks.flatMap{brick =>
-      val char: Char = random.between('a', 'z' + 1).toChar
-      brick.points.map(point => Pos(point.z, point.x) -> char) ++
-      brick.points.map(point => Pos(point.z, point.y + 11) -> char)
-    }.toMap
-    val grid = Grid(points).transform(Matrix.reflectX)
-    grid.toString
-
-  @tailrec
-  def settle(unsettled: Set[Brick], settled: Set[Brick] = Set.empty): Set[Brick] =
-    if unsettled.isEmpty then
-      settled
-    else
-      val minZ = unsettled.map(_.minZ).min
-      val (newSettled, stillUnsettled) = unsettled.partition(_.minZ == minZ)
-      val heights = settled.flatMap(_.points).groupMap(point => (point.x, point.y))(_.z)
-      val movedDown = newSettled.map(_.settle(heights))
-      settle(stillUnsettled, settled ++ movedDown)
+  def settle(bricks: Set[Brick]): Set[Brick] =
+    bricks.toList.sortBy(_.minZ).foldLeft(Map.empty[Pos, Int] -> Set.empty[Brick]){case ((skyline, result), brick) =>
+      val moveDownAmount = brick.points.map{point =>
+        val pos = Pos(point.x, point.y)
+        val height = skyline.getOrElse(pos, 0)
+        point.z - height - 1
+      }.min
+      val newBrick = brick - moveDownAmount
+      val newSkyline = newBrick.points.toList.sortBy(_.z).foldLeft(skyline)((skyline, point) =>
+        skyline.updated(Pos(point.x, point.y), point.z)
+      )
+      (newSkyline, result + newBrick)
+    }._2
