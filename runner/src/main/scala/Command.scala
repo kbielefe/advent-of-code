@@ -104,6 +104,13 @@ case class Answer(year: Int, day: Int, part: Int, example: String, answer: Optio
     Console[IO].println(s"Setting answer for day $day part $part example $example to $result") >>
     Database.setAnswer(year, day, part, example, result)
 
+case class Guesses(year: Int, day: Int, part: Int, example: String) extends Command:
+  override def run: IO[Unit] =
+    Console[IO].println(s"Guesses for day $day part $part example $example:") >>
+    Database.getGuesses(year, day, part, example).flatMap{guesses =>
+      guesses.sortBy(_._2).traverse((status, guess) => Console[IO].println(f"$status%-5s $guess"))
+    }.void
+
 case class Session() extends Command:
   override def run: IO[Unit] =
     val session = paste

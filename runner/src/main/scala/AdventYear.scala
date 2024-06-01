@@ -23,6 +23,7 @@ trait AdventYear(year: Int):
 
   private val run = Opts.subcommand("run", "Run the specified puzzle.")(common.mapN(RunPuzzle.apply))
   private val answer = Opts.subcommand("answer", "Specify the correct answer for the puzzle and clears all guesses. Copies from the clipboard by default.")((Opts(year), day, part, example, answerArg).mapN(Answer.apply))
+  private val guesses = Opts.subcommand("guesses", "Show the guesses made so far")((Opts(year), day, part, example).mapN(Guesses.apply))
   private val session = Opts.subcommand("session", "Copy the user's session cookie from the clipboard.")(Opts(Session()))
   private val database = Opts.subcommand("database", "Initialize the database at advent.db.")(Opts(InitDatabase()))
 
@@ -34,7 +35,7 @@ trait AdventYear(year: Int):
   private val list = Opts.subcommand("list", "List all examples in the database for this day.")((Opts(year), day).mapN(ListExamples.apply))
   private val examples = Opts.subcommand("examples", "Commands dealing with examples.")(scrape <+> list)
 
-  private val all = List(run, input, answer, session, database, examples).combineAll
+  private val all = List(run, input, answer, guesses, session, database, examples).combineAll
 
   private val opts = (verbose, all).tupled.map{(verbose, command) =>
     val result = command.run.as(ExitCode.Success)
