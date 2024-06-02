@@ -28,7 +28,7 @@ object Graph:
             helper(
               remaining ++ node.neighbors,
               visited + node,
-              node.neighbors.filterNot(visited.contains).foldLeft(accum)((accum, neighbor) => accum.addMulti(neighbor, node))
+              node.neighbors.foldLeft(accum)((accum, neighbor) => accum.addMulti(neighbor, node))
             )
           case None =>
             accum
@@ -36,23 +36,16 @@ object Graph:
 
     /** Produce a topological sorting of the graph. */
     def toposort(using CanEqual[A, A]): Iterator[A] =
-      toposort(Queue(a), getIncoming)
-
-    private def toposort(noIncoming: Queue[A], incoming: Map[A, Set[A]])(using CanEqual[A, A]): Iterator[A] =
-      noIncoming.dequeueOption match
-        case None =>
-          Iterator.empty
-        case Some((node, remaining)) =>
-          val outgoing = node.neighbors.toSet
-          val newNoIncoming = outgoing.filter(next => incoming(next) == Set(node))
-          val newIncoming = outgoing.foldLeft(incoming)((incoming, next) => incoming.delMulti(next, node))
-          Iterator(node) ++ toposort(remaining ++ newNoIncoming, newIncoming)
-
-    def longestPaths(using CanEqual[A, A]): Map[A, Int] =
-      val incoming = getIncoming
-      toposort(Queue(a), incoming).foldLeft(Map.empty[A, Int]){(maxLengths, node) =>
-        maxLengths + (node -> (incoming.getOrElse(node, Set.empty).map(x => maxLengths.getOrElse(x, 0)).max + 1))
-      }
+      def helper(noIncoming: Queue[A], incoming: Map[A, Set[A]]): Iterator[A] =
+        noIncoming.dequeueOption match
+          case None =>
+            Iterator.empty
+          case Some((node, remaining)) =>
+            val outgoing = node.neighbors.toSet
+            val newNoIncoming = outgoing.filter(next => incoming(next) == Set(node))
+            val newIncoming = outgoing.foldLeft(incoming)((incoming, next) => incoming.delMulti(next, node))
+            Iterator(node) ++ helper(remaining ++ newNoIncoming, newIncoming)
+      helper(Queue(a), getIncoming)
 
     /** Recursively visit all neighbors of a node, producing a summary value B at
      *  the leaves, and reducing that value at non-leaf nodes. If a node is
