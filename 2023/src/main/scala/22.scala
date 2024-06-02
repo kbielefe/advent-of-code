@@ -1,6 +1,7 @@
 package day22
 import algorithms.*
 import algorithms.Grid.{*, given}
+import algorithms.Graph.*
 import parse.{*, given}
 import scala.annotation.tailrec
 import scala.collection.immutable.Queue
@@ -13,7 +14,13 @@ case class Point(x: Int, y: Int, z: Int) derives CanEqual:
   def +(amount: Int): Point =
     Point(x, y, z + amount)
 
+  override def toString: String =
+    s"$x $y $z"
+
 case class Brick(start: Point - ",", end: Point - ",") derives CanEqual:
+  override def toString: String =
+    s"$start -> $end"
+
   def points: Set[Point] = for
     x <- (start.x to end.x).toSet
     y <- (start.y to end.y).toSet
@@ -48,32 +55,19 @@ object Puzzle extends runner.Day[I, Long, Long]:
   def part2(bricks: I): Long =
     val settled = settle(bricks.asInstanceOf[Set[Brick]])
     val bricksByPoint = settled.flatMap(brick => brick.points.map(point => point -> brick)).toMap
-    settled.map(brick => chainReaction(bricksByPoint, Queue(brick))).sum
+    settled.toList.map(chainReaction(bricksByPoint)).sum
 
-  @tailrec
-  def chainReaction(
-    bricksByPoint: Map[Point, Brick],
-    toVisit: Queue[Brick],
-    disintegrated: Set[Brick] = Set.empty,
-    queued: Set[Brick] = Set.empty
-  ): Int =
-    toVisit.dequeueOption match
-      case Some((brick, remaining)) if brick.below(bricksByPoint).isEmpty || queued.isEmpty =>
-        chainReaction(
-          bricksByPoint -- brick.points,
-          remaining ++ brick.above(bricksByPoint),
-          disintegrated + brick,
-          queued ++ brick.above(bricksByPoint)
-        )
-      case Some((brick, remaining)) =>
-        chainReaction(
-          bricksByPoint,
-          remaining,
-          disintegrated,
-          queued
-        )
-      case None =>
-        disintegrated.size - 1
+  def chainReaction(bricksByPoint: Map[Point, Brick])(bottomBrick: Brick): Int =
+    given Graph[Brick] = new Graph[Brick]:
+      override def neighbors(brick: Brick): Iterator[Brick] =
+        Iterator.from(brick.above(bricksByPoint))
+
+    bottomBrick.toposort.foldLeft((bricksByPoint -- bottomBrick.points, Set(bottomBrick))){case ((bricksByPoint, disintegrated), brick) =>
+      if brick.below(bricksByPoint).isEmpty then
+        (bricksByPoint -- brick.points, disintegrated + brick)
+      else
+        (bricksByPoint, disintegrated)
+    }._2.size - 1
 
   def settle(bricks: Set[Brick]): Set[Brick] =
     bricks.toList.sortBy(_.minZ).foldLeft(Map.empty[Pos, Int] -> Set.empty[Brick]){case ((skyline, result), brick) =>

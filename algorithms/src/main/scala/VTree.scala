@@ -19,6 +19,14 @@ trait VTree[A]:
         Iterator.empty
     helper(Iterator((node, Set.empty))).map(_._1)
 
+  def preOrder(node: A): Iterator[A] =
+    depthFirstTraverse(node)
+
+  def postOrder(node: A): Iterator[A] =
+    def helper(a: A, visited: Set[A]): Iterator[A] =
+      children(a, visited).flatMap(child => helper(child, visited + a)) ++ Iterator(a)
+    helper(node, Set.empty)
+
   def dfs(node: A, p: A => Boolean): Option[A] =
     depthFirstTraverse(node).find(p)
 
