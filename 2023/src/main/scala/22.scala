@@ -1,7 +1,7 @@
 package day22
 import algorithms.*
 import algorithms.Grid.{*, given}
-import algorithms.Graph.*
+import algorithms.DAG.*
 import parse.{*, given}
 import scala.annotation.tailrec
 import scala.collection.immutable.Queue
@@ -58,7 +58,7 @@ object Puzzle extends runner.Day[I, Long, Long]:
     settled.toList.map(chainReaction(bricksByPoint)).sum
 
   def chainReaction(bricksByPoint: Map[Point, Brick])(bottomBrick: Brick): Int =
-    given Graph[Brick] = new Graph[Brick]:
+    given DAG[Brick] = new DAG[Brick]:
       override def neighbors(brick: Brick): Iterator[Brick] =
         Iterator.from(brick.above(bricksByPoint))
 
