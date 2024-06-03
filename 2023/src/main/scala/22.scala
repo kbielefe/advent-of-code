@@ -44,16 +44,16 @@ case class Brick(start: Point - ",", end: Point - ",") derives CanEqual:
 
 end Brick
 
-type I = Set[Brick - "~"] - "\n"
+type I = List[Brick - "~"] - "\n"
 
 object Puzzle extends runner.Day[I, Long, Long]:
   def part1(bricks: I): Long =
-    val settled = settle(bricks.asInstanceOf[Set[Brick]])
+    val settled = settle(bricks.toSet)
     val bricksByPoint = settled.flatMap(brick => brick.points.map(point => point -> brick)).toMap
     settled.count(_.safeToDisintegrate(bricksByPoint))
 
   def part2(bricks: I): Long =
-    val settled = settle(bricks.asInstanceOf[Set[Brick]])
+    val settled = settle(bricks.toSet)
     val bricksByPoint = settled.flatMap(brick => brick.points.map(point => point -> brick)).toMap
     settled.toList.map(chainReaction(bricksByPoint)).sum
 
