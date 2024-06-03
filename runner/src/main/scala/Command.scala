@@ -66,13 +66,12 @@ case class RunPuzzle(year: Int, day: Int, part: Int, example: String) extends An
       val lows = numericGuesses.filter(_._1 == "low").map(_._2)
       val highs = numericGuesses.filter(_._1 == "high").map(_._2)
       (lows.isEmpty, highs.isEmpty) match
-        case (false, _) if answer <= lows.max  => Some("low")
-        case (_, false) if answer >= highs.min => Some("high")
+        case (false, _) if answer <= lows.max  => Some(s"Too low, should be higher than ${lows.max}")
+        case (_, false) if answer >= highs.min => Some(s"Too high, should be lower than ${highs.min}")
         case _ => None
     }
     highOrLow match
-      case Some("low")  => Console[IO].println("Too low")
-      case Some("high") => Console[IO].println("Too high")
+      case Some(message) => Console[IO].println(message)
       case None if guesses.contains(("incorrect", answer)) => Console[IO].println("Incorrect (already guessed)")
       case _ =>
         IO(copy(answer)) >>
