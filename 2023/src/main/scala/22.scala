@@ -65,3 +65,9 @@ given Read[Bricks] = Read()
 object Puzzle extends runner.Day[Bricks, Int, Int]:
   def part1(bricks: Bricks): Int =
     bricks.settle.safeToDisintegrate
+
+  def part2(bricks: Bricks): Int =
+    ???
+
+  def graphviz(bricks: Bricks): Unit =
+    println(bricks.bricks.size)

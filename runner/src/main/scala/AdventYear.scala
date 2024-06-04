@@ -19,9 +19,11 @@ trait AdventYear(year: Int):
   private val answerArg = Opts.argument[String](metavar = "answer").orNone
   private val example = Opts.option[String]("example", short = "e", metavar = "example name", help = "Use the given example input instead of the official input.").orNone.map(_.getOrElse("official"))
   private val verbose = Opts.flag("verbose", short = "v", help = "Print full stack traces.").orFalse
+  private val name = Opts.argument[String](metavar = "visualization name")
   private val common = (Opts(year), day, part, example)
 
   private val run = Opts.subcommand("run", "Run the specified puzzle.")(common.mapN(RunPuzzle.apply))
+  private val visualization = Opts.subcommand("visualization", "Show a visualization of the puzzle.")((Opts(year), day, name, example).mapN(Visualization.apply))
   private val answer = Opts.subcommand("answer", "Specify the correct answer for the puzzle and clears all guesses. Copies from the clipboard by default.")((Opts(year), day, part, example, answerArg).mapN(Answer.apply))
   private val guesses = Opts.subcommand("guesses", "Show the guesses made so far")((Opts(year), day, part, example).mapN(Guesses.apply))
   private val session = Opts.subcommand("session", "Copy the user's session cookie from the clipboard.")(Opts(Session()))
@@ -35,7 +37,7 @@ trait AdventYear(year: Int):
   private val list = Opts.subcommand("list", "List all examples in the database for this day.")((Opts(year), day).mapN(ListExamples.apply))
   private val examples = Opts.subcommand("examples", "Commands dealing with examples.")(scrape <+> list)
 
-  private val all = List(run, input, answer, guesses, session, database, examples).combineAll
+  private val all = List(run, input, answer, guesses, session, database, examples, visualization).combineAll
 
   private val opts = (verbose, all).tupled.map{(verbose, command) =>
     val result = command.run.as(ExitCode.Success)

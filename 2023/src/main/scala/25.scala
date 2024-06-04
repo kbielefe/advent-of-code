@@ -18,3 +18,5 @@ object Puzzle extends runner.Day[Lines, Int, Int]:
   def part1(lines: Lines): Int =
     println(lines.toSet.flatMap(_.components).size)
     ???
+
+  def part2(lines: Lines): Int = ???

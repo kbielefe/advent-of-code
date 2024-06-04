@@ -33,10 +33,30 @@ sealed trait AnswerCommand(year: Int, day: Int, part: Int, example: String) exte
   yield answer
 
   def getDay: NormalizedDay =
-    Class.forName(s"day$day.Puzzle$$")
+    Class
+      .forName(s"day$day.Puzzle$$")
       .getField("MODULE$")
       .get(null)
       .asInstanceOf[NormalizedDay]
+
+case class Visualization(year: Int, day: Int, name: String, example: String) extends Command:
+  override def run: IO[Unit] = for
+    input  <- Database.getInput(year, day, example)
+    _      <- runVisualization(input)
+  yield ()
+
+  def runVisualization(input: String): IO[Unit] =
+    val c = Class.forName(s"day$day.Puzzle$$")
+    val obj = c.getField("MODULE$").get(null).asInstanceOf[NormalizedDay]
+    c.getMethods().find(_.getName() == name) match
+      case Some(method) =>
+        val arg = obj.read(input)
+        if method.getReturnType().getName() == "cats.effect.IO" then
+          method.invoke(obj, arg).asInstanceOf[IO[Unit]]
+        else
+          IO.interruptible(method.invoke(obj, arg))
+      case None =>
+        IO.raiseError(new Exception(s"Visualization $name not found"))
 
 case class RunPuzzle(year: Int, day: Int, part: Int, example: String) extends AnswerCommand(year, day, part, example):
   override def run: IO[Unit] = answer.flatMap(checkAnswer)
