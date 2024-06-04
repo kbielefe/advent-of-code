@@ -29,6 +29,9 @@ case class Bricks(bricks: Set[Brick]):
       .flatMap(brick => brick.points.map(point => point -> brick))
       .toMap
 
+  private lazy val graph =
+    Graph.fromEdges(edges)
+
   extension (brick: Brick)
     def above: Set[Brick] =
       brick.points.flatMap(point => byPoint.get(point + 1)) - brick
@@ -38,6 +41,15 @@ case class Bricks(bricks: Set[Brick]):
 
     def safeToDisintegrate: Boolean =
       brick.above.isEmpty || brick.above.forall(_.below.exists(_ != brick))
+
+    def chainReaction: Int =
+      val reachable = graph.reachableFrom(brick) - brick
+      reachable.toposort.foldLeft((reachable, 0)){case ((graph, disintegrated), brick) =>
+        if graph.incomingEdges(brick).isEmpty then
+          (graph - brick, disintegrated + 1)
+        else
+          (graph, disintegrated)
+      }._2
 
   def safeToDisintegrate: Int =
     bricks.count(_.safeToDisintegrate)
@@ -57,6 +69,14 @@ case class Bricks(bricks: Set[Brick]):
     }._2
     new Bricks(settled)
 
+  private def edges: Set[Edge[Brick, Unit]] =
+    bricks.flatMap(from => from.above.map(to => Edge(from, to, ())))
+
+  def chainReaction: Int =
+    bricks.map(_.chainReaction).sum
+
+end Bricks
+
 given Read[Point] = Read(",")
 given Read[Brick] = Read("~")
 given Read[Set[Brick]] = Read("\n")
@@ -67,7 +87,4 @@ object Puzzle extends runner.Day[Bricks, Int, Int]:
     bricks.settle.safeToDisintegrate
 
   def part2(bricks: Bricks): Int =
-    ???
-
-  def graphviz(bricks: Bricks): Unit =
-    println(bricks.bricks.size)
+    bricks.settle.chainReaction
