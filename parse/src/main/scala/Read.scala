@@ -43,6 +43,11 @@ object Read:
       summon[ReadProduct[T]]
         .readProduct(input.split(delimiter))
 
+  def apply[T <: Product : ReadProduct](): Read[T] = new Read[T]:
+    def read(input: String): T =
+      summon[ReadProduct[T]]
+        .readProduct(Array(input))
+
   def apply[C[_]: ReadSeq, T: Read: ClassTag](delimiter: String): Read[C[T]] = new Read[C[T]]:
     def read(input: String): C[T] =
       summon[ReadSeq[C]]

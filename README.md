@@ -19,10 +19,12 @@ Adds four type classes that ease working with puzzle input:
  - `ReadProduct[T]`: Converts a `String` to a tuple or case class `T`.
  - `Show[A]`: Converts an `A` into a `String`.
 
-There are three useful overloads of `Read.apply` for different situations:
+There are four useful overloads of `Read.apply` for different situations:
 
  - `given Read[MyCaseClass] = Read(regex)` Uses the match groups of the regex to populate the fields of the case class.
  - `given Read[MyCaseClass] = Read(delimiter)` Splits the input by the delimiter and assigns to each field of the case class.
+ - `given Read[MyCaseClass] = Read()` For a case class with one field, just
+   copies it through. Useful to add functionality around a collection.
  - `given Read[List[A]] = Read(delimiter)` Splits the input by the delimiter to populate each element of the List.
 
  The first two work with any product, so case classes and tuples. The last one
