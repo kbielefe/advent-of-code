@@ -26,14 +26,15 @@ class Graph[V, E] private (val vertices: Set[V], val edges: Set[Edge[V, E]])(usi
     vertices.filter(incomingEdges(_).isEmpty)
 
   def toposort: Iterator[V] =
-    def helper(noIncoming: Queue[V], graph: Graph[V, E]): Iterator[V] =
+    def helper(noIncoming: Queue[V], queued: Set[V], graph: Graph[V, E]): Iterator[V] =
       noIncoming.dequeueOption match
         case None =>
           Iterator.empty
         case Some((v, remaining)) =>
           val newGraph = graph - v
-          Iterator(v) ++ helper(remaining ++ newGraph.noIncoming, newGraph)
-    helper(Queue.from(noIncoming), this)
+          val newQueued = newGraph.noIncoming -- queued
+          Iterator(v) ++ helper(remaining ++ newQueued, queued ++ newQueued, newGraph)
+    helper(Queue.from(noIncoming), noIncoming, this)
 
   def reachableFrom(v: V): Graph[V, E] =
     @tailrec

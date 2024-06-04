@@ -4,6 +4,9 @@ import algorithms.Grid.Pos
 import parse.{*, given}
 
 case class Point(x: Int, y: Int, z: Int):
+  override def toString: String =
+    s"$x,$y,$z"
+
   def -(amount: Int): Point =
     Point(x, y, z - amount)
 
@@ -11,6 +14,9 @@ case class Point(x: Int, y: Int, z: Int):
     Point(x, y, z + amount)
 
 case class Brick(start: Point, end: Point) derives CanEqual:
+  override def toString: String =
+    s"$start~$end"
+
   def minZ: Int =
     Math.min(start.z, end.z)
 
@@ -42,14 +48,21 @@ case class Bricks(bricks: Set[Brick]):
     def safeToDisintegrate: Boolean =
       brick.above.isEmpty || brick.above.forall(_.below.exists(_ != brick))
 
+    // A = 1,0,1~1,2,1 should have chainReaction of 6
+    // F = 0,1,4~2,1,4 should have chainReaction of 1
     def chainReaction: Int =
       val reachable = graph.reachableFrom(brick) - brick
-      reachable.toposort.foldLeft((reachable, 0)){case ((graph, disintegrated), brick) =>
+      if brick.toString == "0,1,4~2,1,4" || brick.toString == "1,0,1~1,2,1" then
+        println(reachable.toposort.mkString("\n"))
+      val result = reachable.toposort.foldLeft((graph - brick, 0)){case ((graph, disintegrated), brick) =>
         if graph.incomingEdges(brick).isEmpty then
           (graph - brick, disintegrated + 1)
         else
           (graph, disintegrated)
       }._2
+      if brick.toString == "0,1,4~2,1,4" || brick.toString == "1,0,1~1,2,1" then
+        println(s"$brick: $result")
+      result
 
   def safeToDisintegrate: Int =
     bricks.count(_.safeToDisintegrate)
@@ -73,7 +86,7 @@ case class Bricks(bricks: Set[Brick]):
     bricks.flatMap(from => from.above.map(to => Edge(from, to, ())))
 
   def chainReaction: Int =
-    bricks.map(_.chainReaction).sum
+    bricks.toList.map(_.chainReaction).sum
 
 end Bricks
 
