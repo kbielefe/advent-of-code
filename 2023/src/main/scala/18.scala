@@ -14,7 +14,8 @@ case class Dig(dir: Char, dist: Int, color: String):
 
 given Read[Dig] = Read("""(U|D|L|R) (\d+) \((.+)\)""".r)
 
-type I = List[Dig] - "\n"
+type I = List[Dig]
+given Read[I] = Read("\n")
 
 object Puzzle extends runner.Day[I, Long, Long]:
   def part1(input: I): Long =

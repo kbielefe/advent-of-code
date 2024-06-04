@@ -8,7 +8,8 @@ import parse.{*, given}
 import scala.concurrent.duration.*
 import year2019.IntCode
 
-type I = Vector[Long] - ","
+type I = Vector[Long]
+given Read[I] = Read(",")
 
 object Puzzle extends runner.IODay[I, Long, Long]:
   def part1(input: I): IO[Long] =

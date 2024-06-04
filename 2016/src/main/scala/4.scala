@@ -18,7 +18,9 @@ case class Room(encryptedName: String, sectorId: Int, checksum: String):
       ((char.toInt - 'a'.toInt + sectorId) % 26 + 'a'.toInt).toChar
 end Room
 
-type I = List[Room ~ """(.+)-(\d+)\[(.+)\]"""] - "\n"
+type I = List[Room]
+given Read[List[Room]] = Read("\n")
+given Read[Room] = Read("""(.+)-(\d+)\[(.+)\]""".r)
 
 object Puzzle extends runner.Day[I, Int, Int]:
   def part1(input: I): Int =

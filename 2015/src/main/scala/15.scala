@@ -5,7 +5,9 @@ case class Ingredient(name: String, capacity: Int, durability: Int, flavor: Int,
   def score(quantity: Int): Int =
     quantity * (capacity + durability + flavor + texture)
 
-type I = Vector[Ingredient ~ """(\w+): capacity (-?\d+), durability (-?\d+), flavor (-?\d+), texture (-?\d+), calories (-?\d+)"""] - "\n"
+type I = Vector[Ingredient]
+given Read[Vector[Ingredient]] = Read("\n")
+given Read[Ingredient] = Read("""(\w+): capacity (-?\d+), durability (-?\d+), flavor (-?\d+), texture (-?\d+), calories (-?\d+)""".r)
 
 object Puzzle extends runner.Day[I, Int, Int]:
   def part1(input: I): Int =

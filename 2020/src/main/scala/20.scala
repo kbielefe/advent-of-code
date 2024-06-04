@@ -51,7 +51,8 @@ case class Tile(number: Int, grid: Grid):
 
 given Read[Tile] = Read("""(?s)Tile (\d+):\n(.+)""".r)
 
-type I = List[Tile] - "\n\n"
+type I = List[Tile]
+given Read[I] = Read("\n\n")
 
 val monster = Grid(
   """                  #

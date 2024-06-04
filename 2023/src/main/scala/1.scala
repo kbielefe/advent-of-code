@@ -1,7 +1,8 @@
 package day1
 import parse.{*, given}
 
-type I = List[String] - "\n"
+type I = List[String]
+given Read[I] = Read("\n")
 
 object Puzzle extends runner.Day[I, Int, Int]:
   def part1(input: I): Int =

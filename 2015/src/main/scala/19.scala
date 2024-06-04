@@ -12,7 +12,7 @@ case class Replacement(lhs: String, rhs: String):
 
 given Read[Replacement] = Read("""(.+) => (.+)""".r)
 
-case class Input(replacements: List[Replacement] - "\n", molecule: String):
+case class Input(replacements: List[Replacement], molecule: String):
   def singleReplacements: List[String] =
     replacements.flatMap(_.singleReplacement(molecule))
 
@@ -27,11 +27,12 @@ case class Input(replacements: List[Replacement] - "\n", molecule: String):
           case None           => helper(0, molecule)
     helper(0, molecule)
 
-type I = Input - "\n\n"
+given Read[List[Replacement]] = Read("\n")
+given Read[Input] = Read("\n\n")
 
-object Puzzle extends runner.Day[I, Int, Int]:
-  def part1(input: I): Int =
+object Puzzle extends runner.Day[Input, Int, Int]:
+  def part1(input: Input): Int =
     input.singleReplacements.size
 
-  def part2(input: I): Int =
+  def part2(input: Input): Int =
     input.synthesizeMolecule

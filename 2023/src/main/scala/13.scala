@@ -3,7 +3,8 @@ import parse.{*, given}
 import algorithms.{*, given}
 import algorithms.Grid.Pos
 
-type I = List[Grid] - "\n\n"
+type I = List[Grid]
+given Read[I] = Read("\n\n")
 
 object Puzzle extends runner.Day[I, Int, Int]:
   def part1(grids: I): Int =

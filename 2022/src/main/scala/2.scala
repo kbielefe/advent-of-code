@@ -43,7 +43,9 @@ case class Round(opponent: RPS, me: RPS) derives ReadProduct:
   def score: Int = me.shapeScore + outcome
 end Round
 
-type I = List[Round - " "] - "\n"
+type I = List[Round]
+given Read[I] = Read("\n")
+given Read[Round] = Read(" ")
 
 object Puzzle extends runner.Day[I, Int, Int]:
   def part1(input: I): Int =

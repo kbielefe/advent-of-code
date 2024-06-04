@@ -2,7 +2,8 @@ package day22
 import parse.{*, given}
 import algorithms.{Cache, Memoize, Memoized}
 
-type I = (Int, Int) ~ """Hit Points: (\d+)\nDamage: (\d+)"""
+type I = (Int, Int)
+given Read[I] = Read("""Hit Points: (\d+)\nDamage: (\d+)""".r)
 
 case class GameState(currentMana: Int, manaSpent: Int, myHp: Int, bossHp: Int, bossDamage: Int, shieldCounter: Int, poisonCounter: Int, rechargeCounter: Int, difficulty: Int):
   def applyDifficulty: GameState =

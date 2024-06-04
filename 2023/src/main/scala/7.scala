@@ -49,7 +49,8 @@ case class Hand(cards: String, bid: Int):
 
 given Read[Hand] = Read("""(.+) (\d+)""".r)
 
-type I = List[Hand] - "\n"
+type I = List[Hand]
+given Read[I] = Read("\n")
 
 object Puzzle extends runner.Day[I, Int, Int]:
   def part1(input: I): Int =

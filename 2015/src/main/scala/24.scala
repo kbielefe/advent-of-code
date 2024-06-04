@@ -2,14 +2,14 @@ package day24
 
 import parse.{*, given}
 
-type I = List[Long] - "\n"
+given Read[List[Long]] = Read("\n")
 
-object Puzzle extends runner.Day[I, Long, Long]:
-  def part1(input: I): Long = answer(input, 3)
+object Puzzle extends runner.Day[List[Long], Long, Long]:
+  def part1(input: List[Long]): Long = answer(input, 3)
 
-  def part2(input: I): Long = answer(input, 4)
+  def part2(input: List[Long]): Long = answer(input, 4)
 
-  def answer(input: I, groupCount: Long): Long =
+  def answer(input: List[Long], groupCount: Long): Long =
     val groupSize = input.sum / groupCount
     val minSize = (1 to input.size).iterator.flatMap(input.combinations).find(_.sum == groupSize).get.size
     input.combinations(minSize).filter(_.sum == groupSize).map(quantumEntanglement).min

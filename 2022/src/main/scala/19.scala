@@ -4,9 +4,12 @@ import parse.{*, given}
 import com.google.ortools.Loader
 import com.google.ortools.linearsolver.MPSolver
 
-case class Cost(amount: Int, material: String) derives ReadProduct
-case class Robot(name: String, costs: List[Cost ~ """(\d+) (\w+)"""] - " and ") derives ReadProduct
-case class Blueprint(number: Int, robots: List[Robot] ~ """Each (\w+) robot costs ([^.]+)\.""") derives ReadProduct:
+case class Cost(amount: Int, material: String)
+given Read[Cost] = Read("""(\d+) (\w+)""".r)
+given Read[List[Cost]] = Read(" and ")
+case class Robot(name: String, costs: List[Cost])
+given Read[List[Robot]] = Read("""Each (\w+) robot costs ([^.]+)\.""".r)
+case class Blueprint(number: Int, robots: List[Robot]):
   def quality: Int = number * geodeCount(24)
 
   def geodeCount(minutes: Int): Int =
@@ -71,7 +74,9 @@ case class Blueprint(number: Int, robots: List[Robot] ~ """Each (\w+) robot cost
     robots.find(_.name == robot).get.costs.find(_.material == material).map(_.amount).getOrElse(0)
 end Blueprint
 
-type I = List[Blueprint ~ """Blueprint (\d+): (.+)"""] - "\n"
+type I = List[Blueprint]
+given Read[I] = Read("\n")
+given Read[Blueprint] = Read("""Blueprint (\d+): (.+)""".r)
 
 object Puzzle extends runner.Day[I, Int, Int]:
   def part1(input: I): Int =

@@ -7,14 +7,14 @@ case class Cubes(count: Int, color: String):
     case "green" => count <= 13
     case "blue"  => count <= 14
 
-case class Round(cubes: List[Cubes ~ """(\d+) (.+)"""] - ", "):
+case class Round(cubes: List[Cubes]):
   def possible: Boolean =
     cubes.forall(_.possible)
 
   def colorCount(color: String): Int =
     cubes.find(_.color == color).map(_.count).getOrElse(0)
 
-case class Game(id: Int, rounds: List[Round ~ """(.+)"""] - "; "):
+case class Game(id: Int, rounds: List[Round]):
   def possible: Boolean =
     rounds.forall(_.possible)
 
@@ -24,7 +24,13 @@ case class Game(id: Int, rounds: List[Round ~ """(.+)"""] - "; "):
   def power: Int =
     List("red", "green", "blue").map(max).product
 
-type I = List[Game ~ """Game (\d+): (.+)"""] - "\n"
+given Read[Game] = Read("""Game (\d+): (.+)""".r)
+given Read[Round] = Read("""(.+)""".r)
+given Read[Cubes] = Read("""(\d+) (.+)""".r)
+given lr: Read[List[Round]] = Read("; ")
+given lc: Read[List[Cubes]] = Read(", ")
+type I = List[Game]
+given Read[I] = Read("\n")
 
 object Puzzle extends runner.Day[I, Int, Int]:
   def part1(input: I): Int =

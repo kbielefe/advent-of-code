@@ -7,13 +7,14 @@ case class Reindeer(name: String, speed: Int, time: Int, rest: Int):
     val partialInterval = Math.min(seconds % (time + rest), time)
     fullIntervals * time * speed + partialInterval * speed
 
-type I = List[Reindeer ~ """(\w+) can fly (\d+) km/s for (\d+) seconds, but then must rest for (\d+) seconds\."""] - "\n"
+given Read[Reindeer] = Read("""(\w+) can fly (\d+) km/s for (\d+) seconds, but then must rest for (\d+) seconds\.""".r)
+given Read[List[Reindeer]] = Read("\n")
 
-object Puzzle extends runner.Day[I, Int, Int]:
-  def part1(input: I): Int =
+object Puzzle extends runner.Day[List[Reindeer], Int, Int]:
+  def part1(input: List[Reindeer]): Int =
     input.map(_.distanceAfter(2503)).max
 
-  def part2(input: I): Int =
+  def part2(input: List[Reindeer]): Int =
     val endScores = (1 to 2503).foldLeft(Map.empty[String, Int]){(scores, second) =>
       val currentDistances = input.map(reindeer => reindeer.name -> reindeer.distanceAfter(second)).toMap
       val lead = currentDistances.values.max

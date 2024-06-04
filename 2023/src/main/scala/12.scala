@@ -5,10 +5,10 @@ import algorithms.{Cache, Memoize, Memoized}
 enum Spring derives CanEqual:
   case Damaged, Operational, Unknown
 
-case class Row(springs: String, counts: List[Int] - ","):
+case class Row(springs: String, counts: List[Int]):
   import Spring.*
   def unfold: Row =
-    Row(Iterator.fill(5)(springs).mkString("?"), Iterator.fill(5)(counts.iterator).flatten.toList.asInstanceOf[List[Int] - ","])
+    Row(Iterator.fill(5)(springs).mkString("?"), Iterator.fill(5)(counts.iterator).flatten.toList)
 
   type CacheKey = (Set[Spring], List[Spring], List[Int])
   given Cache[CacheKey, Long] = Cache.empty
@@ -47,8 +47,10 @@ case class Row(springs: String, counts: List[Int] - ","):
     case Spring.Operational => '.'
     case Spring.Unknown     => '?'
 
-given Read[Row] = Read("(.*) (.*)".r)
-type I = List[Row] - "\n"
+given Read[List[Int]] = Read(",")
+given Read[Row] = Read(" ")
+type I = List[Row]
+given Read[I] = Read("\n")
 
 object Puzzle extends runner.Day[I, Long, Long]:
   def part1(rows: I): Long =

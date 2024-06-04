@@ -8,7 +8,8 @@ import parse.{*, given}
 import scala.annotation.tailrec
 import year2019.IntCode
 
-type I = Vector[Long] - ","
+type I = Vector[Long]
+given Read[I] = Read(",")
 type P = (Int, Int)
 
 def neighbors(p: P): Set[P] =

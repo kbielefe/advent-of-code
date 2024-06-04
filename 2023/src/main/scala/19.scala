@@ -50,7 +50,7 @@ case class Rule(condition: Option[Condition], action: String):
   def invertedTerm(intervals: XmasIntervals): XmasIntervals =
     condition.map(_.invertedTerm(intervals)).getOrElse(intervals)
 
-case class Workflow(name: String, rules: List[Rule] - ","):
+case class Workflow(name: String, rules: List[Rule]):
   def result(part: Part): String =
     rules.find(_.succeeds(part)).map(_.action).get
 
@@ -72,7 +72,7 @@ case class Part(x: Int, m: Int, a: Int, s: Int):
       workflowsByName(workflowName).result(this)
     }.dropWhile(name => name != "R" && name != "A").next == "A"
 
-case class Input(workflows: List[Workflow] - "\n", parts: List[Part] - "\n")
+case class Input(workflows: List[Workflow], parts: List[Part])
 
 given Read[Rule] with
   def read(input: String): Rule =
@@ -84,6 +84,9 @@ given Read[Condition] = Read("""(.)(.)(\d+)""".r)
 given Read[Workflow] = Read("""([^{]+)\{(.+)\}""".r)
 given Read[Part] = Read("""\{x=(\d+),m=(\d+),a=(\d+),s=(\d+)\}""".r)
 given Read[Input] = Read("""(?s)(.+)\n\n(.+)""".r)
+given lr: Read[List[Rule]] = Read(",")
+given lw: Read[List[Workflow]] = Read("\n")
+given lp: Read[List[Part]] = Read("\n")
 
 object Puzzle extends runner.Day[Input, Long, Long]:
   def part1(input: Input): Long =
@@ -91,8 +94,8 @@ object Puzzle extends runner.Day[Input, Long, Long]:
     input.parts.filter(_.accepted(workflowsByName)).map(_.allRatings).sum
 
   def part2(input: Input): Long =
-    val a = Workflow("A", List.empty.asInstanceOf[List[Rule] - ","])
-    val r = Workflow("R", List.empty.asInstanceOf[List[Rule] - ","])
+    val a = Workflow("A", List.empty)
+    val r = Workflow("R", List.empty)
     given Tree[Workflow] = Tree.fromId(a :: r :: input.workflows, _.name, _.rules.map(_.action).distinct)
     val start = input.workflows.find(_.name == "in").get
     val intervals = XmasIntervals(Intervals(1, 4000), Intervals(1, 4000), Intervals(1, 4000), Intervals(1, 4000))

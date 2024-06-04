@@ -19,27 +19,15 @@ Adds four type classes that ease working with puzzle input:
  - `ReadProduct[T]`: Converts a `String` to a tuple or case class `T`.
  - `Show[A]`: Converts an `A` into a `String`.
 
-Of these, `ReadProduct` is most likely to be useful to a puzzle solver,
-as you derive it to automatically parse a case class:
+There are three useful overloads of `Read.apply` for different situations:
 
-```scala
-case class MyCaseClass(a: Int, b: String) derives ReadProduct
-```
+ - `given Read[MyCaseClass] = Read(regex)` Uses the match groups of the regex to populate the fields of the case class.
+ - `given Read[MyCaseClass] = Read(delimiter)` Splits the input by the delimiter and assigns to each field of the case class.
+ - `given Read[List[A]] = Read(delimiter)` Splits the input by the delimiter to populate each element of the List.
 
-Also adds new type operators:
-
- - `List[A] - "delimiter"`: splits a `String` by the delimiter, then parses it
-   into a `List[A]`. This uses the Scala 3 opaque type, so to your code, this
-   works exactly the same as a `List[A]`, but contains enough information to
-   automatically parse it.
- - `MyCaseClass ~ """(\d+) (\w+)"""`: Uses the matched groups from the regex to
-   create an instance of `MyCaseClass` from an entire `String`.
- - `List[MyCaseClass] ~ """(\d+) (\w+)"""`: Splits the `String` into
-   non-overlapping matches of the regex, then creates the `List[MyCaseClass]`.
-
-So if your input is a list of integers, one per line, you can designate that as
-`List[Int] - "\n"` and it will parse it out to what looks to your code like a
-regular `List[Int]`.
+ The first two work with any product, so case classes and tuples. The last one
+ works with any collection with a `ReadSeq` instance, which is currently
+ `Vector`, `List`, and `Set`.
 
 ## Automation Guidelines
 

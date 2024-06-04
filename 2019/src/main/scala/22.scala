@@ -35,7 +35,8 @@ given Read[Shuffle] with
     case s"deal with increment $a" => Increment(a.toLong)
     case s"cut $a"                 => Cut(a.toLong)
 
-type I = List[Shuffle] - "\n"
+type I = List[Shuffle]
+given Read[I] = Read("\n")
 
 object Puzzle extends runner.Day[I, Long, Long]:
   def part1(input: I): Long =

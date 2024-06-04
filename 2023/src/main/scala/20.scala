@@ -57,7 +57,8 @@ given Read[Module] with
     else
       Broadcaster(outputs)
 
-type I = List[Module] - "\n"
+type I = List[Module]
+given Read[I] = Read("\n")
 
 case class State(lowPulses: Int, highPulses: Int, modulesByName: Map[String, Module]):
   def pushButton: State =

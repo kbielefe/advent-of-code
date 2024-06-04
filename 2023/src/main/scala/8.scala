@@ -3,7 +3,7 @@ import algorithms.{detectCycle, Mod}
 import parse.{*, given}
 
 case class Network(name: String, left: String, right: String)
-case class Input(turns: String, network: List[Network] - "\n"):
+case class Input(turns: String, network: List[Network]):
   def repeatedTurns =
     Iterator.continually(Iterator.from(turns)).flatten
 
@@ -16,7 +16,9 @@ case class Input(turns: String, network: List[Network] - "\n"):
     }
 
 given Read[Network] = Read("""(.+) = \((.+), (.+)\)""".r)
-type I = Input ~ """(?s)(.+)\n\n(.+)"""
+type I = Input
+given Read[I] = Read("""(?s)(.+)\n\n(.+)""".r)
+given Read[List[Network]] = Read("\n")
 
 object Puzzle extends runner.Day[I, Int, Long]:
   def part1(input: I): Int =

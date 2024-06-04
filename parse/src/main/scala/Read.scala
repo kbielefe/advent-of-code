@@ -1,6 +1,7 @@
 package parse
 
 import io.circe.*, io.circe.parser.*
+import scala.reflect.ClassTag
 import scala.util.matching.Regex
 
 trait Read[A]:
@@ -36,3 +37,13 @@ object Read:
       regex.unapplySeq(input) match
         case Some(fields) => summon[ReadProduct[T]].readProduct(fields.toArray)
         case None         => throw new Exception(s"Regex '${regex.regex}' did not match '$input'")
+
+  def apply[T <: Product : ReadProduct](delimiter: String): Read[T] = new Read[T]:
+    def read(input: String): T =
+      summon[ReadProduct[T]]
+        .readProduct(input.split(delimiter))
+
+  def apply[C[_]: ReadSeq, T: Read: ClassTag](delimiter: String): Read[C[T]] = new Read[C[T]]:
+    def read(input: String): C[T] =
+      summon[ReadSeq[C]]
+        .readSeq[T](input.split(delimiter))

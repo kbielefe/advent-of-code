@@ -20,17 +20,20 @@ case class Item(name: String, count: Int):
     case "pomeranians" | "goldfish" => count < other.count
     case _ => count == other.count
 
-case class Sue(number: Int, items: List[Item ~ """(\w+): (\d+)"""] - ", "):
+case class Sue(number: Int, items: List[Item]):
   def boughtGift: Boolean =
     gift.forall(giftItem => items.find(_.name == giftItem.name).map(_.count == giftItem.count).getOrElse(true))
   def reallyBoughtGift: Boolean =
     gift.forall(giftItem => items.find(_.name == giftItem.name).map(_ `matches` giftItem).getOrElse(true))
 
-type I = List[Sue ~ """Sue (\d+): (.+)"""] - "\n"
+given Read[List[Item]] = Read(", ")
+given Read[List[Sue]] = Read("\n")
+given Read[Item] = Read("""(\w+): (\d+)""".r)
+given Read[Sue] = Read("""Sue (\d+): (.+)""".r)
 
-object Puzzle extends runner.Day[I, Int, Int]:
-  def part1(input: I): Int =
+object Puzzle extends runner.Day[List[Sue], Int, Int]:
+  def part1(input: List[Sue]): Int =
     input.find(_.boughtGift).get.number
 
-  def part2(input: I): Int =
+  def part2(input: List[Sue]): Int =
     input.find(_.reallyBoughtGift).get.number

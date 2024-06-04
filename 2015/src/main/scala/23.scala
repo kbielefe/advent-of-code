@@ -31,7 +31,8 @@ given Read[State[Registers, Unit]] with
     case s"jie $r, $offset" => jumpIf(r, _ % 2 == 0, offset.toInt)
     case s"jio $r, $offset" => jumpIf(r, _ == 1, offset.toInt)
 
-type I = Vector[State[Registers, Unit]] - "\n"
+type I = Vector[State[Registers, Unit]]
+given Read[I] = Read("\n")
 
 object Puzzle extends runner.Day[I, Long, Long]:
   def part1(input: I): Long =
