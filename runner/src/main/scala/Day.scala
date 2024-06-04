@@ -17,7 +17,7 @@ private[runner] trait NormalizedDay:
 
 trait Day[I: Read, A: Show, B: Show] extends NormalizedDay:
   def part1(input: I): A
-  def part2(input: I): B
+  def part2(input: I): B = ???
 
   override def normalizedPart1(input: String): IO[String] =
     normalize[I, A](input, i => IO.interruptible(part1(i)))
@@ -27,7 +27,7 @@ trait Day[I: Read, A: Show, B: Show] extends NormalizedDay:
 
 trait IODay[I: Read, A: Show, B: Show] extends NormalizedDay:
   def part1(input: I): IO[A]
-  def part2(input: I): IO[B]
+  def part2(input: I): IO[B] = ???
 
   override def normalizedPart1(input: String): IO[String] =
     normalize[I, A](input, i => part1(i))
