@@ -8,6 +8,9 @@ case class Edge[V, E](from: V, to: V, props: E) derives CanEqual:
   override def toString: String =
     s"$from-[$props]->$to"
 
+  def reverse: Edge[V, E] =
+    Edge(to, from, props)
+
 class Graph[V, E] private (
   val incomingEdges: Map[V, Set[Edge[V, E]]],
   val outgoingEdges: Map[V, Set[Edge[V, E]]],
@@ -18,6 +21,9 @@ class Graph[V, E] private (
     other.asInstanceOf[Matchable] match
       case o: Graph[V, E] @unchecked => incomingEdges == o.incomingEdges && outgoingEdges == o.outgoingEdges
       case _ => false
+
+  def bidirectional: Graph[V, E] =
+    Graph.fromEdges(edges ++ edges.map(_.reverse))
 
   def toposort: Iterator[V] =
     def helper(graph: Graph[V, E]): Iterator[V] =
@@ -57,11 +63,17 @@ class Graph[V, E] private (
   def +(v: V): Graph[V, E] =
     new Graph(incomingEdges, outgoingEdges, noIncoming + v, vertices + v)
 
+  def -(edge: Edge[V, E]): Graph[V, E] =
+    val newIncoming = incomingEdges.delMulti(edge.to, edge)
+    val newOutgoing = outgoingEdges.delMulti(edge.from, edge)
+    val newNoIncoming = if newIncoming(edge.to).isEmpty then noIncoming + edge.to else noIncoming
+    new Graph(newIncoming, newOutgoing, newNoIncoming, vertices)
+
   def visualize: Unit =
     case class Node(id: String, name: String)
     case class Link(source: String, target: String, name: String)
     case class GraphData(nodes: Set[Node], links: Set[Link])
-    val data = GraphData(vertices.map(v => Node(v.toString, v.toString)), edges.map(edge => Link(edge.from.toString, edge.to.toString, s"${edge.from.toString} -> ${edge.to.toString}")))
+    val data = GraphData(vertices.map(v => Node(v.toString, v.toString)), edges.map(edge => Link(edge.from.toString, edge.to.toString, edge.toString)))
     val content=s"""
     <head>
       <style> body { margin: 0; } </style>

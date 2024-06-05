@@ -39,7 +39,7 @@ object Database:
     sql"INSERT INTO input (year, day, example, input, created) VALUES ($year, $day, $example, $input, datetime()) ON CONFLICT(year, day, example) DO UPDATE set input=$input".update.run.transact(xa).void
 
   def getInputCreated(year: Int, day: Int, example: String): IO[Option[String]] =
-    sql"SELECT created FROM input WHERE year=$year AND day=$day AND example=$example".query[String].option.transact(xa)
+    sql"SELECT created FROM input WHERE year=$year AND day=$day AND example=$example".query[Option[String]].option.transact(xa).map(_.flatten)
 
   def setSession(session: String): IO[Unit] =
     val truncate = sql"DELETE FROM session".update.run
@@ -50,7 +50,7 @@ object Database:
     sql"SELECT session FROM session".query[String].unique.transact(xa)
 
   def getFinished(year: Int, day: Int, part: Int, example: String): IO[Option[String]] =
-    sql"SELECT finished FROM answers WHERE year=$year AND day=$day AND part=$part AND example=$example".query[String].option.transact(xa)
+    sql"SELECT finished FROM answers WHERE year=$year AND day=$day AND part=$part AND example=$example".query[Option[String]].option.transact(xa).map(_.flatten)
 
   def setAnswer(year: Int, day: Int, part: Int, example: String, answer: String): IO[Unit] =
     val deleteGuesses = sql"DELETE FROM guesses WHERE year=$year AND day=$day AND part=$part AND example=$example".update.run

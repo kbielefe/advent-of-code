@@ -17,8 +17,12 @@ given Read[CGraph] =
 
 object Puzzle extends runner.Day[CGraph, Int, Int]:
   def part1(graph: CGraph): Int =
-    println(graph)
-    ???
+    // Found by manual inspection of the visualization
+    val cut = graph - Edge("ttj", "rpd", ()) - Edge("fqn", "dgc", ()) - Edge("vps", "htp", ())
+    val bidirectional = cut.bidirectional
+    val group1 = bidirectional.reachableFrom("ttj").vertices.size
+    val group2 = bidirectional.reachableFrom("rpd").vertices.size
+    group1 * group2
 
   def part2(graph: CGraph): Int = ???
 
