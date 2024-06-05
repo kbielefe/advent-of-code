@@ -3,14 +3,12 @@ import algorithms.{Edge, Graph}
 import parse.{*, given}
 
 type Component = String
+type CGraph = Graph[Component, Unit]
+
 case class Line(lhs: Component, rhs: List[Component]):
   def edges: Iterator[Edge[Component, Unit]] =
     Iterator.from(rhs).map(to => Edge(lhs, to, ()))
 
-  def components: Set[Component] =
-    rhs.toSet + lhs
-
-type CGraph = Graph[Component, Unit]
 given Read[List[Component]] = Read(" ")
 given Read[Line] = Read(": ")
 given Read[CGraph] =

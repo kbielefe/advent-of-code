@@ -42,6 +42,7 @@ lazy val runner = (project in file("runner")).settings(
     "org.tpolecat" %% "doobie-core" % "1.0.0-RC5",
     "com.monovore" %% "decline-effect" % "2.4.1",
     "org.slf4j" % "slf4j-nop" % "2.0.13",
+    "org.jsoup" % "jsoup" % "1.17.2",
     "org.scalatest" %% "scalatest" % "3.2.18" % Test,
     "org.typelevel" %% "cats-effect-testing-scalatest" % "1.5.0" % Test
   )

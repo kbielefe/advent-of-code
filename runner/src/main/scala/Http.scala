@@ -7,6 +7,8 @@ import fs2.text.utf8.decode
 import java.util.{Calendar, Date, TimeZone}
 import org.http4s.*
 import org.http4s.ember.client.EmberClientBuilder
+import org.jsoup.Jsoup
+import scala.jdk.CollectionConverters.*
 
 object Http:
   object NotUnlockedException extends Exception("Puzzle is not yet unlocked.")
@@ -33,7 +35,8 @@ object Http:
       for
         client   <- Stream.resource(client)
         response <- client.stream(request(session, s"https://adventofcode.com/$year/day/$day"))
-        examples <- response.body.through(findExamples)
+        html     <- Stream.eval(response.body.through(decode).compile.string)
+        examples <- findExamples(html)
       yield examples
     else
       Stream.raiseError[IO](NotUnlockedException)
@@ -45,24 +48,11 @@ object Http:
     val currentTime = new Date().getTime()
     currentTime >= unlockTime
 
-  private def findExamples(bytes: Stream[IO, Byte]): Stream[IO, String] =
-    bytes
-      .through(decode)
-      .through(splitTags)
-      .through(scanForCode)
-      .unNone
-
-  private def splitTags(chars: Stream[IO, String]): Stream[IO, String] =
-    chars.repartition(string => Chunk.array(string.split("(?=<)|(?<=>)")))
-
-  private val scanForCode =
-    Scan.stateful[State, String, Option[String]](State.Initial){
-      case (State.Initial,   "<pre>") => (State.FoundPre,  Chunk(None))
-      case (State.FoundPre, "<code>") => (State.FoundCode, Chunk(None))
-      case (_,             "</code>") => (State.Initial,   Chunk(None))
-      case (State.FoundCode,    text) => (State.FoundCode, Chunk(Some(text)))
-      case (_, _)                     => (State.Initial,   Chunk(None))
-    }.toPipe[IO]
-
-  private enum State derives CanEqual:
-    case Initial, FoundPre, FoundCode
+  private def findExamples(html: String): Stream[IO, String] =
+    val examples = Jsoup
+      .parse(html)
+      .getElementsByTag("pre")
+      .asScala
+      .flatMap(_.getElementsByTag("code").asScala)
+      .map(_.text())
+    Stream.emits(examples)
