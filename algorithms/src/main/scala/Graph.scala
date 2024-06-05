@@ -29,7 +29,7 @@ class Graph[V, E] private (val incomingEdges: Map[V, Set[Edge[V, E]]], val outgo
         case Some((v, remaining)) =>
           val newEdges = outgoingEdges(v)
           val newVertices = newEdges.map(_.to) -- visited - v
-          helper(remaining ++ newVertices, visited + v, accum ++ newEdges)
+          helper(remaining ++ newVertices, visited ++ newVertices, accum ++ newEdges)
         case None => accum
     val edges = helper(Queue(v), Set(v), Set.empty)
     Graph.fromEdges(edges) + v
