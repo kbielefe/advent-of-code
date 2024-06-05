@@ -22,7 +22,5 @@ object Puzzle extends runner.Day[CGraph, Int, Int]:
 
   def part2(graph: CGraph): Int = ???
 
-  def graph(graph: CGraph): Unit =
-    println("graph D {")
-    graph.edges.map(edge => s"  ${edge.from} -- ${edge.to}").foreach(println)
-    println("}")
+  def browseGraph(graph: CGraph): Unit =
+    graph.visualize

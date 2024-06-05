@@ -1,5 +1,5 @@
 ThisBuild / scalaVersion := "3.4.2"
-ThisBuild / scalacOptions ++= Seq("-source", "future", "-language:strictEquality", "-deprecation", "-feature")
+ThisBuild / scalacOptions ++= Seq("-source", "future", "-deprecation", "-feature")
 ThisBuild / fork := false // needed for prompt to work when run from sbt console
 
 lazy val advent2015 = (project in file("2015")).settings(

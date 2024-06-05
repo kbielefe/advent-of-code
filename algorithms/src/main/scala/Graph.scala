@@ -1,5 +1,6 @@
 package algorithms
 
+import io.circe.generic.auto.*, io.circe.syntax.*
 import scala.annotation.tailrec
 import scala.collection.immutable.Queue
 
@@ -7,7 +8,12 @@ case class Edge[V, E](from: V, to: V, props: E) derives CanEqual:
   override def toString: String =
     s"$from-[$props]->$to"
 
-class Graph[V, E] private (val incomingEdges: Map[V, Set[Edge[V, E]]], val outgoingEdges: Map[V, Set[Edge[V, E]]], val noIncoming: Set[V], val vertices: Set[V])(using CanEqual[V, V], CanEqual[E, E]) derives CanEqual:
+class Graph[V, E] private (
+  val incomingEdges: Map[V, Set[Edge[V, E]]],
+  val outgoingEdges: Map[V, Set[Edge[V, E]]],
+  val noIncoming: Set[V],
+  val vertices: Set[V]
+)(using CanEqual[V, V], CanEqual[E, E]) derives CanEqual:
   override def equals(other: Any): Boolean =
     other.asInstanceOf[Matchable] match
       case o: Graph[V, E] @unchecked => incomingEdges == o.incomingEdges && outgoingEdges == o.outgoingEdges
@@ -34,6 +40,11 @@ class Graph[V, E] private (val incomingEdges: Map[V, Set[Edge[V, E]]], val outgo
     val edges = helper(Queue(v), Set(v), Set.empty)
     Graph.fromEdges(edges) + v
 
+  def mapEdgeProps[B](f: E => B)(using CanEqual[B, B]): Graph[V, B] =
+    val newIncoming = incomingEdges.view.mapValues(_.map(edge => Edge(edge.from, edge.to, f(edge.props)))).toMap
+    val newOutgoing = outgoingEdges.view.mapValues(_.map(edge => Edge(edge.from, edge.to, f(edge.props)))).toMap
+    new Graph[V, B](newIncoming, newOutgoing, noIncoming, vertices)
+
   def edges: Set[Edge[V, E]] =
     incomingEdges.values.toSet.flatten ++ outgoingEdges.values.toSet.flatten
 
@@ -45,6 +56,35 @@ class Graph[V, E] private (val incomingEdges: Map[V, Set[Edge[V, E]]], val outgo
 
   def +(v: V): Graph[V, E] =
     new Graph(incomingEdges, outgoingEdges, noIncoming + v, vertices + v)
+
+  def visualize: Unit =
+    case class Node(id: String, name: String)
+    case class Link(source: String, target: String, name: String)
+    case class GraphData(nodes: Set[Node], links: Set[Link])
+    val data = GraphData(vertices.map(v => Node(v.toString, v.toString)), edges.map(edge => Link(edge.from.toString, edge.to.toString, s"${edge.from.toString} -> ${edge.to.toString}")))
+    val content=s"""
+    <head>
+      <style> body { margin: 0; } </style>
+      <script src="https://cdn.jsdelivr.net/npm/force-graph/dist/force-graph.min.js" integrity="sha256-r5MkzmO7h/MwZDwEqQYsoXs74ygmI0ASGXztWV6w+Do=" crossorigin="anonymous"></script>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/force-graph/src/force-graph.min.css">
+    </head>
+
+    <body>
+      <div id="graph"></div>
+      <script>
+        const gData = ${data.asJson.spaces2};
+
+        const Graph = ForceGraph()
+          (document.getElementById('graph'))
+            .graphData(gData);
+      </script>
+    </body>
+    """
+    val file = java.io.File.createTempFile("aoc-graph-", ".html")
+    scala.util.Using(java.io.BufferedWriter(java.io.FileWriter(file, true ))) { writer =>
+        writer.write(content)
+    }
+    java.awt.Desktop.getDesktop.browse(file.toURI)
 
 object Graph:
   def fromEdges[V, E](edges: IterableOnce[Edge[V, E]])(using CanEqual[V, V], CanEqual[E, E]): Graph[V, E] =
