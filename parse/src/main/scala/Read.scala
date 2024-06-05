@@ -6,6 +6,11 @@ import scala.util.matching.Regex
 
 trait Read[A]:
   def read(input: String): A
+  def map[B](f: A => B): Read[B] =
+    val readA = read
+    new Read[B]:
+      def read(input: String): B =
+        f(readA(input))
 
 given Read[Int] with
   def read(input: String): Int =
@@ -42,11 +47,6 @@ object Read:
     def read(input: String): T =
       summon[ReadProduct[T]]
         .readProduct(input.split(delimiter))
-
-  def apply[T <: Product : ReadProduct](): Read[T] = new Read[T]:
-    def read(input: String): T =
-      summon[ReadProduct[T]]
-        .readProduct(Array(input))
 
   def apply[C[_]: ReadSeq, T: Read: ClassTag](delimiter: String): Read[C[T]] = new Read[C[T]]:
     def read(input: String): C[T] =

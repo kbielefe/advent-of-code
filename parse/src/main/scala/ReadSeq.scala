@@ -16,3 +16,7 @@ given ReadSeq[Vector] with
 given ReadSeq[Set] with
   def readSeq[A : Read : ClassTag](input: Array[String]): Set[A] =
     input.map(summon[Read[A]].read).toSet
+
+given ReadSeq[Iterator] with
+  def readSeq[A : Read : ClassTag](input: Array[String]): Iterator[A] =
+    input.map(summon[Read[A]].read).iterator

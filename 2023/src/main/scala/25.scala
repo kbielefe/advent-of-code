@@ -1,22 +1,30 @@
 package day25
+import algorithms.{Edge, Graph}
 import parse.{*, given}
 
 type Component = String
 case class Line(lhs: Component, rhs: List[Component]):
-  def edges: Iterator[(Component, Component)] =
-    Iterator.from(rhs).map(lhs -> _)
+  def edges: Iterator[Edge[Component, Unit]] =
+    Iterator.from(rhs).map(to => Edge(lhs, to, ()))
 
   def components: Set[Component] =
     rhs.toSet + lhs
 
-type Lines = List[Line]
+type CGraph = Graph[Component, Unit]
 given Read[List[Component]] = Read(" ")
 given Read[Line] = Read(": ")
-given Read[Lines] = Read("\n")
+given Read[CGraph] =
+  Read[Iterator, Line]("\n")
+    .map(lines => Graph.fromEdges(lines.flatMap(_.edges)))
 
-object Puzzle extends runner.Day[Lines, Int, Int]:
-  def part1(lines: Lines): Int =
-    println(lines.toSet.flatMap(_.components).size)
+object Puzzle extends runner.Day[CGraph, Int, Int]:
+  def part1(graph: CGraph): Int =
+    println(graph)
     ???
 
-  def part2(lines: Lines): Int = ???
+  def part2(graph: CGraph): Int = ???
+
+  def graph(graph: CGraph): Unit =
+    println("graph D {")
+    graph.edges.map(edge => s"  ${edge.from} -- ${edge.to}").foreach(println)
+    println("}")

@@ -86,7 +86,9 @@ end Bricks
 given Read[Point] = Read(",")
 given Read[Brick] = Read("~")
 given Read[Set[Brick]] = Read("\n")
-given Read[Bricks] = Read()
+given Read[Bricks] =
+  summon[Read[Set[Brick]]]
+    .map(Bricks(_))
 
 object Puzzle extends runner.Day[Bricks, Int, Int]:
   def part1(bricks: Bricks): Int =
