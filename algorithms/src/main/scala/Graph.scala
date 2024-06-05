@@ -7,23 +7,11 @@ case class Edge[V, E](from: V, to: V, props: E) derives CanEqual:
   override def toString: String =
     s"$from-[$props]->$to"
 
-class Graph[V, E] private (val vertices: Set[V], val edges: Set[Edge[V, E]])(using CanEqual[V, V], CanEqual[E, E]) derives CanEqual:
+class Graph[V, E] private (val incomingEdges: Map[V, Set[Edge[V, E]]], val outgoingEdges: Map[V, Set[Edge[V, E]]], val noIncoming: Set[V], val vertices: Set[V])(using CanEqual[V, V], CanEqual[E, E]) derives CanEqual:
   override def equals(other: Any): Boolean =
     other.asInstanceOf[Matchable] match
-      case o: Graph[V, E] @unchecked => vertices == o.vertices && edges == o.edges
+      case o: Graph[V, E] @unchecked => incomingEdges == o.incomingEdges && outgoingEdges == o.outgoingEdges
       case _ => false
-
-  override def toString: String =
-    s"Vertices:\n${vertices.mkString("\n")}\nEdges:\n${edges.mkString("\n")}"
-
-  def incomingEdges(v: V): Set[Edge[V, E]] =
-    edges.filter(_.to == v)
-
-  def outgoingEdges(v: V): Set[Edge[V, E]] =
-    edges.filter(_.from == v)
-
-  def noIncoming: Set[V] =
-    vertices.filter(incomingEdges(_).isEmpty)
 
   def toposort: Iterator[V] =
     def helper(graph: Graph[V, E]): Iterator[V] =
@@ -46,16 +34,31 @@ class Graph[V, E] private (val vertices: Set[V], val edges: Set[Edge[V, E]])(usi
     val edges = helper(Queue(v), Set(v), Set.empty)
     Graph.fromEdges(edges) + v
 
+  def edges: Set[Edge[V, E]] =
+    incomingEdges.values.toSet.flatten ++ outgoingEdges.values.toSet.flatten
+
   def -(v: V): Graph[V, E] =
-    new Graph(vertices - v, edges.filterNot(edge => edge.from == v || edge.to == v))
+    val newIncoming = outgoingEdges(v).foldLeft(incomingEdges - v)((incomingEdges, edge) => incomingEdges.delMulti(edge.to, edge))
+    val newOutgoing = incomingEdges(v).foldLeft(outgoingEdges - v)((outgoingEdges, edge) => outgoingEdges.delMulti(edge.from, edge))
+    val newNoIncoming = noIncoming - v ++ outgoingEdges(v).filter(edge => incomingEdges(edge.to).forall(_.from == v)).map(_.to)
+    new Graph(newIncoming, newOutgoing, newNoIncoming, vertices - v)
 
   def +(v: V): Graph[V, E] =
-    new Graph(vertices + v, edges)
+    new Graph(incomingEdges, outgoingEdges, noIncoming + v, vertices + v)
 
 object Graph:
   def fromEdges[V, E](edges: IterableOnce[Edge[V, E]])(using CanEqual[V, V], CanEqual[E, E]): Graph[V, E] =
     val edgeSet = edges.iterator.to(Set)
-    new Graph[V, E](edgeSet.flatMap(e => Set(e.from, e.to)), edgeSet)
+    val vertices = edgeSet.flatMap(e => Set(e.from, e.to))
+    val incomingEdges = edgeSet.groupBy(_.to).view.mapValues(_.toSet).toMap.withDefaultValue(Set.empty)
+    val outgoingEdges = edgeSet.groupBy(_.from).view.mapValues(_.toSet).toMap.withDefaultValue(Set.empty)
+    val noIncoming = vertices.filter(incomingEdges(_).isEmpty)
+    new Graph[V, E](incomingEdges, outgoingEdges, noIncoming, vertices)
 
   def empty[V, E](using CanEqual[V, V], CanEqual[E, E]): Graph[V, E] =
-    new Graph[V, E](Set.empty, Set.empty)
+    new Graph[V, E](
+      Map.empty.withDefaultValue(Set.empty),
+      Map.empty.withDefaultValue(Set.empty),
+      Set.empty,
+      Set.empty
+    )

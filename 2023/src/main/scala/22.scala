@@ -48,21 +48,14 @@ case class Bricks(bricks: Set[Brick]):
     def safeToDisintegrate: Boolean =
       brick.above.isEmpty || brick.above.forall(_.below.exists(_ != brick))
 
-    // A = 1,0,1~1,2,1 should have chainReaction of 6
-    // F = 0,1,4~2,1,4 should have chainReaction of 1
     def chainReaction: Int =
       val reachable = graph.reachableFrom(brick) - brick
-      if brick.toString == "0,1,4~2,1,4" || brick.toString == "1,0,1~1,2,1" then
-        println(reachable.toposort.mkString("\n"))
-      val result = reachable.toposort.foldLeft((graph - brick, 0)){case ((graph, disintegrated), brick) =>
+      reachable.toposort.foldLeft((graph - brick, 0)){case ((graph, disintegrated), brick) =>
         if graph.incomingEdges(brick).isEmpty then
           (graph - brick, disintegrated + 1)
         else
           (graph, disintegrated)
       }._2
-      if brick.toString == "0,1,4~2,1,4" || brick.toString == "1,0,1~1,2,1" then
-        println(s"$brick: $result")
-      result
 
   def safeToDisintegrate: Int =
     bricks.count(_.safeToDisintegrate)

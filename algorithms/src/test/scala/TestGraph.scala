@@ -78,7 +78,7 @@ class TestGraph extends AnyWordSpec with Matchers {
       }
 
       "have empty incoming edges for the first node" in {
-        graph.incomingEdges(1) shouldBe empty
+        graph.incomingEdges.get(1) shouldBe empty
       }
 
       "have the edge as an incoming edge for the second node" in {
@@ -90,7 +90,7 @@ class TestGraph extends AnyWordSpec with Matchers {
       }
 
       "have empty outgoing edges for the second node" in {
-        graph.outgoingEdges(2) shouldBe empty
+        graph.outgoingEdges.get(2) shouldBe empty
       }
 
       "indicate the first node as having no incoming edges" in {
