@@ -28,4 +28,4 @@ object Puzzle extends runner.Day[CGraph, Int, Int]:
   def part2(graph: CGraph): Int = ???
 
   def browseGraph(graph: CGraph): Unit =
-    ForceGraph.forGraph(graph)
+    ForceGraph.forGraph(graph, Some("Advent of Code [2023 Day 25]"))

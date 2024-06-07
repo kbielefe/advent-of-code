@@ -55,4 +55,4 @@ object Puzzle extends runner.Day[List[Hailstone], BigInt, BigInt]:
       .combinations(2)
       .collect{case List(first, second) => first.xyIntersection(second)}
       .collect{case (x, y, denom) if denom != 0 => (x.toDouble/denom.toDouble, y.toDouble/denom.toDouble)}
-    visualizations.Plotly(points)
+    visualizations.Plotly(points, title=Some("Advent of Code [2023 Day 24]"))
