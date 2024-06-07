@@ -1,6 +1,10 @@
 # advent-of-code
 For sharing my adventofcode.com solutions
 
+## Visualizations
+
+Visualizations are found on my [GitHub pages site](https://kbielefe.github.io/advent-of-code/).
+
 ## Runner
 Runs the puzzles. Run `run --help` from the sbt console of one of the project years for options.
 
