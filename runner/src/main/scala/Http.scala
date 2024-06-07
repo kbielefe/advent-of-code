@@ -51,8 +51,7 @@ object Http:
   private def findExamples(html: String): Stream[IO, String] =
     val examples = Jsoup
       .parse(html)
-      .getElementsByTag("pre")
-      .asScala
+      .getElementsByTag("pre").asScala
       .flatMap(_.getElementsByTag("code").asScala)
       .map(_.text())
     Stream.emits(examples)

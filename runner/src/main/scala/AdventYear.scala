@@ -25,7 +25,7 @@ trait AdventYear(year: Int):
   private val run = Opts.subcommand("run", "Run the specified puzzle.")(common.mapN(RunPuzzle.apply))
   private val visualization = Opts.subcommand("visualization", "Show a visualization of the puzzle.")((Opts(year), day, name, example).mapN(Visualization.apply))
   private val answer = Opts.subcommand("answer", "Specify the correct answer for the puzzle and clears all guesses. Copies from the clipboard by default.")((Opts(year), day, part, example, answerArg).mapN(Answer.apply))
-  private val guesses = Opts.subcommand("guesses", "Show the guesses made so far")((Opts(year), day, part, example).mapN(Guesses.apply))
+  private val guess = Opts.subcommand("guess", "Show the guesses made so far")((Opts(year), day, part, example).mapN(Guesses.apply))
   private val session = Opts.subcommand("session", "Copy the user's session cookie from the clipboard.")(Opts(Session()))
   private val database = Opts.subcommand("database", "Initialize the database at advent.db.")(Opts(InitDatabase()))
 
@@ -33,11 +33,12 @@ trait AdventYear(year: Int):
   private val copyInput = Opts.subcommand("copy", "Copy the puzzle's input from the clipboard.")((Opts(year), day, example).mapN(Input.apply))
   private val input = Opts.subcommand("input", "Commands dealing with input.")(copyInput <+> showInput)
 
-  private val scrape = Opts.subcommand("scrape", "Scrape examples from <code></code> tags in the puzzle description.")((Opts(year), day).mapN(Scrape.apply))
-  private val list = Opts.subcommand("list", "List all examples in the database for this day.")((Opts(year), day).mapN(ListExamples.apply))
-  private val examples = Opts.subcommand("examples", "Commands dealing with examples.")(scrape <+> list)
+  private val posExample = Opts.argument[String](metavar = "example name")
+  private val showExamples = Opts.subcommand("show", "Show all examples in the database for this day.")((Opts(year), day).mapN(ShowExamples.apply))
+  private val deleteExample = Opts.subcommand("delete", "Delete an example.")((Opts(year), day, posExample).mapN(DeleteExample.apply))
+  private val examples = Opts.subcommand("example", "Commands dealing with examples.")(showExamples <+> deleteExample)
 
-  private val all = List(run, input, answer, guesses, session, database, examples, visualization).combineAll
+  private val all = List(run, input, answer, guess, session, database, examples, visualization).combineAll
 
   private val opts = (verbose, all).tupled.map{(verbose, command) =>
     val result = command.run.as(ExitCode.Success)

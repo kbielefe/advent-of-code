@@ -89,7 +89,10 @@ object Database:
     Console[IO].println(s"Saving example $exampleString to database:\n$input") >>
     setInput(year, day, exampleString, input)
 
-  def listExamples(year: Int, day: Int): IO[Unit] =
+  def showExamples(year: Int, day: Int): IO[Unit] =
     sql"SELECT input, example FROM input WHERE year = $year AND day = $day AND example != 'official'".query[(String, String)].to[List].transact(xa).flatMap{examples =>
       examples.traverse{case (input, example) => Console[IO].println(s"\nExample $example:\n$input")}.void
     }
+
+  def deleteExample(year: Int, day: Int, example: String): IO[Unit] =
+    sql"DELETE FROM input WHERE year=$year AND day=$day AND example=$example".update.run.transact(xa).void

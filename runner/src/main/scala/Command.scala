@@ -143,6 +143,10 @@ case class Scrape(year: Int, day: Int) extends Command:
   override def run: IO[Unit] =
     Database.scrapeExamples(year, day)
 
-case class ListExamples(year: Int, day: Int) extends Command:
+case class ShowExamples(year: Int, day: Int) extends Command:
   override def run: IO[Unit] =
-    Database.listExamples(year, day)
+    Database.showExamples(year, day)
+
+case class DeleteExample(year: Int, day: Int, example: String) extends Command:
+  override def run: IO[Unit] =
+    Database.deleteExample(year, day, example)
