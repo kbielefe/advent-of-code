@@ -32,7 +32,7 @@ lazy val advent2023 = (project in file("2023")).settings(
   libraryDependencies ++= Seq(
     "org.typelevel" %% "cats-effect" % "3.5.4"
   )
-).dependsOn(runner, parse, algorithms)
+).dependsOn(runner, parse, algorithms, visualizations)
 
 lazy val runner = (project in file("runner")).settings(
   name := "runner",
@@ -64,3 +64,9 @@ lazy val parse = (project in file("parse")).settings(
     "io.circe" %% "circe-parser" % "0.14.7"
   )
 )
+
+lazy val visualizations = (project in file("visualizations")).settings(
+  name := "visualizations",
+  libraryDependencies ++= Seq(
+  )
+).dependsOn(algorithms)

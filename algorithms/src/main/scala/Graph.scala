@@ -1,6 +1,5 @@
 package algorithms
 
-import io.circe.generic.auto.*, io.circe.syntax.*
 import scala.annotation.tailrec
 import scala.collection.immutable.Queue
 
@@ -68,35 +67,6 @@ class Graph[V, E] private (
     val newOutgoing = outgoingEdges.delMulti(edge.from, edge)
     val newNoIncoming = if newIncoming(edge.to).isEmpty then noIncoming + edge.to else noIncoming
     new Graph(newIncoming, newOutgoing, newNoIncoming, vertices)
-
-  def visualize: Unit =
-    case class Node(id: String, name: String)
-    case class Link(source: String, target: String, name: String)
-    case class GraphData(nodes: Set[Node], links: Set[Link])
-    val data = GraphData(vertices.map(v => Node(v.toString, v.toString)), edges.map(edge => Link(edge.from.toString, edge.to.toString, edge.toString)))
-    val content=s"""
-    <head>
-      <style> body { margin: 0; } </style>
-      <script src="https://cdn.jsdelivr.net/npm/force-graph/dist/force-graph.min.js" integrity="sha256-r5MkzmO7h/MwZDwEqQYsoXs74ygmI0ASGXztWV6w+Do=" crossorigin="anonymous"></script>
-      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/force-graph/src/force-graph.min.css">
-    </head>
-
-    <body>
-      <div id="graph"></div>
-      <script>
-        const gData = ${data.asJson.spaces2};
-
-        const Graph = ForceGraph()
-          (document.getElementById('graph'))
-            .graphData(gData);
-      </script>
-    </body>
-    """
-    val file = java.io.File.createTempFile("aoc-graph-", ".html")
-    scala.util.Using(java.io.BufferedWriter(java.io.FileWriter(file, true ))) { writer =>
-        writer.write(content)
-    }
-    java.awt.Desktop.getDesktop.browse(file.toURI)
 
 object Graph:
   def fromEdges[V, E](edges: IterableOnce[Edge[V, E]])(using CanEqual[V, V], CanEqual[E, E]): Graph[V, E] =

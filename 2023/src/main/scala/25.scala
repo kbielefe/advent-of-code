@@ -1,6 +1,7 @@
 package day25
 import algorithms.{Edge, Graph}
 import parse.{*, given}
+import visualizations.ForceGraph
 
 type Component = String
 type CGraph = Graph[Component, Unit]
@@ -27,4 +28,4 @@ object Puzzle extends runner.Day[CGraph, Int, Int]:
   def part2(graph: CGraph): Int = ???
 
   def browseGraph(graph: CGraph): Unit =
-    graph.visualize
+    ForceGraph.forGraph(graph)
