@@ -62,5 +62,5 @@ object Puzzle extends runner.Day[List[Hailstone], BigInt, BigInt]:
   def plotXYPaths(hailstones: List[Hailstone]): Unit =
     val traces = hailstones.map(stone => Trace(List(stone.px, stone.px + stone.vx*20), List(stone.py, stone.py + stone.vy*20), "lines", "scatter"))
     val axis = Axis(showgrid=false)
-    val layout = Layout(xaxis=axis, yaxis=axis)
+    val layout = Layout(xaxis=axis, yaxis=axis, showlegend=false)
     Plotly(traces, layout)

@@ -29,7 +29,8 @@ object Plotly extends DefaultEncoder:
 
   case class Layout(
     xaxis: Axis | Default = Def,
-    yaxis: Axis | Default = Def
+    yaxis: Axis | Default = Def,
+    showlegend: Boolean | Default = Def
   )
 
   def apply[N: Numeric: Encoder](traces: List[Trace[N]], layout: Layout = Layout(), title: String = "Advent of Code Plot"): Unit =
