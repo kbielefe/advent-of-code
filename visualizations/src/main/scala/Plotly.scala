@@ -1,16 +1,43 @@
 package visualizations
 
-import io.circe.Encoder, io.circe.generic.auto.*, io.circe.syntax.*
+import io.circe.*, io.circe.generic.auto.*, io.circe.syntax.*
+import scala.reflect.TypeTest
 
-object Plotly:
-  case class Trace[N](x: List[N], y: List[N], mode: String, `type`: String)
+trait Default
+object Def extends Default
 
-  def apply[N: Numeric: Encoder](points: IterableOnce[(N, N)], mode: String = "markers", plotType: String = "scatter", title: Option[String] = None): Unit =
-    val pointsList = points.iterator.toList
-    val data = List(Trace(pointsList.map(_._1), pointsList.map(_._2), mode, plotType))
+// Given is in separate trait to put it lower priority than the built-in circe
+// encoders.
+trait DefaultEncoder:
+  given [A: Encoder](using TypeTest[A | Default, A]): Encoder[A | Default] with
+    def apply(a: A | Default): Json = a match
+      case a: A => a.asJson
+      case _    => Json.Null
+
+object Plotly extends DefaultEncoder:
+  case class Trace[N](
+    x: List[N],
+    y: List[N],
+    mode: String | Default = Def,
+    `type`: String | Default = Def,
+    text: List[String] | Default = Def
+  )
+
+  case class Axis(
+    showgrid: Boolean | Default = Def
+  )
+
+  case class Layout(
+    xaxis: Axis | Default = Def,
+    yaxis: Axis | Default = Def
+  )
+
+  def apply[N: Numeric: Encoder](traces: List[Trace[N]], layout: Layout = Layout(), title: String = "Advent of Code Plot"): Unit =
+    val traceJson = traces.asJson.deepDropNullValues.noSpaces
+    val layoutJson = layout.asJson.deepDropNullValues.noSpaces
     val content=s"""
     <head>
-      ${title.fold("")(t => s"<title>$t</title>")}
+      <title>$title</title>
       <style> body { margin: 0; } </style>
       <script src="https://cdn.plot.ly/plotly-2.32.0.min.js" charset="utf-8"></script>
     </head>
@@ -18,8 +45,8 @@ object Plotly:
     <body>
       <div id="plot"></div>
       <script>
-        Plotly.newPlot('plot', ${data.asJson.noSpaces});
+        Plotly.newPlot('plot', $traceJson, $layoutJson);
       </script>
     </body>
     """
-    Browse(content, "aoc-scatterplot-")
+    Browse(content, "aoc-plotly-")

@@ -1,5 +1,6 @@
 package day24
 import parse.{*, given}
+import visualizations.Plotly, Plotly.*
 
 case class Hailstone(position: (BigInt, BigInt, BigInt), velocity: (BigInt, BigInt, BigInt)):
   val (px, py, pz) = position
@@ -50,9 +51,16 @@ object Puzzle extends runner.Day[List[Hailstone], BigInt, BigInt]:
   def part2(hailstones: List[Hailstone]): BigInt =
     ???
 
-  def plot(hailstones: List[Hailstone]): Unit =
+  def plotXYIntersections(hailstones: List[Hailstone]): Unit =
     val points = hailstones
       .combinations(2)
       .collect{case List(first, second) => first.xyIntersection(second)}
       .collect{case (x, y, denom) if denom != 0 => (x.toDouble/denom.toDouble, y.toDouble/denom.toDouble)}
-    visualizations.Plotly(points, title=Some("Advent of Code [2023 Day 24]"))
+      .toList
+    Plotly(List(Trace(points.map(_._1), points.map(_._2), "markers", "scatter")), title="Advent of Code [2023 Day 24]")
+
+  def plotXYPaths(hailstones: List[Hailstone]): Unit =
+    val traces = hailstones.map(stone => Trace(List(stone.px, stone.px + stone.vx*20), List(stone.py, stone.py + stone.vy*20), "lines", "scatter"))
+    val axis = Axis(showgrid=false)
+    val layout = Layout(xaxis=axis, yaxis=axis)
+    Plotly(traces, layout)
