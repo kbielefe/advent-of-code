@@ -19,6 +19,7 @@ trait AdventYear(year: Int):
   private val answerArg = Opts.argument[String](metavar = "answer").orNone
   private val example = Opts.option[String]("example", short = "e", metavar = "example name", help = "Use the given example input instead of the official input.").orNone.map(_.getOrElse("official"))
   private val verbose = Opts.flag("verbose", short = "v", help = "Print full stack traces.").orFalse
+  private val help = Opts.flag("help", short = "h", help = "Show this help text.", Visibility.Partial).asHelp
   private val name = Opts.argument[String](metavar = "visualization name")
   private val common = (Opts(year), day, part, example)
 
@@ -38,7 +39,8 @@ trait AdventYear(year: Int):
   private val deleteExample = Opts.subcommand("delete", "Delete an example.")((Opts(year), day, posExample).mapN(DeleteExample.apply))
   private val examples = Opts.subcommand("example", "Commands dealing with examples.")(showExamples <+> deleteExample)
 
-  private val all = List(run, input, answer, guess, session, database, examples, visualization).combineAll
+
+  private val all = List(help, run, input, answer, guess, session, database, examples, visualization).combineAll
 
   private val opts = (verbose, all).tupled.map{(verbose, command) =>
     val result = command.run.as(ExitCode.Success)
@@ -53,5 +55,5 @@ trait AdventYear(year: Int):
 
   def main(args: Array[String]): Unit =
     CommandIOApp
-      .run[IO]("run", s"$year Advent of Code Runner")(opts, args.toList)
+      .run[IO]("run", s"$year Advent of Code Runner", helpFlag=false)(opts, args.toList)
       .unsafeRunSync()
