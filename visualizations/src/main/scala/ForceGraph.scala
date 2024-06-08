@@ -11,7 +11,7 @@ object ForceGraph:
   def forGraph[V, E](graph: Graph[V, E], title: Option[String] = None): Unit =
     val data = GraphData(
       graph.vertices.map(v => Node(v.toString, v.toString)),
-      graph.edges.map(edge => Link(edge.from.toString, edge.to.toString, s"${edge.from.toString} -> ${edge.to.toString}"))
+      graph.edges.map(edge => Link(edge.from.toString, edge.to.toString, s"${edge.from.toString} -[${edge.props}]-> ${edge.to.toString}"))
     )
 
     val content=s"""

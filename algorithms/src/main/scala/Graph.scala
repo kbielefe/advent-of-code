@@ -62,6 +62,13 @@ class Graph[V, E] private (
   def +(v: V): Graph[V, E] =
     new Graph(incomingEdges, outgoingEdges, noIncoming + v, vertices + v)
 
+  def +(edge: Edge[V, E]): Graph[V, E] =
+    val newIncoming = incomingEdges.addMulti(edge.to, edge)
+    val newOutgoing = outgoingEdges.addMulti(edge.from, edge)
+    val newNoIncoming = noIncoming - edge.to
+    val newVertices = vertices + edge.from + edge.to
+    new Graph(newIncoming, newOutgoing, newNoIncoming, newVertices)
+
   def -(edge: Edge[V, E]): Graph[V, E] =
     val newIncoming = incomingEdges.delMulti(edge.to, edge)
     val newOutgoing = outgoingEdges.delMulti(edge.from, edge)

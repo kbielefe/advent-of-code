@@ -39,7 +39,6 @@ trait AdventYear(year: Int):
   private val deleteExample = Opts.subcommand("delete", "Delete an example.")((Opts(year), day, posExample).mapN(DeleteExample.apply))
   private val examples = Opts.subcommand("example", "Commands dealing with examples.")(showExamples <+> deleteExample)
 
-
   private val all = List(help, run, input, answer, guess, session, database, examples, visualization).combineAll
 
   private val opts = (verbose, all).tupled.map{(verbose, command) =>
