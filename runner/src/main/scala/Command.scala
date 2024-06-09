@@ -1,10 +1,14 @@
 package runner
 
 import cats.effect.*
+import cats.effect.kernel.Resource
 import cats.effect.std.Console
 import cats.implicits.given
 import java.awt.Toolkit
 import java.awt.datatransfer.{DataFlavor, StringSelection}
+import java.io.BufferedInputStream
+import javax.sound.sampled.*
+import scala.concurrent.duration.*
 import scala.util.Try
 
 sealed trait Command:
@@ -23,6 +27,27 @@ sealed trait Command:
       .getContents(null)
       .getTransferData(DataFlavor.stringFlavor)
       .asInstanceOf[String]
+
+  /** clip.start() runs in the background, so we need to run the next IO and
+   *  not close the program until the clip finishes.
+   */
+  def beep[A](name: String)(next: IO[A]): IO[A] =
+    val clipResource = for
+      clip        <- Resource.fromAutoCloseable(IO(AudioSystem.getClip()))
+      stream      <- Resource.fromAutoCloseable(IO(getClass().getResourceAsStream(s"/$name.wav")))
+      buffered    <- Resource.fromAutoCloseable(IO(new BufferedInputStream(stream)))
+      audioStream <- Resource.fromAutoCloseable(IO(AudioSystem.getAudioInputStream(buffered)))
+      _           <- Resource.eval(IO(clip.open(audioStream)))
+      _           <- Resource.eval(IO(clip.start()))
+    yield clip
+
+    clipResource.use{clip =>
+      for
+        fiber  <- IO.sleep(clip.getMicrosecondLength().microseconds).start
+        result <- next
+        _ <- fiber.joinWithUnit
+      yield result
+    }
 
 sealed trait AnswerCommand(year: Int, day: Int, part: Int, example: String) extends Command:
   def answer: IO[String] = for
@@ -59,41 +84,76 @@ case class Visualization(year: Int, day: Int, name: String, example: String) ext
         IO.raiseError(new Exception(s"Visualization $name not found"))
 
 case class RunPuzzle(year: Int, day: Int, part: Int, example: String) extends AnswerCommand(year, day, part, example):
-  override def run: IO[Unit] = answer.flatMap(checkAnswer)
+  override def run: IO[Unit] = for
+    answer   <- answer
+    dbAnswer <- Database.getAnswer(year, day, part, example)
+    guesses  <- Database.getGuesses(year, day, part, example)
+    result    = checkAnswer(answer, dbAnswer, guesses)
+    _        <- result.report(answer)
+  yield ()
 
-  def checkAnswer(answer: String): IO[Unit] =
-    (Database.getAnswer(year, day, part, example), Database.getGuesses(year, day, part, example)).tupled.flatMap {
-      case (Some(correct), _) if answer == correct => Console[IO].println("Correct")
-      case (Some(correct), _)                      => incorrect(answer, correct).flatMap(Console[IO].println)
-      case (None, guesses)                         => unknown(answer, guesses)
-    }
+  def checkAnswer(answer: String, dbAnswer: Option[String], guesses: List[(String, String)]): Result = (dbAnswer, guesses) match
+    case (Some(correct), _) if answer == correct => Correct
+    case (Some(correct), _)                      => incorrect(answer, correct)
+    case (None, guesses)                         => unknown(answer, guesses)
 
-  def incorrect(answer: String, correct: String): IO[String] =
-    val highOrLow = for
+  def incorrect(answer: String, correct: String): Result =
+    val low = for
       answerInt  <- toBigInt(answer)
       correctInt <- toBigInt(correct)
-    yield if answerInt < correctInt then "low" else "high"
-    val status = highOrLow.getOrElse("incorrect")
-    val result = status match
-      case "incorrect" => s"Incorrect, should be $correct"
-      case "high"      => s"Too high, should be $correct"
-      case "low"       => s"Too low, should be $correct"
-    Database.addGuess(year, day, part, example, status, answer) *> IO.pure(result)
+    yield (answerInt < correctInt, correctInt)
 
-  def unknown(answer: String, guesses: List[(String, String)]): IO[Unit] =
-    val highOrLow = toBigInt(answer).flatMap { answer =>
-      val numericGuesses = guesses.flatMap((status, guess) => toBigInt(guess).map(status -> _))
-      val lows = numericGuesses.filter(_._1 == "low").map(_._2)
-      val highs = numericGuesses.filter(_._1 == "high").map(_._2)
-      (lows.isEmpty, highs.isEmpty) match
-        case (false, _) if answer <= lows.max  => Some(s"Too low, should be higher than ${lows.max}")
-        case (_, false) if answer >= highs.min => Some(s"Too high, should be lower than ${highs.min}")
-        case _ => None
-    }
-    highOrLow match
-      case Some(message) => Console[IO].println(message)
-      case None if guesses.contains(("incorrect", answer)) => Console[IO].println("Incorrect (already guessed)")
-      case _ =>
+    low match
+      case Some(true  -> correct) => Low(correct, true)
+      case Some(false -> correct) => High(correct, true)
+      case _                      => Incorrect(Some(correct))
+
+  def unknown(answer: String, guesses: List[(String, String)]): Result =
+    val numericGuesses = guesses.flatMap((status, guess) => toBigInt(guess).map(status -> _))
+    val lows  = numericGuesses.filter(_._1 ==  "low").map(_._2)
+    val highs = numericGuesses.filter(_._1 == "high").map(_._2)
+
+    toBigInt(answer) match
+      case Some(answer) if !lows.isEmpty  && answer <= lows.max  => Low(lows.max, false)
+      case Some(answer) if !highs.isEmpty && answer >= highs.min => High(highs.min, false)
+      case _ if guesses.contains(("incorrect", answer))          => Incorrect(None)
+      case _                                                     => Unknown
+
+  def toBigInt(string: String): Option[BigInt] =
+    Try(BigInt(string)).toOption
+
+  sealed trait Result:
+    def report(answer: String): IO[Unit]
+
+  case class High(limit: BigInt, knownCorrect: Boolean) extends Result:
+    def report(answer: String): IO[Unit] =
+      beep("high")(
+        Database.addGuess(year, day, part, example, "high", answer) >>
+        Console[IO].println(s"Too high, should be ${if knownCorrect then limit.toString else s"lower than $limit"}")
+      )
+
+  case class Low(limit: BigInt, knownCorrect: Boolean) extends Result:
+    def report(answer: String): IO[Unit] =
+      beep("low")(
+        Database.addGuess(year, day, part, example, "low", answer) >>
+        Console[IO].println(s"Too low, should be ${if knownCorrect then limit.toString else s"higher than $limit"}")
+      )
+
+  case class Incorrect(knownCorrect: Option[String]) extends Result:
+    def report(answer: String): IO[Unit] =
+      beep("incorrect")(
+        Database.addGuess(year, day, part, example, "incorrect", answer) >>
+        Console[IO].println(s"Incorrect, ${knownCorrect.fold("already guessed")(correct => s"should be $correct")}")
+      )
+
+  case object Correct extends Result:
+    def report(answer: String): IO[Unit] =
+      beep("correct")(
+        Console[IO].println("Correct")
+      )
+  case object Unknown extends Result:
+    def report(answer: String): IO[Unit] =
+      beep("unknown")(
         IO(copy(answer)) >>
         Console[IO].print("[c]orrect, [i]ncorrect, [h]igh, or [l]ow? ") >>
         Console[IO].readLine.flatMap{
@@ -103,9 +163,7 @@ case class RunPuzzle(year: Int, day: Int, part: Int, example: String) extends An
           case "l" => Database.addGuess(year, day, part, example, "low", answer)
           case _   => IO.unit
         }
-
-  def toBigInt(string: String): Option[BigInt] =
-    Try(BigInt(string)).toOption
+      )
 
 case class Input(year: Int, day: Int, example: String) extends Command:
   override def run: IO[Unit] =
