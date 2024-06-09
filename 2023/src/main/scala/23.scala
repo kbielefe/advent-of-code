@@ -5,6 +5,7 @@ import algorithms.Grid.{*, given}
 import parse.{*, given}
 import scala.annotation.tailrec
 import scala.collection.immutable.Queue
+import visualizations.ForceGraph
 
 object Puzzle extends runner.Day[Grid, Int, Int]:
   given Neighbors = NSEWNeighbors
@@ -20,18 +21,27 @@ object Puzzle extends runner.Day[Grid, Int, Int]:
     val initial = State(start, start, 0)
     val graph = buildGraph(Graph.empty, goal, grid, Set.empty, Queue(initial))
     val initialHike = PosGraphDist(start, graph, 0)
-    longestHike(goal, Queue(initialHike), 0)
+    longestHike(goal, List(initialHike), 0)
+
+  def browseGraph(grid: Grid): Unit =
+    val startCol = grid.row(grid.minRow).indexWhere(_ == '.')
+    val goalCol  = grid.row(grid.maxRow).indexWhere(_ == '.')
+    val start = Pos(grid.minRow, startCol)
+    val goal  = Pos(grid.maxRow, goalCol)
+    val initial = State(start, start, 0)
+    val graph = buildGraph(Graph.empty, goal, grid, Set.empty, Queue(initial))
+    ForceGraph.forGraph(graph, title = Some("Advent of Code [2023 Day 23]"))
 
   case class PosGraphDist(position: Pos, graph: Graph[Pos, Int], distance: Int)
 
-  def longestHike(goal: Pos, queue: Queue[PosGraphDist], longest: Int): Int =
-    queue.dequeueOption match
-      case None => longest
-      case Some((PosGraphDist(pos, graph, dist), remaining)) =>
+  def longestHike(goal: Pos, stack: List[PosGraphDist], longest: Int): Int =
+    stack match
+      case Nil => longest
+      case PosGraphDist(pos, graph, dist) :: remaining =>
         val newGraph = graph.incomingEdges(pos).foldLeft(graph)(_ - _)
         val next = graph.outgoingEdges(pos).map(edge => PosGraphDist(edge.to, newGraph, dist + edge.props))
         val newLongest = if pos == goal then Math.max(dist, longest) else longest
-        longestHike(goal, remaining ++ next, newLongest)
+        longestHike(goal, next.toList ++ remaining, newLongest)
 
   case class State(position: Pos, lastIntersection: Pos, distance: Int)
 
