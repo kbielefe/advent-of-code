@@ -1,5 +1,7 @@
 package algorithms
 
+import cats.Monoid
+import cats.syntax.all.*
 import scala.annotation.tailrec
 import scala.collection.immutable.Queue
 
@@ -65,6 +67,19 @@ class Graph[V, E] private (
             val next = graph.outgoingEdges(edge.to).toList.map((_, newGraph, edge :: accum))
             helper(next ++ remaining)
     helper(outgoingEdges(start).toList.map(edge => (edge, this, List.empty)))
+
+  def combinedPaths(start: V, goal: V)(using M: Monoid[E]): Iterator[E] =
+    def helper(list: List[(Edge[V, E], Graph[V, E], E)]): Iterator[E] =
+      list match
+        case Nil => Iterator.empty
+        case (edge, graph, accum) :: remaining =>
+          if edge.to == goal then
+            Iterator(edge.props |+| accum) ++ helper(remaining)
+          else
+            val newGraph = graph.incomingEdges(edge.to).foldLeft(graph)(_ - _)
+            val next = graph.outgoingEdges(edge.to).toList.map((_, newGraph, edge.props |+| accum))
+            helper(next ++ remaining)
+    helper(outgoingEdges(start).toList.map(edge => (edge, this, M.empty)))
 
   def -(v: V): Graph[V, E] =
     val newIncoming = outgoingEdges(v).foldLeft(incomingEdges - v)((incomingEdges, edge) => incomingEdges.delMulti(edge.to, edge))

@@ -22,14 +22,14 @@ object Puzzle extends runner.Day[Grid, Int, Int]:
     val graph = buildGraph(Graph.empty, goal, grid, Set.empty, Queue(initial))
     val firstEdge = graph.outgoingEdges(start)
     val modified = modifyOutsideEdges(graph, goal, Queue.from(firstEdge))
-    modified.paths(start, goal).map(_.map(_.props).sum).max
+    modified.combinedPaths(start, goal).max
 
   def browseGraph(grid: Grid): Unit =
     val startCol = grid.row(grid.minRow).indexWhere(_ == '.')
     val goalCol  = grid.row(grid.maxRow).indexWhere(_ == '.')
     val start = Pos(grid.minRow, startCol)
     val goal  = Pos(grid.maxRow, goalCol)
-    val initial = State(start, start, 0)
+    val initial = State(start, start, -1)
     val graph = buildGraph(Graph.empty, goal, grid, Set.empty, Queue(initial))
     ForceGraph.forGraph(graph, title = Some("Advent of Code [2023 Day 23]"))
 
