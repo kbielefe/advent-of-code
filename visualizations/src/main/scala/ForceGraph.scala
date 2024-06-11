@@ -8,7 +8,10 @@ object ForceGraph:
   case class Link(source: String, target: String, name: String)
   case class GraphData(nodes: Set[Node], links: Set[Link])
 
-  def forGraph[V, E](graph: Graph[V, E], title: Option[String] = None): Unit =
+  sealed trait Config(val command: String)
+  case class LinkDirectionalParticles(num: Int) extends Config(s".linkDirectionalParticles($num)")
+
+  def forGraph[V, E](graph: Graph[V, E], title: Option[String] = None, config: List[Config] = List.empty): Unit =
     val data = GraphData(
       graph.vertices.map(v => Node(v.toString, v.toString)),
       graph.edges.map(edge => Link(edge.from.toString, edge.to.toString, s"${edge.from.toString} -[${edge.props}]-> ${edge.to.toString}"))
@@ -25,11 +28,9 @@ object ForceGraph:
     <body>
       <div id="graph"></div>
       <script>
-        const gData = ${data.asJson.spaces2};
-
         const Graph = ForceGraph()
           (document.getElementById('graph'))
-            .graphData(gData);
+            .graphData(${data.asJson.spaces2})${config.map(_.command).mkString};
       </script>
     </body>
     """

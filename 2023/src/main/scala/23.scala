@@ -5,7 +5,7 @@ import algorithms.Grid.{*, given}
 import parse.{*, given}
 import scala.annotation.tailrec
 import scala.collection.immutable.Queue
-import visualizations.ForceGraph
+import visualizations.ForceGraph, ForceGraph.LinkDirectionalParticles
 
 object Puzzle extends runner.Day[Grid, Int, Int]:
   given Neighbors = NSEWNeighbors
@@ -18,10 +18,11 @@ object Puzzle extends runner.Day[Grid, Int, Int]:
     val goalCol  = grid.row(grid.maxRow).indexWhere(_ == '.')
     val start = Pos(grid.minRow, startCol)
     val goal  = Pos(grid.maxRow, goalCol)
-    val initial = State(start, start, 0)
+    val initial = State(start, start, -1)
     val graph = buildGraph(Graph.empty, goal, grid, Set.empty, Queue(initial))
-    val initialHike = PosGraphDist(start, graph, 0)
-    longestHike(goal, List(initialHike), 0)
+    val firstEdge = graph.outgoingEdges(start)
+    val modified = modifyOutsideEdges(graph, goal, Queue.from(firstEdge))
+    modified.paths(start, goal).map(_.map(_.props).sum).max
 
   def browseGraph(grid: Grid): Unit =
     val startCol = grid.row(grid.minRow).indexWhere(_ == '.')
@@ -32,24 +33,13 @@ object Puzzle extends runner.Day[Grid, Int, Int]:
     val graph = buildGraph(Graph.empty, goal, grid, Set.empty, Queue(initial))
     ForceGraph.forGraph(graph, title = Some("Advent of Code [2023 Day 23]"))
 
-  case class PosGraphDist(position: Pos, graph: Graph[Pos, Int], distance: Int)
-
-  def longestHike(goal: Pos, stack: List[PosGraphDist], longest: Int): Int =
-    stack match
-      case Nil => longest
-      case PosGraphDist(pos, graph, dist) :: remaining =>
-        val newGraph = graph.incomingEdges(pos).foldLeft(graph)(_ - _)
-        val next = graph.outgoingEdges(pos).map(edge => PosGraphDist(edge.to, newGraph, dist + edge.props))
-        val newLongest = if pos == goal then Math.max(dist, longest) else longest
-        longestHike(goal, next.toList ++ remaining, newLongest)
-
   case class State(position: Pos, lastIntersection: Pos, distance: Int)
 
   @tailrec
   def buildGraph(graph: Graph[Pos, Int], goal: Pos, grid: Grid, visited: Set[(Pos, Pos)], queue: Queue[State]): Graph[Pos, Int] =
     queue.dequeueOption match
       case None =>
-        graph.bidirectional
+        graph
       case Some((State(pos, last, distance), remaining)) if isIntersection(pos, grid) || pos == goal =>
         val neighbors = pos
           .neighbors
@@ -57,8 +47,9 @@ object Puzzle extends runner.Day[Grid, Int, Int]:
           .filterNot(grid(_) == '#')
           .filterNot(pos => visited.contains(pos -> last))
           .map(next => State(next, pos, 0))
-        val edge = Edge(last, pos, distance)
-        buildGraph(graph + edge, goal, grid, visited + (pos -> last), remaining ++ neighbors)
+        val edge = Edge(last, pos, distance + 1)
+        val newGraph = if last == pos then graph else graph + edge
+        buildGraph(newGraph, goal, grid, visited + (pos -> last), remaining ++ neighbors)
       case Some((State(pos, last, distance), remaining)) =>
         val neighbors = pos
           .neighbors
@@ -67,6 +58,16 @@ object Puzzle extends runner.Day[Grid, Int, Int]:
           .filterNot(pos => visited.contains(pos -> last))
           .map(pos => State(pos, last, distance + 1))
         buildGraph(graph, goal, grid, visited + (pos -> last), remaining ++ neighbors)
+
+  @tailrec
+  def modifyOutsideEdges(graph: Graph[Pos, Int], goal: Pos, queue: Queue[Edge[Pos, Int]]): Graph[Pos, Int] =
+    val nextToLast = graph.incomingEdges(goal).head.from
+    queue.dequeueOption match
+      case None => graph
+      case Some((edge, remaining)) =>
+        val newEdges = graph.outgoingEdges(edge.to).filter(edge => graph.outgoingEdges(edge.to).size < 4) - edge.reverse
+        val newGraph = if edge.from == nextToLast then graph else graph - edge.reverse
+        modifyOutsideEdges(newGraph, goal, remaining ++ newEdges)
 
   def isIntersection(pos: Pos, grid: Grid): Boolean =
     pos

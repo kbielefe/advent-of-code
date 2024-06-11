@@ -53,6 +53,19 @@ class Graph[V, E] private (
   def edges: Set[Edge[V, E]] =
     incomingEdges.values.toSet.flatten ++ outgoingEdges.values.toSet.flatten
 
+  def paths(start: V, goal: V): Iterator[List[Edge[V, E]]] =
+    def helper(list: List[(Edge[V, E], Graph[V, E], List[Edge[V, E]])]): Iterator[List[Edge[V, E]]] =
+      list match
+        case Nil => Iterator.empty
+        case (edge, graph, accum) :: remaining =>
+          if edge.to == goal then
+            Iterator(edge :: accum) ++ helper(remaining)
+          else
+            val newGraph = graph.incomingEdges(edge.to).foldLeft(graph)(_ - _)
+            val next = graph.outgoingEdges(edge.to).toList.map((_, newGraph, edge :: accum))
+            helper(next ++ remaining)
+    helper(outgoingEdges(start).toList.map(edge => (edge, this, List.empty)))
+
   def -(v: V): Graph[V, E] =
     val newIncoming = outgoingEdges(v).foldLeft(incomingEdges - v)((incomingEdges, edge) => incomingEdges.delMulti(edge.to, edge))
     val newOutgoing = incomingEdges(v).foldLeft(outgoingEdges - v)((outgoingEdges, edge) => outgoingEdges.delMulti(edge.from, edge))
