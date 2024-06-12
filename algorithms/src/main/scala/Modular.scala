@@ -63,46 +63,46 @@ object Mod:
     }.sum
     result % prod
 
-given [N](using CanEqual[N, N]): CanEqual[Mod[N], Mod[N]] = CanEqual.derived
-given [N: Modulus](using N: Integral[N]): Conversion[Int, Mod[N]] = (i: Int) => Mod(N.fromInt(i))
-given [F[_]: Functor, A: Integral: Modulus]: Conversion[F[A], F[Mod[A]]] =
-  (xs: F[A]) => xs.map(Mod(_))
+  given [N](using CanEqual[N, N]): CanEqual[Mod[N], Mod[N]] = CanEqual.derived
+  given [N: Modulus](using N: Integral[N]): Conversion[Int, Mod[N]] = (i: Int) => Mod(N.fromInt(i))
+  given [F[_]: Functor, A: Integral: Modulus]: Conversion[F[A], F[Mod[A]]] =
+    (xs: F[A]) => xs.map(Mod(_))
 
-given [N](using n: Integral[N])(using CanEqual[N, N])(using m: Modulus[N]): Integral[Mod[N]] with
-  def quot(x: Mod[N], y: Mod[N]): Mod[N] =
-    n.rem(n.quot(x, y), m.mod)
+  given [N](using n: Integral[N])(using CanEqual[N, N])(using m: Modulus[N]): Integral[Mod[N]] with
+    def quot(x: Mod[N], y: Mod[N]): Mod[N] =
+      n.rem(n.quot(x, y), m.mod)
 
-  def rem (x: Mod[N], y: Mod[N]): Mod[N] =
-    n.rem(n.rem(x, y), m.mod)
+    def rem (x: Mod[N], y: Mod[N]): Mod[N] =
+      n.rem(n.rem(x, y), m.mod)
 
-  def minus(x: Mod[N], y: Mod[N]): Mod[N] =
-    normalize(n.rem(n.minus(x, y), m.mod))
+    def minus(x: Mod[N], y: Mod[N]): Mod[N] =
+      normalize(n.rem(n.minus(x, y), m.mod))
 
-  def plus(x: Mod[N], y: Mod[N]): Mod[N] =
-    n.rem(n.plus(x, y), m.mod)
+    def plus(x: Mod[N], y: Mod[N]): Mod[N] =
+      n.rem(n.plus(x, y), m.mod)
 
-  def times(x: Mod[N], y: Mod[N]): Mod[N] =
-    val two = n.fromInt(2)
-    @tailrec
-    def helper(x: N, y: N, result: N): Mod[N] =
-      if y == n.zero then
-        result
-      else if n.rem(y, two) == n.one then
-        helper(x, n.minus(y, n.one), n.rem(n.plus(result, x), m.mod))
-      else
-        helper(n.rem(n.times(x, two), m.mod), n.quot(y, two), result)
-    helper(normalize(x), normalize(y), n.zero)
+    def times(x: Mod[N], y: Mod[N]): Mod[N] =
+      val two = n.fromInt(2)
+      @tailrec
+      def helper(x: N, y: N, result: N): Mod[N] =
+        if y == n.zero then
+          result
+        else if n.rem(y, two) == n.one then
+          helper(x, n.minus(y, n.one), n.rem(n.plus(result, x), m.mod))
+        else
+          helper(n.rem(n.times(x, two), m.mod), n.quot(y, two), result)
+      helper(normalize(x), normalize(y), n.zero)
 
-  def negate(x: Mod[N]): Mod[N] =
-    normalize(n.rem(n.negate(x), m.mod))
+    def negate(x: Mod[N]): Mod[N] =
+      normalize(n.rem(n.negate(x), m.mod))
 
-  def normalize(x: Mod[N]): Mod[N] =
-    n.rem(n.plus(x, m.mod), m.mod)
+    def normalize(x: Mod[N]): Mod[N] =
+      n.rem(n.plus(x, m.mod), m.mod)
 
-  def toDouble(x: Mod[N]): Double = n.toDouble(x)
-  def toFloat(x: Mod[N]): Float = n.toFloat(x)
-  def toInt(x: Mod[N]): Int = n.toInt(x)
-  def toLong(x: Mod[N]): Long = n.toLong(x)
-  def compare(x: Mod[N], y: Mod[N]): Int = n.compare(x, y)
-  def fromInt(x: Int): Mod[N] = n.fromInt(x)
-  def parseString(str: String): Option[Mod[N]] = n.parseString(str)
+    def toDouble(x: Mod[N]): Double = n.toDouble(x)
+    def toFloat(x: Mod[N]): Float = n.toFloat(x)
+    def toInt(x: Mod[N]): Int = n.toInt(x)
+    def toLong(x: Mod[N]): Long = n.toLong(x)
+    def compare(x: Mod[N], y: Mod[N]): Int = n.compare(x, y)
+    def fromInt(x: Int): Mod[N] = n.fromInt(x)
+    def parseString(str: String): Option[Mod[N]] = n.parseString(str)

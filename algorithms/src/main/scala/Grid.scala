@@ -13,6 +13,8 @@ class Grid private (protected val cells: Map[Pos, Char]) derives CanEqual:
   lazy val maxRow = cells.keys.map(_.row).max
   lazy val minCol = cells.keys.map(_.col).min
   lazy val maxCol = cells.keys.map(_.col).max
+  lazy val width = maxCol - minCol + 1
+  lazy val height = maxRow - minRow + 1
 
   override def toString: String =
     (minRow to maxRow).map{row =>

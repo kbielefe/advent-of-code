@@ -11,6 +11,10 @@ extension [N](value: N)(using n: Integral[N])(using CanEqual[N, N])
 
   def primeFactors: List[N] = ???
 
+  /** Like %, but always yields a positive result */
+  infix def %+(y: N): N =
+    ((value % y) + y) % y
+
   def allFactors: Set[N] =
     @tailrec
     def helper(accum: Set[N], factor: N): Set[N] =
@@ -98,8 +102,8 @@ extension [N](value: N)(using n: Integral[N])(using CanEqual[N, N])
     List(thousands(n), hundreds(n), andWord(n), tensAndOnes(n)).flatten.mkString(" ")
   end toWord
 
-object Number:
-  def fromRoman[N](roman: String)(using n: Integral[N]) =
+object Roman:
+  def apply[N](roman: String)(using n: Integral[N]) =
     val digits = roman map Map(
       'M' -> 1000,
       'D' -> 500,
@@ -115,10 +119,3 @@ object Number:
     val subtractive = digits sliding 2 filter inversion map (_.head)
 
     n.fromInt(digits.sum - subtractive.sum * 2)
-
-extension[K, N](map: Map[K, N])(using n: Integral[N])
-  def increment(key: K, amount: N): Map[K, N] =
-    map + (key -> (map.getOrElse(key, n.zero) + amount))
-
-  def decrement(key: K, amount: N): Map[K, N] =
-    map + (key -> (map.getOrElse(key, n.zero) - amount))

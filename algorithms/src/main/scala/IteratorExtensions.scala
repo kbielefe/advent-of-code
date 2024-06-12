@@ -1,6 +1,7 @@
 package algorithms
 import scala.annotation.tailrec
 import cats.*
+import scala.math.Numeric.Implicits.infixNumericOps
 
 extension [A](i: Iterator[A])
   // Like takeWhile, but inclusive of the value that caused it to stop.
@@ -26,6 +27,10 @@ extension [A](i: Iterator[A])
       else
         Iterator.empty
     helper(i)
+
+extension [N: Numeric](i: Iterator[N])
+  def diffs: Iterator[N] =
+    i.sliding(2).map{case Seq(x, y) => y - x}
 
 given Traverse[Iterator] with
   def foldLeft[A, B](fa: Iterator[A], b: B)(f: (B, A) => B): B =
