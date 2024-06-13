@@ -1,22 +1,37 @@
 package day24
+
+import io.circe.Encoder
 import parse.{*, given}
+import spire.compat.fractional
+import spire.math.Rational
 import visualizations.Plotly, Plotly.*
 
-case class Hailstone(position: (BigInt, BigInt, BigInt), velocity: (BigInt, BigInt, BigInt)):
+given Show[Rational] with
+  def show(output: Rational): String =
+    output.toString
+
+given Read[Rational] with
+  def read(input: String): Rational =
+    Rational(input)
+
+given Encoder[Rational] =
+  summon[Encoder[BigInt]].contramap(_.toBigInt)
+
+case class Hailstone(position: (Rational, Rational, Rational), velocity: (Rational, Rational, Rational)):
   val (px, py, pz) = position
   val (vx, vy, vz) = velocity
   val a = vy
   val b = -vx
   val c = px*vy - py*vx
 
-  val low  = BigInt("200000000000000")
-  val high = BigInt("400000000000000")
+  val low  = Rational("200000000000000")
+  val high = Rational("400000000000000")
 
-  def inFuture(num: BigInt, denom: BigInt): Boolean =
+  def inFuture(num: Rational, denom: Rational): Boolean =
     (num >= px * denom && vx*denom > 0) ||
     (num <= px * denom && vx*denom < 0)
 
-  def inTestArea(num: BigInt, denom: BigInt): Boolean =
+  def inTestArea(num: Rational, denom: Rational): Boolean =
     if denom > 0 then
       num >= low*denom && num <= high*denom
     else if denom < 0 then
@@ -24,7 +39,7 @@ case class Hailstone(position: (BigInt, BigInt, BigInt), velocity: (BigInt, BigI
     else
       false
 
-  def xyIntersection(other: Hailstone): (BigInt, BigInt, BigInt) =
+  def xyIntersection(other: Hailstone): (Rational, Rational, Rational) =
     val denom = a*other.b - other.a*b
     val xNum = other.b*c - b*other.c
     val yNum = a*other.c - other.a*c
@@ -37,18 +52,18 @@ case class Hailstone(position: (BigInt, BigInt, BigInt), velocity: (BigInt, BigI
     inFuture(xNum, denom) &&
     other.inFuture(xNum, denom)
 
-given Read[(BigInt, BigInt, BigInt)] = Read[(BigInt, BigInt, BigInt)](",\\s+")
+given Read[(Rational, Rational, Rational)] = Read[(Rational, Rational, Rational)](",\\s+")
 given Read[Hailstone] = Read("\\s+@\\s+")
 given Read[List[Hailstone]] = Read("\n")
 
-object Puzzle extends runner.Day[List[Hailstone], BigInt, BigInt]:
-  def part1(hailstones: List[Hailstone]): BigInt =
+object Puzzle extends runner.Day[List[Hailstone], Rational, Rational]:
+  def part1(hailstones: List[Hailstone]): Rational =
     hailstones
       .combinations(2)
       .collect{case List(first, second) => first.xyPathIntersects(second)}
       .count(identity)
 
-  def part2(hailstones: List[Hailstone]): BigInt =
+  def part2(hailstones: List[Hailstone]): Rational =
     ???
 
   def plotXYIntersections(hailstones: List[Hailstone]): Unit =
