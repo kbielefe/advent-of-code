@@ -19,11 +19,12 @@ trait AdventYear(year: Int):
   private val answerArg = Opts.argument[String](metavar = "answer").orNone
   private val example = Opts.option[String]("example", short = "e", metavar = "example name", help = "Use the given example input instead of the official input.").orNone.map(_.getOrElse("official"))
   private val verbose = Opts.flag("verbose", short = "v", help = "Print full stack traces.").orFalse
+  private val quiet = Opts.flag("quiet", short = "q", help = "Don't play sounds after puzzle calculations.").orFalse
   private val help = Opts.flag("help", short = "h", help = "Show this help text.", Visibility.Partial).asHelp
   private val name = Opts.argument[String](metavar = "visualization name")
   private val common = (Opts(year), day, part, example)
 
-  private val run = Opts.subcommand("run", "Run the specified puzzle.")(common.mapN(RunPuzzle.apply))
+  private val run = Opts.subcommand("run", "Run the specified puzzle.")((Opts(year), day, part, example, quiet).mapN(RunPuzzle.apply))
   private val visualization = Opts.subcommand("visualization", "Show a visualization of the puzzle.")((Opts(year), day, name, example).mapN(Visualization.apply))
   private val answer = Opts.subcommand("answer", "Specify the correct answer for the puzzle and clears all guesses. Copies from the clipboard by default.")((Opts(year), day, part, example, answerArg).mapN(Answer.apply))
   private val guess = Opts.subcommand("guess", "Show the guesses made so far")((Opts(year), day, part, example).mapN(Guesses.apply))

@@ -31,7 +31,7 @@ sealed trait Command:
   /** clip.start() runs in the background, so we need to run the next IO and
    *  not close the program until the clip finishes.
    */
-  def beep[A](name: String)(next: IO[A]): IO[A] =
+  def beep[A](name: String, quiet: Boolean)(next: IO[A]): IO[A] =
     val clipResource = for
       clip        <- Resource.fromAutoCloseable(IO(AudioSystem.getClip()))
       stream      <- Resource.fromAutoCloseable(IO(getClass().getResourceAsStream(s"/$name.wav")))
@@ -41,13 +41,15 @@ sealed trait Command:
       _           <- Resource.eval(IO(clip.start()))
     yield clip
 
-    clipResource.use{clip =>
+    val loud = clipResource.use{clip =>
       for
         fiber  <- IO.sleep(clip.getMicrosecondLength().microseconds).start
         result <- next
         _ <- fiber.joinWithUnit
       yield result
     }
+
+    if quiet then next else loud
 
 sealed trait AnswerCommand(year: Int, day: Int, part: Int, example: String) extends Command:
   def answer: IO[String] = for
@@ -83,7 +85,7 @@ case class Visualization(year: Int, day: Int, name: String, example: String) ext
       case None =>
         IO.raiseError(new Exception(s"Visualization $name not found"))
 
-case class RunPuzzle(year: Int, day: Int, part: Int, example: String) extends AnswerCommand(year, day, part, example):
+case class RunPuzzle(year: Int, day: Int, part: Int, example: String, quiet: Boolean) extends AnswerCommand(year, day, part, example):
   override def run: IO[Unit] = for
     answer   <- answer
     dbAnswer <- Database.getAnswer(year, day, part, example)
@@ -127,33 +129,33 @@ case class RunPuzzle(year: Int, day: Int, part: Int, example: String) extends An
 
   case class High(limit: BigInt, knownCorrect: Boolean) extends Result:
     def report(answer: String): IO[Unit] =
-      beep("high")(
+      beep("high", quiet)(
         Database.addGuess(year, day, part, example, "high", answer) >>
         Console[IO].println(s"Too high, should be ${if knownCorrect then limit.toString else s"lower than $limit"}")
       )
 
   case class Low(limit: BigInt, knownCorrect: Boolean) extends Result:
     def report(answer: String): IO[Unit] =
-      beep("low")(
+      beep("low", quiet)(
         Database.addGuess(year, day, part, example, "low", answer) >>
         Console[IO].println(s"Too low, should be ${if knownCorrect then limit.toString else s"higher than $limit"}")
       )
 
   case class Incorrect(knownCorrect: Option[String]) extends Result:
     def report(answer: String): IO[Unit] =
-      beep("incorrect")(
+      beep("incorrect", quiet)(
         Database.addGuess(year, day, part, example, "incorrect", answer) >>
         Console[IO].println(s"Incorrect, ${knownCorrect.fold("already guessed")(correct => s"should be $correct")}")
       )
 
   case object Correct extends Result:
     def report(answer: String): IO[Unit] =
-      beep("correct")(
+      beep("correct", quiet)(
         Console[IO].println("Correct")
       )
   case object Unknown extends Result:
     def report(answer: String): IO[Unit] =
-      beep("unknown")(
+      beep("unknown", quiet)(
         IO(copy(answer)) >>
         Console[IO].print("[c]orrect, [i]ncorrect, [h]igh, or [l]ow? ") >>
         Console[IO].readLine.flatMap{
