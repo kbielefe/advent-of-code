@@ -7,7 +7,9 @@ import scala.math.Integral.Implicits.infixIntegralOps
 class Lagrange[N] private (val coefficients: List[N], val denom: N)(using N: Integral[N]):
   def apply(x: N): N =
     val powersOfX = Iterator.iterate(N.one)(_ * x)
-    powersOfX.zip(coefficients).map(_ * _).sum / denom
+    val num = powersOfX.zip(coefficients).map(_ * _).sum
+    assert(num % denom == 0, "Not evenly divisible")
+    num / denom
 
 /** Given a list of n (x, y) points, gives a polynomial of degree n-1 that maps
  *  to those points.
