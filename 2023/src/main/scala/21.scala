@@ -5,7 +5,7 @@ import parse.{*, given}
 
 extension (g: Grid)
   def isRock(pos: Pos): Boolean =
-    val normalized = Pos(pos.row %+ g.maxRow, pos.col %+ g.maxCol)
+    val normalized = Pos(pos.row %+ g.height, pos.col %+ g.width)
     g(normalized) == '#'
 
 object Puzzle extends runner.Day[Grid, Long, BigInt]:
@@ -24,7 +24,7 @@ object Puzzle extends runner.Day[Grid, Long, BigInt]:
     val target = (steps - offset) / grid.width
     val xs = Vector(offset, offset + grid.width, offset + 2 * grid.width)
     val points = xs.map(x => BigInt(x) -> BigInt(answer(grid, x)))
-    Lagrange(points, target)
+    Lagrange(points)(target)
 
   private def neighbors(grid: Grid)(gardens: Set[Pos]): Set[Pos] =
     gardens

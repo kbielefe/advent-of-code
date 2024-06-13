@@ -22,15 +22,14 @@ object Mod:
   def apply[N](n: N)(using N: Integral[N])(using m: Modulus[N]): Mod[N] =
     N.rem(N.plus(N.rem(n, m.mod), m.mod), m.mod)
 
-
-  def lcm[N](xs: Iterable[N])(using n: Integral[N])(using CanEqual[N, N]): N =
-    xs.reduceLeft((x, y) => (x * y) / gcd(x, y))
+  def lcm[N: Integral](xs: IterableOnce[N]): N =
+    xs.iterator.reduceLeft((x, y) => (x * y) / gcd(x, y))
 
   @tailrec
-  def gcd[N](a: N, b: N)(using n: Integral[N])(using CanEqual[N, N]): N =
+  def gcd[N](a: N, b: N)(using n: Integral[N]): N =
     if a == n.zero then b else gcd(b % a, a)
 
-  def modInverse[N](a: N)(using n: Integral[N])(using m: Modulus[N])(using CanEqual[N, N]): N =
+  def modInverse[N](a: N)(using n: Integral[N])(using m: Modulus[N]): N =
     @tailrec
     def helper(a: N, m: N, x: N, y: N): N =
       if a <= n.one then
@@ -52,7 +51,7 @@ object Mod:
    *
    *  Useful for cycle detection, to find when multiple cycles "sync up."
    */
-  def chineseRemainder[N](remAndNum: Iterable[(N, N)])(using n: Integral[N])(using CanEqual[N, N]): N =
+  def chineseRemainder[N](remAndNum: Iterable[(N, N)])(using n: Integral[N]): N =
     val coprime = remAndNum.map(_._2).toList.combinations(2).forall{case List(x, y) => gcd(x, y) == n.one}
     assert(coprime, "numbers must be coprime")
     val prod = remAndNum.map(_._2).product
@@ -63,12 +62,11 @@ object Mod:
     }.sum
     result % prod
 
-  given [N](using CanEqual[N, N]): CanEqual[Mod[N], Mod[N]] = CanEqual.derived
   given [N: Modulus](using N: Integral[N]): Conversion[Int, Mod[N]] = (i: Int) => Mod(N.fromInt(i))
   given [F[_]: Functor, A: Integral: Modulus]: Conversion[F[A], F[Mod[A]]] =
     (xs: F[A]) => xs.map(Mod(_))
 
-  given [N](using n: Integral[N])(using CanEqual[N, N])(using m: Modulus[N]): Integral[Mod[N]] with
+  given [N](using n: Integral[N])(using m: Modulus[N]): Integral[Mod[N]] with
     def quot(x: Mod[N], y: Mod[N]): Mod[N] =
       n.rem(n.quot(x, y), m.mod)
 
