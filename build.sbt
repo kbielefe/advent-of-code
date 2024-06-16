@@ -53,6 +53,7 @@ lazy val algorithms = (project in file("algorithms")).settings(
   libraryDependencies ++= Seq(
     "org.typelevel" %% "cats-core" % "2.12.0",
     "org.typelevel" %% "spire" % "0.18.0",
+    "org.scalanlp" %% "breeze" % "2.1.0",
     "org.scalatest" %% "scalatest" % "3.2.18" % Test
   )
 ).dependsOn(parse)

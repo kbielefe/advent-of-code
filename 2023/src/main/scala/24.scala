@@ -1,9 +1,13 @@
 package day24
 
-import algorithms.Spire.given
+import algorithms.breeze.*
+import algorithms.spire.given
+import breeze.linalg.DenseVector
+import breeze.stats.distributions.Rand.VariableSeed.randBasis
+import breeze.optimize.*
 import io.circe.Encoder
 import parse.{*, given}
-import spire.math.Rational
+import spire.math.{Rational, SafeLong}
 
 case class Hailstone(position: (Rational, Rational, Rational), velocity: (Rational, Rational, Rational)):
   val (px, py, pz) = position
@@ -15,9 +19,12 @@ case class Hailstone(position: (Rational, Rational, Rational), velocity: (Ration
   val low  = Rational("200000000000000")
   val high = Rational("400000000000000")
 
-  def inFuture(num: Rational): Boolean =
-    (num >= px && vx > 0) ||
-    (num <= px && vx < 0)
+  val positionVector = DenseVector(px.toDouble, py.toDouble, pz.toDouble)
+  val velocityVector = DenseVector(vx.toDouble, vy.toDouble, vz.toDouble)
+
+  def inFuture(x: Rational): Boolean =
+    (x >= px && vx > 0) ||
+    (x <= px && vx < 0)
 
   def inTestArea(num: Rational): Boolean =
     num >= low && num <= high
@@ -47,4 +54,26 @@ object Puzzle extends runner.Day[List[Hailstone], Int, Rational]:
       .count(identity)
 
   def part2(hailstones: List[Hailstone]): Rational =
+    val result = hailstones
+      .groupBy(_.vx)
+      .filter(_._2.size > 1)
+      .values
+      .flatMap(_.combinations(2))
+      .collect{case List(h1, h2) =>
+        val primeFactors = (h1.px - h2.px)
+          .abs
+          .toSafeLong
+          .factor
+          .toList
+          .flatMap{case (f, count) => List.fill(count)(f)}
+        allFactors(primeFactors).flatMap(factor => Set(h1.vx + factor, h1.vx - factor))
+      }
+      .reduceLeft(_ & _)
+    println(result)
     ???
+
+  def allFactors(primeFactors: List[SafeLong]): Set[SafeLong] = primeFactors match
+    case Nil => Set(1)
+    case head :: tail =>
+      val tailFactors = allFactors(tail)
+      tailFactors ++ tailFactors.map(_ * head)
