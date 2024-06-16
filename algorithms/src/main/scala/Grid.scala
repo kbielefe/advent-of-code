@@ -1,5 +1,6 @@
 package algorithms
 
+import _root_.breeze.linalg.*
 import parse.Read
 import Grid.{Pos, Group}
 import scala.util.matching.Regex
@@ -22,6 +23,10 @@ class Grid private (protected val cells: Map[Pos, Char]) derives CanEqual:
         cells.getOrElse(Pos(row, col), ' ')
       }.mkString
     }.mkString("\n")
+
+  // Need to reflect around Y axis to get normal positive-Y is up transformations
+  def transform(m: Matrix[Int]): Grid =
+    new Grid(cells.map((pos, char) => (Pos.fromAffine(m * pos.toAffine), char)))
 
   def map(f: Char => Char): Grid =
     new Grid(cells.view.mapValues(f).toMap)
@@ -153,6 +158,8 @@ object Grid:
   object Pos:
     def apply(row: Int, col: Int): Pos = (row, col)
     def unapply(pos: Pos): Option[(Int, Int)] = Some(pos.row, pos.col)
+    def fromAffine(v: Vector[Int]): Pos =
+      Pos(v(1), v(0))
 
   extension (p: Pos)
     def row: Int = p._1
@@ -163,6 +170,8 @@ object Grid:
     def south: Pos = (p._1 + 1, p._2)
     def east:  Pos = (p._1, p._2 + 1)
     def west:  Pos = (p._1, p._2 - 1)
+    def toAffine: Vector[Int] =
+      DenseVector(p.col, p.row, 1)
 
   def apply(string: String): Grid =
     val cells = string.linesIterator.zipWithIndex.flatMap{(line, row) =>

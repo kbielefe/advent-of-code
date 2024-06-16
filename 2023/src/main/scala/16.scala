@@ -59,3 +59,4 @@ object Puzzle extends runner.Day[Grid, Int, Int]:
             else
               val moveDir = moves(dir).continue
               energized(grid, visited + (pos -> dir), toVisit - (pos -> dir) + (move(pos, moveDir) -> moveDir) -- visited)
+          case Some(char) => throw new Exception(s"unknown char: $char")

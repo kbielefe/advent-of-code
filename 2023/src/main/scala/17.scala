@@ -31,6 +31,7 @@ object Puzzle extends runner.Day[Grid, Int, Int]:
       case ('s', false) => Set(Crucible(pos.east,  'e', 1), Crucible(pos.west,  'w', 1), Crucible(pos.south, 's', dist + 1))
       case ('e', false) => Set(Crucible(pos.north, 'n', 1), Crucible(pos.south, 's', 1), Crucible(pos.east,  'e', dist + 1))
       case ('w', false) => Set(Crucible(pos.north, 'n', 1), Crucible(pos.south, 's', 1), Crucible(pos.west,  'w', dist + 1))
+      case (char, _) => throw new Exception(s"unknown direction: $char")
     all.filter(crucible => grid.contains(crucible.pos))
 
   def ultraNeighbors(grid: Grid)(crucible: Crucible): Set[Crucible] =

@@ -26,7 +26,7 @@ object Puzzle extends runner.Day[Grid, Int, Int]:
 
   def expandHorizontally(grid: Grid): Grid =
     val string = grid.rows.map{row =>
-      row.head.toString + row.toList.sliding(2).map{case List(x, y) =>
+      row.head.toString + row.toList.sliding(2).collect{case List(x, y) =>
         if "─└┌".contains(x) && "─┘┐".contains(y) then
           s"─$y"
         else
