@@ -2,9 +2,8 @@ package day24
 
 import algorithms.breeze.*
 import algorithms.spire.given
-import breeze.linalg.DenseVector
-import breeze.stats.distributions.Rand.VariableSeed.randBasis
-import breeze.optimize.*
+import breeze.linalg.{*, given}
+import breeze.numerics.{*, given}
 import io.circe.Encoder
 import parse.{*, given}
 import spire.math.{Rational, SafeLong}
@@ -18,9 +17,6 @@ case class Hailstone(position: (Rational, Rational, Rational), velocity: (Ration
 
   val low  = Rational("200000000000000")
   val high = Rational("400000000000000")
-
-  val positionVector = DenseVector(px.toDouble, py.toDouble, pz.toDouble)
-  val velocityVector = DenseVector(vx.toDouble, vy.toDouble, vz.toDouble)
 
   def inFuture(x: Rational): Boolean =
     (x >= px && vx > 0) ||
@@ -46,31 +42,47 @@ given Read[(Rational, Rational, Rational)] = Read[(Rational, Rational, Rational)
 given Read[Hailstone] = Read("\\s+@\\s+")
 given Read[List[Hailstone]] = Read("\n")
 
-object Puzzle extends runner.Day[List[Hailstone], Int, Rational]:
+object Puzzle extends runner.Day[List[Hailstone], Int, Long]:
   def part1(hailstones: List[Hailstone]): Int =
     hailstones
       .combinations(2)
       .collect{case List(first, second) => first.xyPathIntersects(second)}
       .count(identity)
 
-  def part2(hailstones: List[Hailstone]): Rational =
-    val result = hailstones
-      .groupBy(_.vx)
+  def part2(hailstones: List[Hailstone]): Long =
+    val vx = velocity(hailstones, _.vx, _.px)
+    val vy = velocity(hailstones, _.vy, _.py)
+    val vz = velocity(hailstones, _.vz, _.pz)
+    val h1 :: h2 :: _ = hailstones: @unchecked
+    val a = DenseMatrix(
+      (1.0, 0.0, 0.0, (vx - h1.vx).toDouble, 0.0),
+      (0.0, 1.0, 0.0, (vy - h1.vy).toDouble, 0.0),
+      (0.0, 0.0, 1.0, (vz - h1.vz).toDouble, 0.0),
+      (1.0, 0.0, 0.0, 0.0, (vx - h2.vx).toDouble),
+      (0.0, 1.0, 0.0, 0.0, (vy - h2.vy).toDouble)
+    )
+    val r = DenseVector(h1.px.toDouble, h1.py.toDouble, h1.pz.toDouble, h2.px.toDouble, h2.py.toDouble)
+    val result = a \ r
+    result(0).toLong + result(1).toLong + result(2).toLong
+
+  def velocity(hailstones: List[Hailstone], v: Hailstone => Rational, p: Hailstone => Rational): Rational =
+    val possibilities = hailstones
+      .groupBy(v)
       .filter(_._2.size > 1)
       .values
       .flatMap(_.combinations(2))
-      .collect{case List(h1, h2) =>
-        val primeFactors = (h1.px - h2.px)
+      .collect{case List(h1, h2) if p(h1) != p(h2) =>
+        val primeFactors = (p(h1) - p(h2))
           .abs
           .toSafeLong
           .factor
           .toList
           .flatMap{case (f, count) => List.fill(count)(f)}
-        allFactors(primeFactors).flatMap(factor => Set(h1.vx + factor, h1.vx - factor))
+        allFactors(primeFactors).flatMap(factor => Set(v(h1) + factor, v(h1) - factor))
       }
       .reduceLeft(_ & _)
-    println(result)
-    ???
+    assert(possibilities.size == 1, "detected more than one possible velocity")
+    possibilities.head
 
   def allFactors(primeFactors: List[SafeLong]): Set[SafeLong] = primeFactors match
     case Nil => Set(1)
