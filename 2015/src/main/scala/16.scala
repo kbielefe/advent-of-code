@@ -26,10 +26,10 @@ case class Sue(number: Int, items: List[Item]):
   def reallyBoughtGift: Boolean =
     gift.forall(giftItem => items.find(_.name == giftItem.name).map(_ `matches` giftItem).getOrElse(true))
 
-given Read[List[Item]] = Read(", ")
-given Read[List[Sue]] = Read("\n")
 given Read[Item] = Read("""(\w+): (\d+)""".r)
 given Read[Sue] = Read("""Sue (\d+): (.+)""".r)
+given li: Read[List[Item]] = Read(", ")
+given ls: Read[List[Sue]] = Read("\n")
 
 object Puzzle extends runner.Day[List[Sue], Int, Int]:
   def part1(input: List[Sue]): Int =

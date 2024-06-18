@@ -1,7 +1,7 @@
 package algorithms
 
-import spire.compat.integral
-import spire.math.Rational
+import _root_.spire.compat.integral
+import _root_.spire.math.Rational
 
 class Lagrange(val coefficients: List[Rational]):
   def apply(x: Rational): Rational =
