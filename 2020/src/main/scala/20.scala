@@ -1,10 +1,9 @@
 package day20
 
-import algorithms.{Grid, Matrix, given}
-import algorithms.Grid.Pos
-import algorithms.Grid.Neighbors
+import algorithms.{Grid, Transforms, given}, Grid.{Pos, Neighbors}
 import parse.{*, given}
 import scala.annotation.tailrec
+import breeze.linalg.Matrix
 
 case class Tile(number: Int, grid: Grid):
   override def toString: String = s"Tile $number"
@@ -43,7 +42,7 @@ case class Tile(number: Int, grid: Grid):
     edges & other.edges
 
   @tailrec
-  final def transformUntil(t: Matrix[3, 3, Int], p: Tile => Boolean): Tile =
+  final def transformUntil(t: Matrix[Int], p: Tile => Boolean): Tile =
     if p(this) then
       this
     else
@@ -84,11 +83,11 @@ object Puzzle extends runner.Day[I, Long, Int]:
     val commonBottom = corner.commonEdgesWith(placed(Pos(1, 0)))
     val transformedCorner =
       corner
-        .transformUntil(Matrix.rotateCW, tile => commonRight.contains(tile.rightEdge))
-        .transformUntil(Matrix.reflectX, tile => commonBottom.contains(tile.bottomEdge))
+        .transformUntil(Transforms.rotateCW, tile => commonRight.contains(tile.rightEdge))
+        .transformUntil(Transforms.reflectX, tile => commonBottom.contains(tile.bottomEdge))
     val transformed = transformTiles(placed, Map(Pos(0, 0) -> transformedCorner), Pos(0, 1))
     val assembled = assemble(transformed)
-    val monstersRemoved = findMonsters(assembled).foldLeft(assembled)((grid: Grid, monsterPos: Pos) => grid -- monster.transform(Matrix.translate(monsterPos.col, monsterPos.row)))
+    val monstersRemoved = findMonsters(assembled).foldLeft(assembled)((grid: Grid, monsterPos: Pos) => grid -- monster.transform(Transforms.translate(monsterPos.col, monsterPos.row)))
     monstersRemoved.count(_ == '#')
 
   given Neighbors = Grid.NSEWNeighbors
@@ -96,7 +95,7 @@ object Puzzle extends runner.Day[I, Long, Int]:
   def findMonsters(grid: Grid): List[Pos] =
     (grid.minRow to grid.maxRow).toList.flatMap{row =>
       (grid.minCol to grid.maxCol).flatMap{col =>
-        val transformed = monster.transform(Matrix.translate(col, row))
+        val transformed = monster.transform(Transforms.translate(col, row))
         Option.when((transformed & grid) == transformed)(Pos(row, col))
       }
     }
@@ -106,7 +105,7 @@ object Puzzle extends runner.Day[I, Long, Int]:
       val tileGrid = tile.removeEdges
       val rowOffset = pos.row * 8 - tileGrid.minRow
       val colOffset = pos.col * 8 - tileGrid.minCol
-      val transformed = tileGrid.transform(Matrix.translate(colOffset, rowOffset))
+      val transformed = tileGrid.transform(Transforms.translate(colOffset, rowOffset))
       grid ++ transformed
     }
 
@@ -118,16 +117,16 @@ object Puzzle extends runner.Day[I, Long, Int]:
       if pos.row == 0 then
         val goal = transformed(pos.west).rightEdge
         val transformedTile = placed(pos)
-          .transformUntil(Matrix.rotateCW, tile => tile.leftEdge == goal || tile.leftEdge == goal.reverse)
-          .transformUntil(Matrix.reflectX, tile => tile.leftEdge == goal)
+          .transformUntil(Transforms.rotateCW, tile => tile.leftEdge == goal || tile.leftEdge == goal.reverse)
+          .transformUntil(Transforms.reflectX, tile => tile.leftEdge == goal)
         val newTransformed = transformed + (pos -> transformedTile)
         val newPos = if pos.col == 11 then Pos(pos.row + 1, 0) else pos.east
         transformTiles(placed, newTransformed, newPos)
       else
         val goal = transformed(pos.north).bottomEdge
         val transformedTile = placed(pos)
-          .transformUntil(Matrix.rotateCW, tile => tile.topEdge == goal || tile.topEdge == goal.reverse)
-          .transformUntil(Matrix.reflectY, tile => tile.topEdge == goal)
+          .transformUntil(Transforms.rotateCW, tile => tile.topEdge == goal || tile.topEdge == goal.reverse)
+          .transformUntil(Transforms.reflectY, tile => tile.topEdge == goal)
         val newTransformed = transformed + (pos -> transformedTile)
         val newPos = if pos.col == 11 then Pos(pos.row + 1, 0) else pos.east
         transformTiles(placed, newTransformed, newPos)
