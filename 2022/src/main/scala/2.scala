@@ -22,7 +22,7 @@ given Read[RPS] with
       case 'Y' => RPS.Paper
       case 'Z' => RPS.Scissors
 
-case class Round(opponent: RPS, me: RPS) derives ReadProduct:
+case class Round(opponent: RPS, me: RPS):
   import RPS.*
 
   val Win  = 6
@@ -44,8 +44,8 @@ case class Round(opponent: RPS, me: RPS) derives ReadProduct:
 end Round
 
 type I = List[Round]
-given Read[I] = Read("\n")
 given Read[Round] = Read(" ")
+given Read[I] = Read("\n")
 
 object Puzzle extends runner.Day[I, Int, Int]:
   def part1(input: I): Int =

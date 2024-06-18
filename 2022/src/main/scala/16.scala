@@ -2,13 +2,14 @@ package day16
 import algorithms.floydWarshall
 import parse.{*, given}
 
-case class Valve(name: String, rate: Int, tunnels: List[String] - ", ") derives ReadProduct
+case class Valve(name: String, rate: Int, tunnels: List[String])
+given Read[List[String]] = Read(", ")
 
 case class Node(opened: Boolean, valve: Valve)
 
 type I = List[Valve]
-given Read[I] = Read("\n")
 given Read[Valve] = Read("""Valve ([A-Z][A-Z]) has flow rate=(\d+); tunnels? leads? to valves? (.+)""".r)
+given Read[I] = Read("\n")
 
 object Puzzle extends runner.Day[I, Int, Int]:
   def part1(input: I): Int =

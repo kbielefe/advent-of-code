@@ -6,9 +6,10 @@ import com.google.ortools.linearsolver.MPSolver
 
 case class Cost(amount: Int, material: String)
 given Read[Cost] = Read("""(\d+) (\w+)""".r)
-given Read[List[Cost]] = Read(" and ")
+given lc: Read[List[Cost]] = Read(" and ")
 case class Robot(name: String, costs: List[Cost])
-given Read[List[Robot]] = Read("""Each (\w+) robot costs ([^.]+)\.""".r)
+given Read[Robot] = Read("""Each (\w+) robot costs ([^.]+)""".r)
+given Read[List[Robot]] = Read("""\.\s+""")
 case class Blueprint(number: Int, robots: List[Robot]):
   def quality: Int = number * geodeCount(24)
 
@@ -75,8 +76,8 @@ case class Blueprint(number: Int, robots: List[Robot]):
 end Blueprint
 
 type I = List[Blueprint]
-given Read[I] = Read("\n")
 given Read[Blueprint] = Read("""Blueprint (\d+): (.+)""".r)
+given Read[I] = Read("\n")
 
 object Puzzle extends runner.Day[I, Int, Int]:
   def part1(input: I): Int =
