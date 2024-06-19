@@ -1,6 +1,7 @@
 package algorithms.spire
 
-import parse.{Read, Show}
+import cats.Show
+import parse.Read
 import spire.math.Rational
 import io.circe.Encoder
 

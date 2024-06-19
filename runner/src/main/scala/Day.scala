@@ -1,6 +1,7 @@
 package runner
 import cats.effect.IO
 import cats.effect.std.Console
+import cats.Show
 import parse.*
 
 private[runner] trait NormalizedDay:
