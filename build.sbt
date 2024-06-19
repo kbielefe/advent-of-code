@@ -2,36 +2,8 @@ ThisBuild / scalaVersion := "3.4.2"
 ThisBuild / scalacOptions ++= Seq("-source", "future", "-deprecation", "-feature")
 ThisBuild / fork := false // needed for prompt to work when run from sbt console
 
-lazy val advent2015 = (project in file("2015")).settings(
-  name := "advent2015",
-).dependsOn(runner, parse, algorithms)
-
-lazy val advent2016 = (project in file("2016")).settings(
-  name := "advent2016",
-).dependsOn(runner, parse, algorithms)
-
-lazy val advent2019 = (project in file("2019")).settings(
-  name := "advent2019",
-  libraryDependencies += "co.fs2" %% "fs2-core" % "3.10.2"
-).dependsOn(runner, parse, algorithms)
-
-lazy val advent2020 = (project in file("2020")).settings(
-  name := "advent2020"
-).dependsOn(runner, parse, algorithms)
-
-lazy val advent2022 = (project in file("2022")).settings(
-  name := "advent2022",
-  libraryDependencies ++= Seq(
-    "org.typelevel" %% "cats-effect" % "3.5.4",
-    "com.google.ortools" % "ortools-java" % "9.10.4067"
-  )
-).dependsOn(runner, parse, algorithms)
-
 lazy val advent2023 = (project in file("2023")).settings(
-  name := "advent2023",
-  libraryDependencies ++= Seq(
-    "org.typelevel" %% "cats-effect" % "3.5.4"
-  )
+  name := "advent2023"
 ).dependsOn(runner, parse, algorithms, visualizations)
 
 lazy val runner = (project in file("runner")).settings(

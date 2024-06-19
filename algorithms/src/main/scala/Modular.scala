@@ -64,7 +64,7 @@ object Mod:
    *  Useful for cycle detection, to find when multiple cycles "sync up."
    */
   def chineseRemainder[N](remAndNum: Iterable[(N, N)])(using n: Integral[N]): N =
-    val coprime = remAndNum.map(_._2).toList.combinations(2).forall{case List(x, y) => gcd(x, y) == n.one}
+    val coprime = remAndNum.map(_._2).toList.combinations(2).collect{case List(x, y) => gcd(x, y) == n.one}.forall(identity)
     assert(coprime, "numbers must be coprime")
     val prod = remAndNum.map(_._2).product
     val result = remAndNum.map{(rem, num) =>

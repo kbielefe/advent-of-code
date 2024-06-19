@@ -33,29 +33,30 @@ extension [N](value: N)(using n: Integral[N])(using CanEqual[N, N])
       other gcd (value % other)
 
   def toRoman: String =
-    val number = value.toInt
+    def helper(number: Int): String =
+      if (number <= 0) return ""
 
-    if (number <= 0) return ""
+      val conversions = List(
+        (1000, "M"),
+        (900,  "CM"),
+        (500,  "D"),
+        (400,  "CD"),
+        (100,  "C"),
+        (90,   "XC"),
+        (50,   "L"),
+        (40,   "XL"),
+        (10,   "X"),
+        (9,    "IX"),
+        (5,    "V"),
+        (4,    "IV"),
+        (1,    "I"))
 
-    val conversions = List(
-      (1000, "M"),
-      (900,  "CM"),
-      (500,  "D"),
-      (400,  "CD"),
-      (100,  "C"),
-      (90,   "XC"),
-      (50,   "L"),
-      (40,   "XL"),
-      (10,   "X"),
-      (9,    "IX"),
-      (5,    "V"),
-      (4,    "IV"),
-      (1,    "I"))
+      val (decimal, roman) =
+        (conversions dropWhile (_._1 > number)).head
 
-    val (decimal, roman) =
-      (conversions dropWhile (_._1 > number)).head
-
-    roman + (number - decimal).toRoman
+      roman + helper(number - decimal)
+    end helper
+    helper(value.toInt)
   end toRoman
 
   // Handles up to 4 digit numbers
