@@ -61,9 +61,9 @@ lazy val algorithms = (project in file("algorithms")).settings(
 lazy val parse = (project in file("parse")).settings(
   name := "parse",
   libraryDependencies ++= Seq(
-    "io.circe" %% "circe-core" % "0.14.7",
-    "io.circe" %% "circe-generic" % "0.14.7",
-    "io.circe" %% "circe-parser" % "0.14.7"
+    "io.circe" %% "circe-core" % "0.14.8",
+    "io.circe" %% "circe-generic" % "0.14.8",
+    "io.circe" %% "circe-parser" % "0.14.8"
   )
 )
 

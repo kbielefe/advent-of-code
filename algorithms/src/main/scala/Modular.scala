@@ -1,5 +1,6 @@
 package algorithms
 
+import _root_.breeze.math.Semiring
 import cats.Functor
 import cats.syntax.all.*
 import math.Integral.Implicits.infixIntegralOps
@@ -19,6 +20,16 @@ extension [N](n: Mod[N])
   def value: N = n
 
 object Mod:
+  given [V](using s: Semiring[V], m: Modulus[V], n: Integral[V]): Semiring[Mod[V]] with
+    override def zero: Mod[V] = s.zero
+    override def one: Mod[V] = s.one
+    override def +(a: Mod[V], b: Mod[V]): Mod[V] = normalize(a + b)
+    override def *(a: Mod[V], b: Mod[V]): Mod[V] = normalize(a * b)
+    override def ==(a: Mod[V], b: Mod[V]): Boolean = a == b
+    override def !=(a: Mod[V], b: Mod[V]): Boolean = a != b
+    def normalize(x: Mod[V]): Mod[V] =
+      n.rem(n.plus(n.rem(x, m.mod), m.mod), m.mod)
+
   def apply[N](n: N)(using N: Integral[N])(using m: Modulus[N]): Mod[N] =
     N.rem(N.plus(N.rem(n, m.mod), m.mod), m.mod)
 
