@@ -40,6 +40,7 @@ object Mod:
   def gcd[N](a: N, b: N)(using n: Integral[N]): N =
     if a == n.zero then b else gcd(b % a, a)
 
+  /** a * modInverse(a) === 1 */
   def modInverse[N](a: N)(using n: Integral[N])(using m: Modulus[N]): N =
     @tailrec
     def helper(a: N, m: N, x: N, y: N): N =
