@@ -2,6 +2,7 @@ package day17
 import parse.{*, given}
 import algorithms.{AStar, Grid, given}
 import Grid.Pos
+import visualizations.AnimatedGrid, AnimatedGrid.Step
 
 case class Crucible(pos: Pos, direction: Char, distance: Int)
 
@@ -19,6 +20,26 @@ object Puzzle extends runner.Day[Grid, Int, Int]:
     val goal = Pos(grid.maxRow, grid.maxCol)
     val astar = new AStar[Crucible, Int](c => c.pos == goal && c.distance >= 4, _.pos.manhattan(goal), (_, neighbor) => grid(neighbor.pos).asDigit, 0, ultraNeighbors(grid))
     astar.getMinCost(startEast, startSouth).get
+
+  def steps(grid: Grid): Unit =
+    val startEast =  Crucible(Pos(0, 0), 'e', 1)
+    val startSouth = Crucible(Pos(0, 0), 's', 1)
+    val goal = Pos(grid.maxRow, grid.maxCol)
+    val astar = new AStar[Crucible, Int](c => c.pos == goal && c.distance >= 4, _.pos.manhattan(goal), (_, neighbor) => grid(neighbor.pos).asDigit, 0, ultraNeighbors(grid))
+    val steps = astar.visualize(startEast, startSouth).map{
+      case astar.Visited(Crucible(pos, dir, _)) => Step(Map(pos -> dirToArrow(dir)), Map(pos -> "red"))
+      case astar.Opened(crucibles) => Step(Map.empty, crucibles.map(c => (c.pos, "blue")).toMap)
+      case astar.FoundPath(path) => Step(path.map(c => c.pos -> dirToArrow(c.direction)).toMap, path.map(c => c.pos -> "green").toMap)
+      case astar.Failed => ???
+    }
+    AnimatedGrid(grid, steps)
+
+  private def dirToArrow(dir: Char): Char = dir match
+    case 'n' => '↑'
+    case 's' => '↓'
+    case 'e' => '→'
+    case 'w' => '←'
+    case _ => ???
 
   def getNeighbors(grid: Grid)(crucible: Crucible): Set[Crucible] =
     val Crucible(pos, dir, dist) = crucible

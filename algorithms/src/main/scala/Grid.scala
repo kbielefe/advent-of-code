@@ -1,6 +1,7 @@
 package algorithms
 
 import _root_.breeze.linalg.*
+import io.circe.*
 import parse.Read
 import Grid.{Pos, Group}
 import scala.util.matching.Regex
@@ -154,6 +155,13 @@ class Grid private (protected val cells: Map[Pos, Char]) derives CanEqual:
 object Grid:
   opaque type Pos = (Int, Int)
   given CanEqual[Pos, Pos] = CanEqual.derived
+
+  given KeyEncoder[Pos] with
+    def apply(pos: Pos): String =
+      pos.toString
+
+  given Encoder[Grid] =
+    summon[Encoder[Map[Pos, Char]]].contramap(_.cells)
 
   object Pos:
     def apply(row: Int, col: Int): Pos = (row, col)

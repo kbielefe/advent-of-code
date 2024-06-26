@@ -22,7 +22,7 @@ class AStar[Position, Weight : Numeric](
 
       val (current, openWithoutMin) = open.dequeue.get
       if (goal(current))
-        return reconstructPath(start, current, cameFrom)
+        return reconstructPath(current, cameFrom)
 
       def tentativeG(neighbor: Position) = g(current) + neighborWeight(current, neighbor)
 
@@ -44,7 +44,6 @@ class AStar[Position, Weight : Numeric](
     helper(open, cameFrom, g)
   }
 
-  // TODO: Add visualization
   def getMinCost(starts: Position*): Option[Weight] = {
     @tailrec
     def helper(open: PriorityQueue[Position, Weight], g: Map[Position, Weight]): Option[Weight] = {
@@ -74,14 +73,52 @@ class AStar[Position, Weight : Numeric](
     helper(open, g)
   }
 
-  private def reconstructPath(start: Position, end: Position, cameFrom: Map[Position, Position])(using CanEqual[Position, Position]): List[Position] = {
+  sealed trait Step
+  case class Visited(position: Position) extends Step
+  case class Opened(positions: Set[Position]) extends Step
+  case class FoundPath(path: List[Position]) extends Step
+  case object Failed extends Step
+
+  def visualize(starts: Position*): List[Step] = {
     @tailrec
-    def helper(current: Position, result: List[Position]): List[Position] = {
-      if (current == start)
-        return start :: result
-      helper(cameFrom(current), current :: result)
+    def helper(open: PriorityQueue[Position, Weight], opened: Set[Position], cameFrom: Map[Position, Position],
+      g: Map[Position, Weight], steps: List[Step]): List[Step] = {
+
+      if (open.isEmpty)
+        return List(Failed)
+
+      val (current, openWithoutMin) = open.dequeue.get
+      if (goal(current))
+        return (FoundPath(reconstructPath(current, cameFrom)) :: steps).reverse
+
+      def tentativeG(neighbor: Position) = g(current) + neighborWeight(current, neighbor)
+
+      val neighbors = getNeighbors(current) - current
+      val betterNeighbors = neighbors filter {neighbor => g.get(neighbor).map(tentativeG(neighbor) < _).getOrElse(true)}
+
+      val newCameFrom = cameFrom ++ betterNeighbors.map{(_, current)}
+      val newG = g ++ betterNeighbors.map{neighbor => (neighbor, tentativeG(neighbor))}
+      val updatedH = betterNeighbors.map{neighbor => (neighbor, tentativeG(neighbor) + heuristic(neighbor))}
+
+      val newOpen = openWithoutMin.enqueue(updatedH)
+      val newOpened = betterNeighbors -- opened
+      val newSteps = if newOpened.isEmpty then Visited(current) :: steps else Opened(newOpened) :: Visited(current) :: steps
+
+      helper(newOpen, opened ++ newOpened, newCameFrom, newG, newSteps)
     }
 
-    helper(end, List.empty[Position])
+    val open = starts.map(start => (start -> heuristic(start))).foldLeft(PriorityQueue.Empty: PriorityQueue[Position, Weight])((queue, value) => queue.enqueue(value))
+    val g = starts.map(start => start -> initial).toMap
+    val cameFrom = Map[Position, Position]()
+    helper(open, Set.empty, cameFrom, g, List.empty)
   }
+
+  private def reconstructPath(end: Position, cameFrom: Map[Position, Position]): List[Position] =
+    @tailrec
+    def helper(current: Position, result: List[Position]): List[Position] =
+      cameFrom.get(current) match
+        case None => result
+        case Some(previous) => helper(previous, previous :: result)
+
+    helper(end, List.empty[Position])
 }
