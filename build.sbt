@@ -1,3 +1,5 @@
+import org.scalajs.linker.interface.ModuleSplitStyle
+
 ThisBuild / scalaVersion := "3.4.2"
 ThisBuild / scalacOptions ++= Seq("-source", "future", "-deprecation", "-feature")
 ThisBuild / fork := false // needed for prompt to work when run from sbt console
@@ -44,3 +46,17 @@ lazy val visualizations = (project in file("visualizations")).settings(
   libraryDependencies ++= Seq(
   )
 ).dependsOn(algorithms)
+
+lazy val `visualizations-server` = (project in file("visualizations-server"))
+  .enablePlugins(ScalaJSPlugin)
+  .settings(
+    name := "visualizations-server",
+    scalaJSLinkerConfig ~= {
+      _.withModuleKind(ModuleKind.ESModule)
+        .withModuleSplitStyle(
+          ModuleSplitStyle.SmallModulesFor(List("visualizations")))
+    },
+    libraryDependencies ++= Seq(
+      "org.scala-js" %%% "scalajs-dom" % "2.8.0",
+    )
+)
