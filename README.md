@@ -5,6 +5,24 @@ For sharing my adventofcode.com solutions
 
 Visualizations are found on my [GitHub pages site](https://kbielefe.github.io/advent-of-code/).
 
+There is a `visualizations` project meant to be called from a puzzle to
+generate a visualization. There is also a `visualizations-server` project that
+uses Scala.js and vite to create more complex visualization code.
+
+To develop a visualization:
+
+```
+# npm install
+# npm run dev
+```
+
+To build it:
+
+```
+# npm run build
+# npm run preview
+```
+
 ## Runner
 Runs the puzzles. Run `run --help` from the sbt console of one of the project years for options.
 
