@@ -8,17 +8,23 @@ object AnimatedGrid:
 
   def apply(initial: Grid, steps: List[Step], title: String = "Advent of Code Grid Animation"): Unit =
     val content=s"""
-    <head>
-      <title>$title</title>
-      <style> body { margin: 0; } </style>
-    </head>
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <title>$title</title>
+        <style> body { margin: 0; } </style>
+      </head>
 
-    <body>
-      <div id="grid"></div>
-      <script>
-        const initial = ${initial.asJson.noSpaces};
-        const steps = ${steps.asJson.noSpaces};
-      </script>
-    </body>
+      <body>
+        <div id="grid"></div>
+        <script type="module">
+          import {AnimatedGrid} from './animated-grid.js';
+          const initial = ${initial.asJson.noSpaces};
+          const steps = ${steps.asJson.noSpaces};
+          AnimatedGrid.animate(initial, steps);
+        </script>
+      </body>
+      </html>
     """
     Browse(content)

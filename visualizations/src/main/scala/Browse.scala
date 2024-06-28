@@ -11,6 +11,7 @@ import org.http4s.dsl.io.*
 import org.http4s.ember.server.*
 import org.http4s.headers.`Content-Type`
 import org.http4s.server.Router
+import org.http4s.server.staticcontent.*
 import scala.concurrent.duration.*
 
 object Browse:
@@ -19,6 +20,8 @@ object Browse:
 
   def apply(html: String): Unit =
     val service = HttpRoutes.of[IO] {
+      case request @ GET -> Root / path if path.endsWith(".js") =>
+        StaticFile.fromResource[IO]("/" + path).getOrElseF(NotFound())
       case GET -> Root =>
         Ok(html).map(_.withContentType(`Content-Type`(MediaType.text.html)))
     }
