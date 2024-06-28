@@ -1,12 +1,18 @@
 package visualizations
 
 import algorithms.Grid, Grid.Pos
-import io.circe.*, io.circe.generic.auto.*, io.circe.syntax.*
+import cats.effect.IO
+import fs2.Stream
 
 object AnimatedGrid:
-  case class Step(chars: Map[Pos, Char], colors: Map[Pos, String])
+  sealed trait Change
+  case class ChangeChar(char: Char)         extends Change
+  case class ChangeColor(color: String)     extends Change
+  case class ChangeTooltip(tooltip: String) extends Change
 
-  def apply(initial: Grid, steps: List[Step], title: String = "Advent of Code Grid Animation"): Unit =
+  case class Frame(changes: Map[Pos, Seq[Change]], description: Option[String] = None)
+
+  def apply(initial: Grid, frames: Stream[IO, Frame], title: String = "Advent of Code Grid Animation"): Unit =
     val content=s"""
       <!DOCTYPE html>
       <html lang="en">
@@ -20,11 +26,9 @@ object AnimatedGrid:
         <div id="grid"></div>
         <script type="module">
           import {AnimatedGrid} from './animated-grid.js';
-          const initial = ${initial.asJson.noSpaces};
-          const steps = ${steps.asJson.noSpaces};
-          AnimatedGrid.animate(initial, steps);
+          AnimatedGrid.animate();
         </script>
       </body>
       </html>
     """
-    Browse(content)
+    Browse(content) // TODO: create a websocket for the frames

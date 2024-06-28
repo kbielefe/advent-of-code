@@ -30,8 +30,7 @@ object Browse:
       .withShutdownTimeout(1.second)
       .build
       .use{_ =>
-        val uri = URI.create("http://localhost:1225")
-        IO(Desktop.getDesktop.browse(uri)) >>
+        IO(Desktop.getDesktop.browse(URI.create("http://localhost:1225"))) >>
         Console[IO].println("Press <enter> to stop web server") >>
         Console[IO].readLine
       }.unsafeRunSync()

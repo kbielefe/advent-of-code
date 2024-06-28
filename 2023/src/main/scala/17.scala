@@ -1,8 +1,9 @@
 package day17
 import parse.{*, given}
 import algorithms.{AStar, Grid, given}
+import fs2.Stream
 import Grid.Pos
-import visualizations.AnimatedGrid, AnimatedGrid.Step
+import visualizations.AnimatedGrid, AnimatedGrid.*
 
 case class Crucible(pos: Pos, direction: Char, distance: Int)
 
@@ -26,13 +27,13 @@ object Puzzle extends runner.Day[Grid, Int, Int]:
     val startSouth = Crucible(Pos(0, 0), 's', 1)
     val goal = Pos(grid.maxRow, grid.maxCol)
     val astar = new AStar[Crucible, Int](c => c.pos == goal && c.distance >= 4, _.pos.manhattan(goal), (_, neighbor) => grid(neighbor.pos).asDigit, 0, ultraNeighbors(grid))
-    val steps = astar.visualize(startEast, startSouth).map{
-      case astar.Visited(Crucible(pos, dir, _)) => Step(Map(pos -> dirToArrow(dir)), Map(pos -> "red"))
-      case astar.Opened(crucibles) => Step(Map.empty, crucibles.map(c => (c.pos, "blue")).toMap)
-      case astar.FoundPath(path) => Step(path.map(c => c.pos -> dirToArrow(c.direction)).toMap, path.map(c => c.pos -> "green").toMap)
+    val frames = astar.visualize(startEast, startSouth).map{
+      case astar.Visited(Crucible(pos, dir, _)) => Frame(Map(pos -> Seq(ChangeColor("red"), ChangeChar(dirToArrow(dir)))))
+      case astar.Opened(crucibles) => Frame(crucibles.map(c => (c.pos, Seq(ChangeColor("blue"), ChangeChar(dirToArrow(c.direction))))).toMap)
+      case astar.FoundPath(path) => Frame(path.map(c => (c.pos, Seq(ChangeColor("green"), ChangeChar(dirToArrow(c.direction))))).toMap)
       case astar.Failed => ???
     }
-    AnimatedGrid(grid, steps)
+    AnimatedGrid(grid, Stream.iterable(frames)) // TODO: Have A* generate the stream directly
 
   private def dirToArrow(dir: Char): Char = dir match
     case 'n' => '↑'
