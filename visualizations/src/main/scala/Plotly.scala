@@ -50,4 +50,4 @@ object Plotly extends DefaultEncoder:
       </script>
     </body>
     """
-    Browse(content, "aoc-plotly-")
+    Browse(content)

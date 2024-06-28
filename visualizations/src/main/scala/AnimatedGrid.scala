@@ -21,4 +21,4 @@ object AnimatedGrid:
       </script>
     </body>
     """
-    Browse(content, "aoc-grid-")
+    Browse(content)

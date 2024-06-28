@@ -44,6 +44,8 @@ lazy val parse = (project in file("parse")).settings(
 lazy val visualizations = (project in file("visualizations")).settings(
   name := "visualizations",
   libraryDependencies ++= Seq(
+    "org.http4s" %% "http4s-ember-server" % "0.23.27",
+    "org.http4s" %% "http4s-dsl"          % "0.23.27"
   )
 ).dependsOn(algorithms)
 

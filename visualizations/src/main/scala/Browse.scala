@@ -1,15 +1,38 @@
 package visualizations
 
+import cats.effect.*
+import cats.effect.std.Console
+import cats.effect.unsafe.IORuntime
+import com.comcast.ip4s.*
 import java.awt.Desktop
-import java.io.{BufferedWriter, File, FileWriter}
-import scala.util.Using
+import java.net.URI
+import org.http4s.*
+import org.http4s.dsl.io.*
+import org.http4s.ember.server.*
+import org.http4s.headers.`Content-Type`
+import org.http4s.server.Router
+import scala.concurrent.duration.*
 
 object Browse:
-  /** Write html to a temporary file with the given prefix and suffix and open
-   *  in the default web browser. */
-  def apply(html: String, prefix: String = "aoc-visualization-", suffix: String = ".html"): Unit =
-    val file = File.createTempFile(prefix, suffix)
-    Using(BufferedWriter(FileWriter(file, true))) { writer =>
-      writer.write(html)
+  given IORuntime =
+    cats.effect.unsafe.IORuntime.global
+
+  def apply(html: String): Unit =
+    val service = HttpRoutes.of[IO] {
+      case GET -> Root =>
+        Ok(html).map(_.withContentType(`Content-Type`(MediaType.text.html)))
     }
-    Desktop.getDesktop.browse(file.toURI)
+    val httpApp = Router("/" -> service).orNotFound
+    val uri = URI.create("http://localhost:1225")
+    val server = EmberServerBuilder
+      .default[IO]
+      .withHost(ipv4"0.0.0.0")
+      .withPort(port"1225")
+      .withHttpApp(httpApp)
+      .withShutdownTimeout(1.second)
+      .build
+      .use{_ =>
+        IO(Desktop.getDesktop.browse(uri)) >>
+        Console[IO].println("Press <enter> to stop web server") >>
+        Console[IO].readLine
+      }.unsafeRunSync()

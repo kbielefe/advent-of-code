@@ -18,7 +18,10 @@ object ForceGraph:
     )
 
     val content=s"""
+    <!DOCTYPE html>
+    <html lang="en">
     <head>
+      <meta charset="utf-8">
       ${title.fold("")(t => s"""<title>$t</title>""")}
       <style> body { margin: 0; } </style>
       <script src="https://cdn.jsdelivr.net/npm/force-graph/dist/force-graph.min.js" integrity="sha256-r5MkzmO7h/MwZDwEqQYsoXs74ygmI0ASGXztWV6w+Do=" crossorigin="anonymous"></script>
@@ -33,5 +36,6 @@ object ForceGraph:
             .graphData(${data.asJson.spaces2})${config.map(_.command).mkString};
       </script>
     </body>
+    </html>
     """
-    Browse(content, "aoc-graph-")
+    Browse(content)
