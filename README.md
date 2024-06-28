@@ -3,11 +3,12 @@ For sharing my adventofcode.com solutions
 
 ## Visualizations
 
-Visualizations are found on my [GitHub pages site](https://kbielefe.github.io/advent-of-code/).
-
 There is a `visualizations` project meant to be called from a puzzle to
 generate a visualization. There is also a `visualizations-server` project that
 uses Scala.js and vite to create more complex visualization code.
+
+Visualizations may be viewed via the runner with a `sbt run visualization <day> <name>` command.
+It will start a web server and automatically open the browser to the page.
 
 To develop a visualization:
 
