@@ -6,7 +6,7 @@ ThisBuild / fork := false // needed for prompt to work when run from sbt console
 
 lazy val advent2023 = (project in file("2023")).settings(
   name := "advent2023"
-).dependsOn(runner, parse, algorithms, visualizations)
+).dependsOn(runner, parse, algorithms, visualizations.jvm)
 
 lazy val runner = (project in file("runner")).settings(
   name := "runner",
@@ -41,18 +41,16 @@ lazy val parse = (project in file("parse")).settings(
   )
 )
 
-lazy val visualizations = (project in file("visualizations")).settings(
-  name := "visualizations",
-  libraryDependencies ++= Seq(
-    "org.http4s" %% "http4s-ember-server" % "0.23.27",
-    "org.http4s" %% "http4s-dsl"          % "0.23.27"
-  )
-).dependsOn(algorithms)
-
-lazy val `visualizations-server` = (project in file("visualizations-server"))
-  .enablePlugins(ScalaJSPlugin)
+lazy val visualizations = crossProject(JSPlatform, JVMPlatform)
+  .in(file("visualizations"))
   .settings(
-    name := "visualizations-server",
+    name := "visualizations",
+  ).jvmSettings(
+    libraryDependencies ++= Seq(
+      "org.http4s" %% "http4s-ember-server" % "0.23.27",
+      "org.http4s" %% "http4s-dsl"          % "0.23.27"
+    )
+  ).jsSettings(
     scalaJSLinkerConfig ~= {
       _.withModuleKind(ModuleKind.ESModule)
         .withModuleSplitStyle(
@@ -61,4 +59,4 @@ lazy val `visualizations-server` = (project in file("visualizations-server"))
     libraryDependencies ++= Seq(
       "org.scala-js" %%% "scalajs-dom" % "2.8.0",
     )
-)
+  ).jvmConfigure(_.dependsOn(algorithms))
