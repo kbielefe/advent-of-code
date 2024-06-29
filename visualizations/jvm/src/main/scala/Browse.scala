@@ -36,7 +36,7 @@ object Browse:
       }.unsafeRunSync()
   end apply
 
-  private def service(html: String, websockets: Map[String, Websocket], json: Map[String, Json], builder: WebSocketBuilder2[IO]): HttpRoutes[IO] = HttpRoutes.of[IO] {
+  private def service(html: String, websockets: Map[String, Websocket], json: Map[String, Json], builder: WebSocketBuilder2[IO]): HttpRoutes[IO] = HttpRoutes.of[IO]:
     case GET -> Root / path if json.contains(path) =>
       Ok(json(path)).map(_.withContentType(`Content-Type`(MediaType.application.json, Charset.`UTF-8`)))
     case GET -> Root / path if websockets.contains(path) =>
@@ -45,7 +45,6 @@ object Browse:
       StaticFile.fromResource[IO]("/" + path).getOrElseF(NotFound()).map(_.withContentType(`Content-Type`(MediaType.application.javascript, Charset.`UTF-8`)))
     case GET -> Root =>
       Ok(html).map(_.withContentType(`Content-Type`(MediaType.text.html, Charset.`UTF-8`)))
-  }
 
   private def httpApp(html: String, websockets: Map[String, Websocket], json: Map[String, Json])(builder: WebSocketBuilder2[IO]): HttpApp[IO] =
     val corsService = CORS.policy.withAllowOriginHost(_.host.value == "localhost")(service(html, websockets, json, builder))

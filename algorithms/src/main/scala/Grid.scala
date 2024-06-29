@@ -133,11 +133,10 @@ class Grid private (val cells: Map[Pos, Char]) derives CanEqual:
         new Group(pos, length, string)
       }.toList
 
-  def vTree(obstacle: Char => Boolean = _ == '#')(using Grid.Neighbors): VTree[Pos] = new VTree{
+  def vTree(obstacle: Char => Boolean = _ == '#')(using Grid.Neighbors): VTree[Pos] = new VTree:
     override def children(node: Pos, visited: Set[Pos]): Iterator[Pos] =
       val allNeighbors = node.neighbors.filter(cells.contains).filterNot(pos => obstacle(cells(pos)))
       (allNeighbors -- visited).iterator
-  }
 
   def aStar(goal: Pos, obstacle: Char => Boolean = _ == '#')(using Grid.Neighbors): AStar[Pos, Int] =
     new AStar[Pos, Int](_ == goal, _.manhattan(goal), (_, _) => 1, 0, _.neighbors.filter(cells.contains).filterNot(pos => obstacle(cells(pos))))

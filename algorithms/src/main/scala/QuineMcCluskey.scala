@@ -25,10 +25,9 @@ object QuineMcCluskey:
       bits.zip(other.bits).map((x, y) => if x != y then 1 else 0).sum == 1
 
     def merge(other: Implicant): Implicant =
-      val newBits = bits.zip(other.bits).map{
+      val newBits = bits.zip(other.bits).map:
         case (Some(x), Some(y)) if x == y => Some(x)
         case _ => None
-      }
       new Implicant(labels, minterms ++ other.minterms, newBits)
 
     def oneCount: Int = bits.count(_ == Some(1))

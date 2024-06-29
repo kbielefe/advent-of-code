@@ -13,18 +13,18 @@ class AStar[Position, Weight : Numeric](
     heuristic: Position => Weight,
     neighborWeight: (Position, Position) => Weight, // current -> neighbor -> weight
     initial: Weight, // initial weight of the start state, usually zero
-    getNeighbors: Position => Set[Position]) {
+    getNeighbors: Position => Set[Position]):
 
-  def getPath(start: Position)(using CanEqual[Position, Position]) : List[Position] = {
+  def getPath(start: Position)(using CanEqual[Position, Position]) : List[Position] =
     @tailrec
     def helper(open: PriorityQueue[Position, Weight], cameFrom: Map[Position, Position],
-      g: Map[Position, Weight]): List[Position] = {
+      g: Map[Position, Weight]): List[Position] =
 
-      if (open.isEmpty)
+      if open.isEmpty then
         return List.empty[Position]
 
       val (current, openWithoutMin) = open.dequeue.get
-      if (goal(current))
+      if goal(current) then
         return reconstructPath(current, cameFrom)
 
       def tentativeG(neighbor: Position) = g(current) + neighborWeight(current, neighbor)
@@ -39,23 +39,21 @@ class AStar[Position, Weight : Numeric](
       val newOpen = openWithoutMin.enqueue(updatedH)
 
       helper(newOpen, newCameFrom, newG)
-    }
 
     val open = PriorityQueue(start -> heuristic(start))
     val cameFrom = Map[Position, Position]()
     val g = Map[Position, Weight](start -> initial)
     helper(open, cameFrom, g)
-  }
 
-  def getMinCost(starts: Position*): Option[Weight] = {
+  def getMinCost(starts: Position*): Option[Weight] =
     @tailrec
-    def helper(open: PriorityQueue[Position, Weight], g: Map[Position, Weight]): Option[Weight] = {
+    def helper(open: PriorityQueue[Position, Weight], g: Map[Position, Weight]): Option[Weight] =
 
-      if (open.isEmpty)
+      if open.isEmpty then
         return None
 
       val (current, openWithoutMin) = open.dequeue.get
-      if (goal(current))
+      if goal(current) then
         return Some(g(current))
 
       def tentativeG(neighbor: Position) = g(current) + neighborWeight(current, neighbor)
@@ -69,12 +67,10 @@ class AStar[Position, Weight : Numeric](
       val newOpen = openWithoutMin.enqueue(updatedH)
 
       helper(newOpen, newG)
-    }
 
     val open = starts.map(start => (start -> heuristic(start))).foldLeft(PriorityQueue.Empty: PriorityQueue[Position, Weight])((queue, value) => queue.enqueue(value))
     val g = starts.map(start => start -> initial).toMap
     helper(open, g)
-  }
 
   sealed trait Step
   case class Visited(position: Position) extends Step
@@ -82,15 +78,15 @@ class AStar[Position, Weight : Numeric](
   case class FoundPath(path: List[Position]) extends Step
   case object Failed extends Step
 
-  def visualize(starts: Position*): Stream[IO, Step] = {
+  def visualize(starts: Position*): Stream[IO, Step] =
     def helper(open: PriorityQueue[Position, Weight], opened: Set[Position], cameFrom: Map[Position, Position],
-      g: Map[Position, Weight]): Stream[IO, Step] = {
+      g: Map[Position, Weight]): Stream[IO, Step] =
 
-      if (open.isEmpty)
+      if open.isEmpty then
         return Stream(Failed)
 
       val (current, openWithoutMin) = open.dequeue.get
-      if (goal(current))
+      if goal(current) then
         return Stream(FoundPath(reconstructPath(current, cameFrom)))
 
       def tentativeG(neighbor: Position) = g(current) + neighborWeight(current, neighbor)
@@ -107,13 +103,11 @@ class AStar[Position, Weight : Numeric](
       val newSteps = if newOpened.isEmpty then Stream(Visited(current)) else Stream(Visited(current), Opened(newOpened))
 
       newSteps ++ helper(newOpen, opened ++ newOpened, newCameFrom, newG)
-    }
 
     val open = starts.map(start => (start -> heuristic(start))).foldLeft(PriorityQueue.Empty: PriorityQueue[Position, Weight])((queue, value) => queue.enqueue(value))
     val g = starts.map(start => start -> initial).toMap
     val cameFrom = Map[Position, Position]()
     helper(open, Set.empty, cameFrom, g)
-  }
 
   private def reconstructPath(end: Position, cameFrom: Map[Position, Position]): List[Position] =
     @tailrec
@@ -123,4 +117,3 @@ class AStar[Position, Weight : Numeric](
         case Some(previous) => helper(previous, previous :: result)
 
     helper(end, List(end))
-}

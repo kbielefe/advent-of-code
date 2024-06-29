@@ -34,7 +34,7 @@ extension [N](value: N)(using n: Integral[N])(using CanEqual[N, N])
 
   def toRoman: String =
     def helper(number: Int): String =
-      if (number <= 0) return ""
+      if number <= 0 then return ""
 
       val conversions = List(
         (1000, "M"),

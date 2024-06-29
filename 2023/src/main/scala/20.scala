@@ -81,20 +81,18 @@ case class State(lowPulses: Int, highPulses: Int, modulesByName: Map[String, Mod
 object Puzzle extends runner.Day[I, Long, Long]:
   def part1(input: I): Long =
     val inputs = input.flatMap(module => module.outputs.map(output => (output -> module.name))).groupMap(_._1)(_._2)
-    val withInputs = input.map{
+    val withInputs = input.map:
       case Conjunction(name, outputs, _) => Conjunction(name, outputs, inputs(name).map(_ -> Signal.Low).toMap)
       case other => other
-    }
     val modulesByName = withInputs.map(module => (module.name -> module)).toMap
     val state = State(0, 0, modulesByName)
     Iterator.iterate(state)(_.pushButton).drop(1000).next.result
 
   def part2(input: I): Long =
     val inputs = input.flatMap(module => module.outputs.map(output => (output -> module.name))).groupMap(_._1)(_._2)
-    val withInputs = input.map{
+    val withInputs = input.map:
       case Conjunction(name, outputs, _) => Conjunction(name, outputs, inputs(name).map(_ -> Signal.Low).toMap)
       case other => other
-    }
     val modulesByName = withInputs.map(module => (module.name -> module)).toMap + ("rx" -> Rx(false))
     val state = State(0, 0, modulesByName)
     val initials = inputs("ns").map{input =>

@@ -23,11 +23,10 @@ object Database:
     (createSession, createInput, createAnswers, createGuesses).tupled.transact(xa).void
 
   def getInput(year: Int, day: Int, example: String): IO[String] =
-    sql"SELECT input FROM input WHERE year = $year AND day = $day AND example = $example".query[String].option.transact(xa).flatMap{
+    sql"SELECT input FROM input WHERE year = $year AND day = $day AND example = $example".query[String].option.transact(xa).flatMap:
       case Some(input)                   => IO.pure(input)
       case None if example == "official" => downloadInput(year, day, example)
       case _                             => IO.raiseError(InputNotFoundException)
-    }
 
   def downloadInput(year: Int, day: Int, example: String): IO[String] = for
     session <- getSession

@@ -27,7 +27,7 @@ object Puzzle extends runner.Day[Grid, Int, Int]:
     val startSouth = Crucible(Pos(0, 0), 's', 1)
     val goal = Pos(grid.maxRow, grid.maxCol)
     val astar = new AStar[Crucible, Int](c => c.pos == goal && c.distance >= 4, _.pos.manhattan(goal), (_, neighbor) => grid(neighbor.pos).asDigit, 0, ultraNeighbors(grid))
-    val frames = astar.visualize(startEast, startSouth).map{
+    val frames = astar.visualize(startEast, startSouth).map:
       case astar.Visited(Crucible(pos, dir, _)) =>
         Frame(Map((pos.row,pos.col) -> Seq(ChangeColor("red"), ChangeChar(dirToArrow(dir)))))
       case astar.Opened(crucibles) =>
@@ -35,7 +35,6 @@ object Puzzle extends runner.Day[Grid, Int, Int]:
       case astar.FoundPath(path) =>
         Frame(path.map(c => ((c.pos.row,c.pos.col), Seq(ChangeColor("green"), ChangeChar(dirToArrow(c.direction))))).toMap)
       case astar.Failed => ???
-    }
     AnimatedGrid(grid, frames)
 
   private def dirToArrow(dir: Char): Char = dir match

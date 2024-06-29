@@ -9,11 +9,10 @@ trait Tree[A]:
   def children(node: A): Iterator[A]
 
 object Tree:
-  def fromId[A, B](list: IterableOnce[A], id: A => B, neighborIds: A => IterableOnce[B]): Tree[A] = new Tree[A] {
+  def fromId[A, B](list: IterableOnce[A], id: A => B, neighborIds: A => IterableOnce[B]): Tree[A] = new Tree[A]:
     val nodeMap: Map[B, A] = list.iterator.map(node => id(node) -> node).toMap
     def children(node: A): Iterator[A] =
       neighborIds(node).iterator.map(nodeMap.apply)
-  }
 
   extension [A](a: A)(using t: Tree[A])
     def children: Iterator[A] = t.children(a)

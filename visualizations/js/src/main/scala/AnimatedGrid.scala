@@ -32,7 +32,7 @@ object AnimatedGrid:
 
   private val frames: IO[Unit] =
     val request = WSRequest(uri"ws://localhost:1225/frames")
-    WebSocketClient[IO].connectHighLevel(request).use {
+    WebSocketClient[IO].connectHighLevel(request).use:
       _.receiveStream // TODO: Is there an alternate method that handles decoding?
         .metered(20.milliseconds)
         .map(decodeFrame)
@@ -40,7 +40,6 @@ object AnimatedGrid:
         .evalTap(showFrame)
         .compile
         .drain
-    }
 
   private val posRegex = """\((\d+),(\d+)\)""".r
   given KeyDecoder[Pos] with
@@ -58,11 +57,10 @@ object AnimatedGrid:
   private def showFrame(frame: Frame): IO[Unit] =
     val changes = frame.changes.flatMap{case ((row, col), changes) =>
       val node = document.getElementById(s"$row,$col").asInstanceOf[Element]
-      changes.map{
+      changes.map:
         case ChangeChar(char)       => IO(node.innerHTML = char.toString)
         case ChangeColor(color)     => IO(node.style.color = color)
         case ChangeTooltip(tooltip) => IO.unit // TODO: Implement tooltips
-      }
     }
     Parallel.parSequence(changes.toList).void
 
