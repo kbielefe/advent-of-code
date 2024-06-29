@@ -16,6 +16,7 @@ import org.http4s.client.websocket.*
 import org.http4s.dom.*
 import org.http4s.syntax.all.*
 import org.scalajs.dom.*, html.Element
+import scala.concurrent.duration.*
 import scala.scalajs.js.annotation.*
 
 @JSExportTopLevel("AnimatedGrid")
@@ -32,7 +33,8 @@ object AnimatedGrid:
   private val frames: IO[Unit] =
     val request = WSRequest(uri"ws://localhost:1225/frames")
     WebSocketClient[IO].connectHighLevel(request).use {
-      _.receiveStream
+      _.receiveStream // TODO: Is there an alternate method that handles decoding?
+        .metered(20.milliseconds)
         .map(decodeFrame)
         .unNone
         .evalTap(showFrame)

@@ -6,7 +6,7 @@ export default defineConfig({
   build: {
     sourcemap: false,
     lib: {
-      entry: 'visualizations-server/target/scala-3.4.2/visualizations-server-opt/main.js',
+      entry: 'visualizations/js/target/scala-3.4.2/visualizations-opt/main.js',
       name: 'AnimatedGrid',
       fileName: 'animated-grid'
     }

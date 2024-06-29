@@ -38,13 +38,13 @@ object Browse:
 
   private def service(html: String, websockets: Map[String, Websocket], json: Map[String, Json], builder: WebSocketBuilder2[IO]): HttpRoutes[IO] = HttpRoutes.of[IO] {
     case GET -> Root / path if json.contains(path) =>
-      Ok(json(path))
+      Ok(json(path)).map(_.withContentType(`Content-Type`(MediaType.application.json, Charset.`UTF-8`)))
     case GET -> Root / path if websockets.contains(path) =>
       websockets(path).build(builder)
     case GET -> Root / path if path.endsWith(".js") =>
-      StaticFile.fromResource[IO]("/" + path).getOrElseF(NotFound())
+      StaticFile.fromResource[IO]("/" + path).getOrElseF(NotFound()).map(_.withContentType(`Content-Type`(MediaType.application.javascript, Charset.`UTF-8`)))
     case GET -> Root =>
-      Ok(html).map(_.withContentType(`Content-Type`(MediaType.text.html)))
+      Ok(html).map(_.withContentType(`Content-Type`(MediaType.text.html, Charset.`UTF-8`)))
   }
 
   private def httpApp(html: String, websockets: Map[String, Websocket], json: Map[String, Json])(builder: WebSocketBuilder2[IO]): HttpApp[IO] =
