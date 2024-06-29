@@ -48,7 +48,8 @@ lazy val visualizations = crossProject(JSPlatform, JVMPlatform)
   ).jvmSettings(
     libraryDependencies ++= Seq(
       "org.http4s" %% "http4s-ember-server" % "0.23.27",
-      "org.http4s" %% "http4s-dsl"          % "0.23.27"
+      "org.http4s" %% "http4s-dsl"          % "0.23.27",
+      "org.http4s" %% "http4s-circe"        % "0.23.27"
     )
   ).jsSettings(
     scalaJSLinkerConfig ~= {
@@ -58,5 +59,11 @@ lazy val visualizations = crossProject(JSPlatform, JVMPlatform)
     },
     libraryDependencies ++= Seq(
       "org.scala-js" %%% "scalajs-dom" % "2.8.0",
+      "org.http4s" %%% "http4s-dom" % "0.2.11",
+      "org.http4s" %%% "http4s-client" % "0.23.27",
+      "io.circe" %%% "circe-core" % "0.14.8",
+      "io.circe" %%% "circe-generic" % "0.14.8",
+      "io.circe" %%% "circe-parser" % "0.14.8",
+      "org.http4s" %%% "http4s-circe" % "0.23.27",
     )
   ).jvmConfigure(_.dependsOn(algorithms))

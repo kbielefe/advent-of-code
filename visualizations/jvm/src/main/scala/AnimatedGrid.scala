@@ -1,18 +1,18 @@
 package visualizations
 
-import algorithms.Grid, Grid.Pos
+import algorithms.Grid
 import cats.effect.IO
 import fs2.Stream
+import io.circe.KeyEncoder
+import io.circe.generic.auto.*
+import io.circe.syntax.*
+
+given KeyEncoder[Pos] with
+  def apply(pos: Pos): String =
+    pos.toString
 
 object AnimatedGrid:
-  sealed trait Change
-  case class ChangeChar(char: Char)         extends Change
-  case class ChangeColor(color: String)     extends Change
-  case class ChangeTooltip(tooltip: String) extends Change
-
-  case class Frame(changes: Map[Pos, Seq[Change]], description: Option[String] = None)
-
-  def apply(initial: Grid, frames: Stream[IO, Frame], title: String = "Advent of Code Grid Animation"): Unit =
+  def apply(grid: Grid, frames: Stream[IO, Frame], title: String = "Advent of Code Grid Animation"): Unit =
     val content=s"""
       <!DOCTYPE html>
       <html lang="en">
@@ -31,4 +31,4 @@ object AnimatedGrid:
       </body>
       </html>
     """
-    Browse(content) // TODO: create a websocket for the frames
+    Browse(content, websockets = Map("frames" -> new SendOnlyWebsocket(frames)), json=Map("grid" -> grid.cells.asJson))

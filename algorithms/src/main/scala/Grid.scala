@@ -10,7 +10,7 @@ given Read[Grid] with
   def read(input: String): Grid =
     Grid(input)
 
-class Grid private (protected val cells: Map[Pos, Char]) derives CanEqual:
+class Grid private (val cells: Map[Pos, Char]) derives CanEqual:
   lazy val minRow = cells.keys.map(_.row).min
   lazy val maxRow = cells.keys.map(_.row).max
   lazy val minCol = cells.keys.map(_.col).min
