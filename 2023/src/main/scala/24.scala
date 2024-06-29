@@ -7,6 +7,8 @@ import breeze.numerics.{*, given}
 import io.circe.Encoder
 import parse.{*, given}
 import spire.math.{Rational, SafeLong}
+import spire.syntax.all.*
+import visualizations.Plotly, Plotly.*
 
 case class Hailstone(position: (Rational, Rational, Rational), velocity: (Rational, Rational, Rational)):
   val (px, py, pz) = position
@@ -64,6 +66,14 @@ object Puzzle extends runner.Day[List[Hailstone], Int, Long]:
     val r = DenseVector(h1.px.toDouble, h1.py.toDouble, h1.pz.toDouble, h2.px.toDouble, h2.py.toDouble)
     val result = a \ r
     result(0).toLong + result(1).toLong + result(2).toLong
+
+  def plotly(hailstones: List[Hailstone]): Unit =
+    val points = hailstones
+      .combinations(2)
+      .collect{case List(first, second) => first.xyIntersection(second)}
+      .collect{case Some(x) => x}
+      .toList
+    Plotly(List(Trace(points.map(_._1.toDouble), points.map(_._2.toDouble), "markers", "scatter")), title="Advent of Code [2023 Day 24]")
 
   def velocity(hailstones: List[Hailstone], v: Hailstone => Rational, p: Hailstone => Rational): Rational =
     val possibilities = hailstones

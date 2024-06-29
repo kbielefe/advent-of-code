@@ -31,11 +31,14 @@ object ForceGraph:
     <body>
       <div id="graph"></div>
       <script>
-        const Graph = ForceGraph()
-          (document.getElementById('graph'))
-            .graphData(${data.asJson.spaces2})${config.map(_.command).mkString};
+        fetch('./graph')
+          .then(res => res.json())
+          .then(data => {
+            ForceGraph()(document.getElementById('graph'))
+              .graphData(data)${config.map(_.command).mkString};
+          })
       </script>
     </body>
     </html>
     """
-    Browse(content)
+    Browse(content, json=Map("graph" -> data.asJson))

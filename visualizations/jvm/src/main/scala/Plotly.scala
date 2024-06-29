@@ -34,8 +34,6 @@ object Plotly extends DefaultEncoder:
   )
 
   def apply[N: Numeric: Encoder](traces: List[Trace[N]], layout: Layout = Layout(), title: String = "Advent of Code Plot"): Unit =
-    val traceJson = traces.asJson.deepDropNullValues.noSpaces
-    val layoutJson = layout.asJson.deepDropNullValues.noSpaces
     val content=s"""
     <head>
       <title>$title</title>
@@ -46,8 +44,15 @@ object Plotly extends DefaultEncoder:
     <body>
       <div id="plot"></div>
       <script>
-        Plotly.newPlot('plot', $traceJson, $layoutJson);
+        Promise.all([
+          fetch('./traces'),
+          fetch('./layout')
+        ]).then(async([traces, layout]) =>
+          Plotly.newPlot('plot', await traces.json(), await layout.json())
+        )
       </script>
     </body>
     """
-    Browse(content)
+    val traceJson = traces.asJson.deepDropNullValues
+    val layoutJson = layout.asJson.deepDropNullValues
+    Browse(content, json=Map("traces" -> traceJson, "layout" -> layoutJson))
