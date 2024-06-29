@@ -28,12 +28,15 @@ object Puzzle extends runner.Day[Grid, Int, Int]:
     val goal = Pos(grid.maxRow, grid.maxCol)
     val astar = new AStar[Crucible, Int](c => c.pos == goal && c.distance >= 4, _.pos.manhattan(goal), (_, neighbor) => grid(neighbor.pos).asDigit, 0, ultraNeighbors(grid))
     val frames = astar.visualize(startEast, startSouth).map{
-      case astar.Visited(Crucible(pos, dir, _)) => Frame(Map((pos.row,pos.col) -> Seq(ChangeColor("red"), ChangeChar(dirToArrow(dir)))))
-      case astar.Opened(crucibles) => Frame(crucibles.map(c => ((c.pos.row,c.pos.col), Seq(ChangeColor("blue"), ChangeChar(dirToArrow(c.direction))))).toMap)
-      case astar.FoundPath(path) => Frame(path.map(c => ((c.pos.row,c.pos.col), Seq(ChangeColor("green"), ChangeChar(dirToArrow(c.direction))))).toMap)
+      case astar.Visited(Crucible(pos, dir, _)) =>
+        Frame(Map((pos.row,pos.col) -> Seq(ChangeColor("red"), ChangeChar(dirToArrow(dir)))))
+      case astar.Opened(crucibles) =>
+        Frame(crucibles.map(c => ((c.pos.row,c.pos.col), Seq(ChangeColor("blue"), ChangeChar(dirToArrow(c.direction))))).toMap)
+      case astar.FoundPath(path) =>
+        Frame(path.map(c => ((c.pos.row,c.pos.col), Seq(ChangeColor("green"), ChangeChar(dirToArrow(c.direction))))).toMap)
       case astar.Failed => ???
     }
-    AnimatedGrid(grid, Stream.iterable(frames)) // TODO: Have A* generate the stream directly
+    AnimatedGrid(grid, frames)
 
   private def dirToArrow(dir: Char): Char = dir match
     case 'n' => '↑'

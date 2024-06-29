@@ -1,4 +1,7 @@
 package algorithms
+
+import cats.effect.IO
+import fs2.Stream
 import math.Numeric.Implicits.infixNumericOps
 import math.Ordering.Implicits.infixOrderingOps
 import scala.annotation.tailrec
@@ -79,17 +82,16 @@ class AStar[Position, Weight : Numeric](
   case class FoundPath(path: List[Position]) extends Step
   case object Failed extends Step
 
-  def visualize(starts: Position*): List[Step] = {
-    @tailrec
+  def visualize(starts: Position*): Stream[IO, Step] = {
     def helper(open: PriorityQueue[Position, Weight], opened: Set[Position], cameFrom: Map[Position, Position],
-      g: Map[Position, Weight], steps: List[Step]): List[Step] = {
+      g: Map[Position, Weight]): Stream[IO, Step] = {
 
       if (open.isEmpty)
-        return List(Failed)
+        return Stream(Failed)
 
       val (current, openWithoutMin) = open.dequeue.get
       if (goal(current))
-        return (FoundPath(reconstructPath(current, cameFrom)) :: steps).reverse
+        return Stream(FoundPath(reconstructPath(current, cameFrom)))
 
       def tentativeG(neighbor: Position) = g(current) + neighborWeight(current, neighbor)
 
@@ -102,15 +104,15 @@ class AStar[Position, Weight : Numeric](
 
       val newOpen = openWithoutMin.enqueue(updatedH)
       val newOpened = betterNeighbors -- opened
-      val newSteps = if newOpened.isEmpty then Visited(current) :: steps else Opened(newOpened) :: Visited(current) :: steps
+      val newSteps = if newOpened.isEmpty then Stream(Visited(current)) else Stream(Visited(current), Opened(newOpened))
 
-      helper(newOpen, opened ++ newOpened, newCameFrom, newG, newSteps)
+      newSteps ++ helper(newOpen, opened ++ newOpened, newCameFrom, newG)
     }
 
     val open = starts.map(start => (start -> heuristic(start))).foldLeft(PriorityQueue.Empty: PriorityQueue[Position, Weight])((queue, value) => queue.enqueue(value))
     val g = starts.map(start => start -> initial).toMap
     val cameFrom = Map[Position, Position]()
-    helper(open, Set.empty, cameFrom, g, List.empty)
+    helper(open, Set.empty, cameFrom, g)
   }
 
   private def reconstructPath(end: Position, cameFrom: Map[Position, Position]): List[Position] =
@@ -120,5 +122,5 @@ class AStar[Position, Weight : Numeric](
         case None => result
         case Some(previous) => helper(previous, previous :: result)
 
-    helper(end, List.empty[Position])
+    helper(end, List(end))
 }
