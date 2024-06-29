@@ -67,13 +67,13 @@ object Puzzle extends runner.Day[List[Hailstone], Int, Long]:
     val result = a \ r
     result(0).toLong + result(1).toLong + result(2).toLong
 
-  def plotly(hailstones: List[Hailstone]): Unit =
+  val plotly = Plotly(title="Advent of code [2023 Day 24]", description = "plot of the xy intersections of the hailstones"): (hailstones: List[Hailstone]) =>
     val points = hailstones
       .combinations(2)
       .collect{case List(first, second) => first.xyIntersection(second)}
       .collect{case Some(x) => x}
       .toList
-    Plotly(List(Trace(points.map(_._1.toDouble), points.map(_._2.toDouble), "markers", "scatter")), title="Advent of Code [2023 Day 24]")
+    List(Trace(points.map(_._1.toDouble), points.map(_._2.toDouble), "markers", "scatter"))
 
   def velocity(hailstones: List[Hailstone], v: Hailstone => Rational, p: Hailstone => Rational): Rational =
     val possibilities = hailstones

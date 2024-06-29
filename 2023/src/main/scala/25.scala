@@ -27,5 +27,4 @@ object Puzzle extends runner.Day[CGraph, Int, Int]:
 
   def part2(graph: CGraph): Int = ???
 
-  def browseGraph(graph: CGraph): Unit =
-    ForceGraph.forGraph(graph, Some("Advent of Code [2023 Day 25]"))
+  val browseGraph = ForceGraph[CGraph, Component, Unit](title = Some("Advent of Code [2023 Day 25]"), description = "A force graph of the wiring diagram")(identity)

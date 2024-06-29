@@ -24,14 +24,13 @@ object Puzzle extends runner.Day[Grid, Int, Int]:
     val modified = modifyOutsideEdges(graph, goal, Queue.from(firstEdge))
     modified.combinedPaths(start, goal).max
 
-  def browseGraph(grid: Grid): Unit =
+  val browseGraph = ForceGraph(title = Some("Advent of Code [2023 Day 23]"), description = "A simplified graph showing the intersections"): (grid: Grid) =>
     val startCol = grid.row(grid.minRow).indexWhere(_ == '.')
     val goalCol  = grid.row(grid.maxRow).indexWhere(_ == '.')
     val start = Pos(grid.minRow, startCol)
     val goal  = Pos(grid.maxRow, goalCol)
     val initial = State(start, start, -1)
-    val graph = buildGraph(Graph.empty, goal, grid, Set.empty, Queue(initial))
-    ForceGraph.forGraph(graph, title = Some("Advent of Code [2023 Day 23]"))
+    buildGraph(Graph.empty, goal, grid, Set.empty, Queue(initial))
 
   case class State(position: Pos, lastIntersection: Pos, distance: Int)
 

@@ -1,7 +1,9 @@
 package visualizations
 
+import cats.effect.IO
 import io.circe.*, io.circe.generic.auto.*, io.circe.syntax.*
 import scala.reflect.TypeTest
+import parse.Read
 
 trait Default
 object Def extends Default
@@ -14,7 +16,7 @@ trait DefaultEncoder:
       case a: A => a.asJson
       case _    => Json.Null
 
-object Plotly extends DefaultEncoder:
+object Plotly:
   case class Trace[N](
     x: List[N],
     y: List[N],
@@ -33,7 +35,13 @@ object Plotly extends DefaultEncoder:
     showlegend: Boolean | Default = Def
   )
 
-  def apply[N: Numeric: Encoder](traces: List[Trace[N]], layout: Layout = Layout(), title: String = "Advent of Code Plot"): Unit =
+class Plotly[N: Numeric: Encoder, I: Read](
+  title: String = "Advent of Code Plot",
+  name: String = "plotly",
+  description: String = "Plotly plot")(f: I => List[Plotly.Trace[N]]) extends DefaultEncoder, Visualization[I](name, description):
+  import Plotly.*
+  def show(input: I): IO[Unit] =
+    val traces = f(input)
     val content=s"""
     <head>
       <title>$title</title>
@@ -54,5 +62,5 @@ object Plotly extends DefaultEncoder:
     </body>
     """
     val traceJson = traces.asJson.deepDropNullValues
-    val layoutJson = layout.asJson.deepDropNullValues
+    val layoutJson = Plotly.Layout().asJson.deepDropNullValues
     Browse(content, json=Map("traces" -> traceJson, "layout" -> layoutJson))

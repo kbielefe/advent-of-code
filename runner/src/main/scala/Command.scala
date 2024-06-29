@@ -10,6 +10,7 @@ import java.io.BufferedInputStream
 import javax.sound.sampled.*
 import scala.concurrent.duration.*
 import scala.util.Try
+import visualizations.NormalizedVisualization
 
 sealed trait Command:
   def run: IO[Unit]
@@ -66,6 +67,23 @@ sealed trait AnswerCommand(year: Int, day: Int, part: Int, example: String) exte
       .get(null)
       .asInstanceOf[NormalizedDay]
 
+case class ListVisualizations(year: Int, day: Option[Int]) extends Command:
+  override def run: IO[Unit] =
+    day match
+      case Some(day) => listForDay(day)
+      case None => (1 to 25).toList.map(listForDay).sequence.void
+
+  private def listForDay(day: Int): IO[Unit] =
+    val list = Try{Class.forName(s"day$day.Puzzle$$")}.map: c =>
+      val obj = c.getField("MODULE$").get(null).asInstanceOf[NormalizedDay]
+      val visualizations =
+        c.getMethods()
+          .toList
+          .filter(_.getReturnType().getInterfaces().map(_.getName()).contains("visualizations.Visualization"))
+          .map(_.invoke(obj).asInstanceOf[NormalizedVisualization])
+      visualizations.map(vis => Console[IO].println(s"Day $day ${vis.name} ${vis.description}")).sequence.void
+    list.getOrElse(IO.unit)
+
 case class Visualization(year: Int, day: Int, name: String, example: String) extends Command:
   override def run: IO[Unit] = for
     input  <- Database.getInput(year, day, example)
@@ -75,15 +93,14 @@ case class Visualization(year: Int, day: Int, name: String, example: String) ext
   def runVisualization(input: String): IO[Unit] =
     val c = Class.forName(s"day$day.Puzzle$$")
     val obj = c.getField("MODULE$").get(null).asInstanceOf[NormalizedDay]
-    c.getMethods().find(_.getName() == name) match
-      case Some(method) =>
-        val arg = obj.read(input)
-        if method.getReturnType().getName() == "cats.effect.IO" then
-          method.invoke(obj, arg).asInstanceOf[IO[Unit]]
-        else
-          IO.interruptible(method.invoke(obj, arg))
-      case None =>
-        IO.raiseError(new Exception(s"Visualization $name not found"))
+    val visualizations =
+      c.getMethods()
+        .toList
+        .filter(_.getReturnType().getInterfaces().map(_.getName()).contains("visualizations.Visualization"))
+        .map(_.invoke(obj).asInstanceOf[NormalizedVisualization])
+    visualizations.find(_.name == name) match
+      case Some(vis) => vis.show(input)
+      case None      => IO.raiseError(new Exception(s"Visualization $name not found"))
 
 case class RunPuzzle(year: Int, day: Int, part: Int, example: String, quiet: Boolean) extends AnswerCommand(year, day, part, example):
   override def run: IO[Unit] = for

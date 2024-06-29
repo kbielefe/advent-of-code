@@ -21,15 +21,18 @@ trait AdventYear(year: Int):
   private val verbose = Opts.flag("verbose", short = "v", help = "Print full stack traces.").orFalse
   private val quiet = Opts.flag("quiet", short = "q", help = "Don't play sounds after puzzle calculations.").orFalse
   private val help = Opts.flag("help", short = "h", help = "Show this help text.", Visibility.Partial).asHelp
-  private val name = Opts.argument[String](metavar = "visualization name")
   private val common = (Opts(year), day, part, example)
 
   private val run = Opts.subcommand("run", "Run the specified puzzle.")((Opts(year), day, part, example, quiet).mapN(RunPuzzle.apply))
-  private val visualization = Opts.subcommand("visualization", "Show a visualization of the puzzle.")((Opts(year), day, name, example).mapN(Visualization.apply))
   private val answer = Opts.subcommand("answer", "Specify the correct answer for the puzzle and clears all guesses. Copies from the clipboard by default.")((Opts(year), day, part, example, answerArg).mapN(Answer.apply))
   private val guess = Opts.subcommand("guess", "Show the guesses made so far")((Opts(year), day, part, example).mapN(Guesses.apply))
   private val session = Opts.subcommand("session", "Copy the user's session cookie from the clipboard.")(Opts(Session()))
   private val database = Opts.subcommand("database", "Initialize the database at advent.db.")(Opts(InitDatabase()))
+
+  private val name = Opts.argument[String](metavar = "visualization name")
+  private val listVis = Opts.subcommand("list", "List the available visualizations.")((Opts(year), day.orNone).mapN(ListVisualizations.apply))
+  private val showVis = Opts.subcommand("show", "Show (run) the visualization.")((Opts(year), day, name, example).mapN(Visualization.apply))
+  private val visualization = Opts.subcommand("visualization", "Commands dealing with puzzle visualizations.")(showVis <+> listVis)
 
   private val showInput = Opts.subcommand("show", "Print the input to the console.")((Opts(year), day, example).mapN(ShowInput.apply))
   private val copyInput = Opts.subcommand("copy", "Copy the puzzle's input from the clipboard.")((Opts(year), day, example).mapN(Input.apply))

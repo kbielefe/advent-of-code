@@ -1,8 +1,7 @@
 package visualizations
 
-import cats.effect.*
+import cats.effect.IO
 import cats.effect.std.Console
-import cats.effect.unsafe.IORuntime
 import com.comcast.ip4s.*
 import io.circe.Json
 import java.awt.Desktop
@@ -19,10 +18,8 @@ import org.http4s.server.websocket.WebSocketBuilder2
 import scala.concurrent.duration.*
 
 object Browse:
-  given IORuntime = IORuntime.global
-
-  def apply(html: String, websockets: Map[String, Websocket] = Map.empty, json: Map[String, Json] = Map.empty): Unit =
-    val server = EmberServerBuilder
+  def apply(html: String, websockets: Map[String, Websocket] = Map.empty, json: Map[String, Json] = Map.empty): IO[Unit] =
+    EmberServerBuilder
       .default[IO]
       .withHost(ipv4"127.0.0.1")
       .withPort(port"1225")
@@ -33,7 +30,7 @@ object Browse:
         IO(Desktop.getDesktop.browse(URI.create("http://localhost:1225"))) >>
         Console[IO].println("Press <enter> to stop web server") >>
         Console[IO].readLine
-      }.unsafeRunSync()
+      }.void
   end apply
 
   private def service(html: String, websockets: Map[String, Websocket], json: Map[String, Json], builder: WebSocketBuilder2[IO]): HttpRoutes[IO] = HttpRoutes.of[IO]:

@@ -22,7 +22,7 @@ object Puzzle extends runner.Day[Grid, Int, Int]:
     val astar = new AStar[Crucible, Int](c => c.pos == goal && c.distance >= 4, _.pos.manhattan(goal), (_, neighbor) => grid(neighbor.pos).asDigit, 0, ultraNeighbors(grid))
     astar.getMinCost(startEast, startSouth).get
 
-  def steps(grid: Grid): Unit =
+  val animation = AnimatedGrid(description="An animation of the A* search for the ultra-crucible path with minimum heat loss"): (grid: Grid) =>
     val startEast =  Crucible(Pos(0, 0), 'e', 1)
     val startSouth = Crucible(Pos(0, 0), 's', 1)
     val goal = Pos(grid.maxRow, grid.maxCol)
@@ -35,7 +35,8 @@ object Puzzle extends runner.Day[Grid, Int, Int]:
       case astar.FoundPath(path) =>
         Frame(path.map(c => ((c.pos.row,c.pos.col), Seq(ChangeColor("green"), ChangeChar(dirToArrow(c.direction))))).toMap)
       case astar.Failed => ???
-    AnimatedGrid(grid, frames)
+    (grid, frames)
+  end animation
 
   private def dirToArrow(dir: Char): Char = dir match
     case 'n' => '↑'

@@ -6,13 +6,18 @@ import fs2.Stream
 import io.circe.KeyEncoder
 import io.circe.generic.auto.*
 import io.circe.syntax.*
+import parse.Read
 
 given KeyEncoder[Pos] with
   def apply(pos: Pos): String =
     pos.toString
 
-object AnimatedGrid:
-  def apply(grid: Grid, frames: Stream[IO, Frame], title: String = "Advent of Code Grid Animation"): Unit =
+class AnimatedGrid[I: Read](
+    title: String = "Advent of Code Grid Animation",
+    name: String = "animated-grid",
+    description: String = "An animated grid of the puzzle"
+)(f: I => (Grid, Stream[IO, Frame])) extends Visualization[I](name, description):
+  def show(input: I): IO[Unit] =
     val content=s"""
       <!DOCTYPE html>
       <html lang="en">
@@ -32,4 +37,5 @@ object AnimatedGrid:
       </body>
       </html>
     """
+    val (grid, frames) = f(input)
     Browse(content, websockets = Map("frames" -> new SendOnlyWebsocket(frames)), json=Map("grid" -> grid.cells.asJson))

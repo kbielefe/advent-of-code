@@ -1,7 +1,9 @@
 package visualizations
 
 import algorithms.Graph
+import cats.effect.IO
 import io.circe.generic.auto.*, io.circe.syntax.*
+import parse.Read
 
 object ForceGraph:
   case class Node(id: String, name: String)
@@ -11,7 +13,14 @@ object ForceGraph:
   sealed trait Config(val command: String)
   case class LinkDirectionalParticles(num: Int) extends Config(s".linkDirectionalParticles($num)")
 
-  def forGraph[V, E](graph: Graph[V, E], title: Option[String] = None, config: List[Config] = List.empty): Unit =
+class ForceGraph[I: Read, V, E](
+  name: String = "force-graph",
+  description: String = "Show a force graph",
+  title: Option[String] = None,
+  config: List[ForceGraph.Config] = List.empty)(f: I => Graph[V, E]) extends Visualization[I](name, description):
+  import ForceGraph.*
+  def show(input: I): IO[Unit] =
+    val graph = f(input)
     val data = GraphData(
       graph.vertices.map(v => Node(v.toString, v.toString)),
       graph.edges.map(edge => Link(edge.from.toString, edge.to.toString, s"${edge.from.toString} -[${edge.props}]-> ${edge.to.toString}"))

@@ -6,7 +6,7 @@ ThisBuild / fork := false // needed for prompt to work when run from sbt console
 
 lazy val advent2023 = (project in file("2023")).settings(
   name := "advent2023"
-).dependsOn(runner, parse, algorithms, visualizations.jvm)
+).dependsOn(runner, algorithms)
 
 lazy val runner = (project in file("runner")).settings(
   name := "runner",
@@ -20,7 +20,7 @@ lazy val runner = (project in file("runner")).settings(
     "org.scalatest" %% "scalatest" % "3.2.18" % Test,
     "org.typelevel" %% "cats-effect-testing-scalatest" % "1.5.0" % Test
   )
-).dependsOn(parse)
+).dependsOn(parse, visualizations.jvm)
 
 lazy val algorithms = (project in file("algorithms")).settings(
   name := "algorithms",
