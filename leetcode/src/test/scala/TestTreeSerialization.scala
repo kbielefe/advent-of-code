@@ -1,58 +1,42 @@
-import cats.Eval, cats.data.Cont, cats.syntax.all.*
-import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
-import scala.collection.immutable.Queue
+import org.scalatest.prop.TableDrivenPropertyChecks
+import org.scalatest.wordspec.AnyWordSpec
 
 case class Tree[A](value: A, left: Option[Tree[A]], right: Option[Tree[A]])
 
 object Tree:
-  // In Cont[A, B], B is the argument to the continuation and what gets
-  // "extracted" in a flatMap. A is the result of the continuation.
+  def fromLevelOrder[A](levelOrder: IndexedSeq[Option[A]]): Option[Tree[A]] =
+    def postOrder(col: Int, levelOrder: IndexedSeq[Option[A]], nodeCount: Int): Option[Tree[A]] =
+      if levelOrder.isEmpty then
+        None
+      else
+        val newCol = (col - levelOrder.take(col).count(!_.isDefined)) * 2
+        val newLevelOrder = levelOrder.drop(nodeCount)
+        val newNodeCount = levelOrder.take(nodeCount).count(_.isDefined) * 2
+        val left  = postOrder(newCol,     newLevelOrder, newNodeCount)
+        val right = postOrder(newCol + 1, newLevelOrder, newNodeCount)
+        val value = levelOrder.lift(col).flatten
+        value.map(Tree(_, left, right))
+    end postOrder
 
-  def fromLevelOrder[A](levelOrder: List[Option[A]]): Option[Tree[A]] =
-    type LevelOrder = List[Option[A]]
-    type Node = Option[Tree[A]]
+    postOrder(0, levelOrder, 1)
 
-    def findChild(levelOrder: LevelOrder): Cont[Node, Node] = levelOrder.headOption.flatten match
-      case None    => Cont.pure(None)
-      case Some(a) => Cont.pure(Some(Tree(a, None, None)))
+class TestTreeSerialization extends AnyWordSpec with Matchers with TableDrivenPropertyChecks {
+  val trees = Table(
+    "level order" -> "tree",
+    Vector.empty    -> None,
+    Vector(None)    -> None,
+    Vector(Some(1)) -> Some(Tree(1, None, None)),
+    Vector(Some(1), Some(2)) -> Some(Tree(1, Some(Tree(2, None, None)), None)),
+    Vector(Some(1), None, Some(2), Some(3)) -> Some(Tree(1, None, Some(Tree(2,Some(Tree(3, None, None)),None)))),
+    Vector(Some(1), None, Some(2), None, Some(3), None, Some(4)) -> Some(Tree(1, None, Some(Tree(2,None, Some(Tree(3, None, Some(Tree(4, None, None)))))))),
+    Vector(Some(5),Some(4),Some(7),Some(3),None,Some(2),None,Some(-1),None,Some(9)) -> Some(Tree(5, Some(Tree(4, Some(Tree(3, Some(Tree(-1, None, None)), None)), None)), Some(Tree(7, Some(Tree(2, Some(Tree(9, None, None)), None)), None)))),
+  )
 
-    def findTree(levelOrder: LevelOrder): Cont[Node, Node] = for
-      left  <- findChild(levelOrder.tail)
-      right <- findChild(levelOrder.tail.tail)
-    yield Some(Tree(levelOrder.head.get, left, right))
-
-    findTree(levelOrder).eval.value
-
-class TestTreeSerialization extends AnyWordSpec with Matchers {
-  "Delimited continuations" should {
-    "have an example" ignore {
-      val result: Cont[Unit, String] = Cont.reset[String, Unit]:
-        for
-          _ <- Cont.defer(println("Before shift"))
-          x <- Cont.shift[String, String]:k =>
-            for
-              _ <- Cont.defer(println("Before continue"))
-              y <- Cont.liftF(k("x"))
-              _ <- Cont.defer(println(s"y: $y"))
-            yield "z"
-          _ <- Cont.defer(println(s"x: $x"))
-        yield "y"
-      result.run(z => Eval.later(println(s"z: $z"))).value
-    }
-  }
-
-  "Tree Serialization" when {
-    "given an empty list" should {
-      "return an empty tree" in {
-        Tree.fromLevelOrder[Int](List.empty) shouldBe None
-      }
-    }
-
-    "given [1,2,3]" should {
-      "return a tree with root 1 and children 2 and 3" in {
-        Tree.fromLevelOrder(List(Some(1), Some(2), Some(3))) shouldBe Some(Tree(1, Some(Tree(2, None, None)), Some(Tree(3, None, None))))
-      }
+  "Tree.fromLevelOrder" should {
+    "generate trees from a level order properly" in {
+      forAll (trees): (levelOrder, tree) =>
+        Tree.fromLevelOrder(levelOrder) shouldBe tree
     }
   }
 }
