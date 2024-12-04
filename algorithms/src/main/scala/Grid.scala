@@ -102,25 +102,13 @@ class Grid private (val cells: Map[Pos, Char]) derives CanEqual:
   def filter(p: Char => Boolean): Grid =
     new Grid(cells.filter((pos, char) => p(char)))
 
-  def findAll(length: Int, regex: Regex): Set[Pos] =
-    cells.keySet.flatMap{pos =>
-      val sequence = (pos.col until (pos.col + length)).map(col => cells.get(Pos(pos.row, col)))
-      if sequence.forall(_.isDefined) then
-        val string = sequence.flatten.mkString
-        Option.when(regex.matches(string))(pos)
-      else
-        None
-    }
-
-  def findAllVertical(length: Int, regex: Regex): Set[Pos] =
-    cells.keySet.flatMap{pos =>
-      val sequence = (pos.row until (pos.row + length)).map(row => cells.get(Pos(row, pos.col)))
-      if sequence.forall(_.isDefined) then
-        val string = sequence.flatten.mkString
-        Option.when(regex.matches(string))(pos)
-      else
-        None
-    }
+  def findAll(length: Int, regex: Regex, directions: List[Pos => Pos] = List(_.east)): Iterator[Pos] =
+    for
+      pos <- cells.keysIterator
+      direction <- directions.iterator
+      string = Iterator.iterate(pos)(direction).take(length).flatMap(cells.get).mkString
+      if string.length == length && regex.matches(string)
+    yield pos
 
   /** Find consecutive characters that satisfy the predicate.  */
   def findGroups(p: Char => Boolean): List[Group] =
