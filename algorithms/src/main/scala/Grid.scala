@@ -150,6 +150,28 @@ object Grid:
   given Encoder[Grid] =
     summon[Encoder[Map[Pos, Char]]].contramap(_.cells)
 
+  enum Dir:
+    case North, South, East, West
+
+    def turnRight: Dir = this match
+      case North => East
+      case South => West
+      case East  => South
+      case West  => North
+
+    def turnLeft: Dir = this match
+      case North => West
+      case South => East
+      case East  => North
+      case West  => South
+
+    def arrow: Char = this match
+      case North => '↑'
+      case South => '↓'
+      case East  => '→'
+      case West  => '←'
+  end Dir
+
   object Pos:
     def apply(row: Int, col: Int): Pos = (row, col)
     def unapply(pos: Pos): Option[(Int, Int)] = Some(pos.row, pos.col)
@@ -159,14 +181,24 @@ object Grid:
   extension (p: Pos)
     def row: Int = p._1
     def col: Int = p._2
+
     def neighbors(using n: Neighbors): Set[Pos] = n.neighbors(p)
+
     def manhattan(other: Pos): Int = Math.abs(row - other.row) + Math.abs(col - other.col)
+
     def north: Pos = (p._1 - 1, p._2)
     def south: Pos = (p._1 + 1, p._2)
     def east:  Pos = (p._1, p._2 + 1)
     def west:  Pos = (p._1, p._2 - 1)
+
     def toAffine: Vector[Int] =
       DenseVector(p.col, p.row, 1)
+
+    def moveInDir(dir: Dir): Pos = dir match
+      case Dir.North => north
+      case Dir.South => south
+      case Dir.East  => east
+      case Dir.West  => west
 
   def apply(string: String): Grid =
     val cells = string.linesIterator.zipWithIndex.flatMap{(line, row) =>
