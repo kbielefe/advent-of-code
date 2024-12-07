@@ -174,6 +174,12 @@ object Grid:
       case East  => North
       case West  => South
 
+    def opposite: Dir = this match
+      case North => South
+      case South => North
+      case East  => West
+      case West  => East
+
     def arrow: Char = this match
       case North => '↑'
       case South => '↓'
