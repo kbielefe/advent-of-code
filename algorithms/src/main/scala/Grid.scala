@@ -62,11 +62,17 @@ class Grid private (val cells: Map[Pos, Char]) derives CanEqual:
   def rows: Iterator[String] =
     (minRow to maxRow).iterator.map(row)
 
+  def reverseRows: Iterator[String] =
+    (maxRow to minRow by -1).iterator.map(row)
+
   def col(col: Int): String =
     cells.filter(_._1.col == col).toList.sortBy(_._1.row).map(_._2).mkString
 
   def cols: Iterator[String] =
     (minCol to maxCol).iterator.map(col)
+
+  def reverseCols: Iterator[String] =
+    (maxCol to minCol by -1).iterator.map(col)
 
   def removeRow(row: Int): Grid =
     new Grid(cells.filterNot(_._1.row == row))
@@ -80,7 +86,10 @@ class Grid private (val cells: Map[Pos, Char]) derives CanEqual:
   def --(other: Grid): Grid =
     new Grid(cells -- other.cells.keySet)
 
-  def --(xs: Set[Pos]): Grid =
+  def ++(xs: IterableOnce[(Pos, Char)]): Grid =
+    new Grid(cells ++ xs)
+
+  def --(xs: IterableOnce[Pos]): Grid =
     new Grid(cells -- xs)
 
   def +(cell: (Pos, Char)): Grid =
@@ -172,6 +181,7 @@ object Grid:
       case West  => '←'
   end Dir
 
+  case class PosDir(pos: Pos, dir: Dir)
   object Pos:
     def apply(row: Int, col: Int): Pos = (row, col)
     def unapply(pos: Pos): Option[(Int, Int)] = Some(pos.row, pos.col)
