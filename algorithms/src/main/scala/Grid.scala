@@ -122,6 +122,9 @@ class Grid private (val cells: Map[Pos, Char]) derives CanEqual:
       if string.length == length && regex.matches(string)
     yield pos
 
+  def findAll(char: Char): Iterator[Pos] =
+    cells.filter(_._2 == char).keysIterator
+
   /** Find consecutive characters that satisfy the predicate.  */
   def findGroups(p: Char => Boolean): List[Group] =
     cells.filter((pos, char) => p(char) && (!cells.contains(pos.west) || !p(apply(pos.west))))
