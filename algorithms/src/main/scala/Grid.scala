@@ -111,6 +111,9 @@ class Grid private (val cells: Map[Pos, Char]) derives CanEqual:
   def filter(p: Char => Boolean): Grid =
     new Grid(cells.filter((pos, char) => p(char)))
 
+  def crop(minRow: Int, maxRow: Int, minCol: Int, maxCol: Int): Grid =
+    new Grid(cells.filter((pos, _) => pos.row >= minRow && pos.row <= maxRow && pos.col >= minCol && pos.col <= maxCol))
+
   def findAll(length: Int, regex: Regex, directions: List[Pos => Pos] = List(_.east)): Iterator[Pos] =
     for
       pos <- cells.keysIterator
