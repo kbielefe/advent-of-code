@@ -9,15 +9,14 @@ object Puzzle extends runner.Day[Grid, Int, Int]:
   def part2(grid: Grid): Int =
     val obstacles = firstObstacleInDir(grid)
     val start = grid.find('^').get
-    (findGuardPath(grid, obstacles).flatMap(obstacleHasLoop(grid, obstacles)).toSet - start).size
+    (findGuardPath(grid, obstacles).flatMap(obstacleHasLoop(grid, obstacles, PosDir(start, Dir.North))).toSet - start).size
 
-  def obstacleHasLoop(grid: Grid, obstacles: Map[PosDir, PosDir])(start: PosDir): Option[Pos] =
-    val obstaclePos = start.pos.moveInDir(start.dir)
+  def obstacleHasLoop(grid: Grid, obstacles: Map[PosDir, PosDir], start: PosDir)(guard: PosDir): Option[Pos] =
+    val obstaclePos = guard.pos.moveInDir(guard.dir)
     val newObstacles = addObstacle(grid, obstaclePos, obstacles)
     @tailrec
     def helper(visited: Set[PosDir], current: PosDir): Option[Pos] =
       if visited.contains(current) then
-        //printLoop(grid, obstaclePos, visited, start)
         Some(obstaclePos)
       else newObstacles.get(current) match
         case Some(next) => helper(visited + current, next)
@@ -26,24 +25,6 @@ object Puzzle extends runner.Day[Grid, Int, Int]:
       case Some('#') => None
       case _         => helper(Set.empty, start)
   end obstacleHasLoop
-
-  def printLoop(grid: Grid, obstacle: Pos, visited: Set[PosDir], start: PosDir): Unit =
-    val prunedGrid = grid + (obstacle, 'O') ++ visited.map(posDir => (posDir.pos, posDir.dir.arrow)) + (start.pos, start.dir.arrow)
-    val minRow = visited.map(_.pos.row).min - 2
-    val maxRow = visited.map(_.pos.row).max + 2
-    val minCol = visited.map(_.pos.col).min - 2
-    val maxCol = visited.map(_.pos.col).max + 2
-    println(prunedGrid.crop(minRow, maxRow, minCol, maxCol))
-    println()
-
-  def printObstacle(grid: Grid, obstacle: Pos, entries: List[(PosDir, PosDir)]): Unit =
-    val prunedGrid = grid + (obstacle, 'O') ++ entries.flatMap((start, end) => Iterator((start.pos, start.dir.arrow), (end.pos, end.dir.arrow)))
-    val minRow = entries.flatMap(x => List(x._1, x._2)).map(_.pos.row).min - 2
-    val maxRow = entries.flatMap(x => List(x._1, x._2)).map(_.pos.row).max + 2
-    val minCol = entries.flatMap(x => List(x._1, x._2)).map(_.pos.col).min - 2
-    val maxCol = entries.flatMap(x => List(x._1, x._2)).map(_.pos.col).max + 2
-    println(prunedGrid.crop(minRow, maxRow, minCol, maxCol))
-    println()
 
   def addObstacle(grid: Grid, pos: Pos, obstacles: Map[PosDir, PosDir]): Map[PosDir, PosDir] =
     def entries = Iterator(Dir.North, Dir.South, Dir.East, Dir.West).flatMap: dir =>
@@ -60,7 +41,6 @@ object Puzzle extends runner.Day[Grid, Int, Int]:
       case Some('#') => obstacles
       case None      => obstacles
       case _         =>
-        //printObstacle(grid, pos, entries.toList)
         obstacles ++ entries
   end addObstacle
 
