@@ -193,7 +193,11 @@ object Grid:
       case West  => '←'
   end Dir
 
-  case class PosDir(pos: Pos, dir: Dir)
+  case class PosDir(pos: Pos, dir: Dir):
+    def turnRight: PosDir = PosDir(pos, dir.turnRight)
+    def turnLeft: PosDir = PosDir(pos, dir.turnLeft)
+    def moveForward: PosDir = PosDir(pos.moveInDir(dir), dir)
+
   object Pos:
     def apply(row: Int, col: Int): Pos = (row, col)
     def unapply(pos: Pos): Option[(Int, Int)] = Some(pos.row, pos.col)
