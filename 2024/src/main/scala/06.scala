@@ -1,21 +1,25 @@
 package day6
-import algorithms.{Grid, given}, Grid.{Dir, PosDir}
+import algorithms.{Grid, given}, Grid.{Dir, Pos, PosDir}
 
 object Puzzle extends runner.Day[Grid, Int, Int]:
   def part1(grid: Grid): Int =
-    guardPath(grid).map(_.pos).distinct.size
+    val start = PosDir(grid.find('^').get, Dir.North)
+    guardPath(grid, start).map(_.pos).distinct.size
 
   def part2(grid: Grid): Int =
-    val start = guardPath(grid).next.pos
-    val potentialObstacles = guardPath(grid).map(_.moveForward.pos).filter(grid.get(_) == Some('.')).distinct
-    potentialObstacles.count(obstacle => hasLoop(grid + (obstacle -> '#')))
-
-  def hasLoop(grid: Grid): Boolean =
-    val visited = guardPath(grid).scanLeft(Set.empty[PosDir])(_ + _)
-    guardPath(grid).zip(visited).exists{case (posDir, visited) => visited.contains(posDir)}
-
-  def guardPath(grid: Grid): Iterator[PosDir] =
     val start = PosDir(grid.find('^').get, Dir.North)
+    val visited = guardPath(grid, start).map(_.moveForward.pos).scanLeft(Set.empty[Pos])(_ + _)
+    val potentialObstacles = guardPath(grid, start).zip(visited).filter: (posDir, visited) =>
+        val obstacle = posDir.moveForward.pos
+        !visited.contains(obstacle) && grid.get(obstacle) == Some('.')
+      .map(_._1)
+    potentialObstacles.count(start => hasLoop(grid + (start.moveForward.pos -> '#'), start))
+
+  def hasLoop(grid: Grid, start: PosDir): Boolean =
+    val visited = guardPath(grid, start).scanLeft(Set.empty[PosDir])(_ + _)
+    guardPath(grid, start).zip(visited).exists{case (posDir, visited) => visited.contains(posDir)}
+
+  def guardPath(grid: Grid, start: PosDir): Iterator[PosDir] =
     Iterator.iterate(start): posDir =>
         if grid.get(posDir.moveForward.pos) == Some('#') then posDir.turnRight else posDir.moveForward
       .takeWhile(posDir => grid.contains(posDir.pos))
