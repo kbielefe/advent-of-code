@@ -1,38 +1,57 @@
 package day9
+import algorithms.PriorityQueue
 import parse.{*, given}
 
-type FileSystem = Vector[Option[Int]]
+case class File(id: Int, position: Int, size: Int)
+case class Block(id: Int, position: Int)
+case class Free(position: Int, size: Int)
 
-given Read[FileSystem] = summon[Read[String]].map: input =>
-  input.toVector.map(_.asDigit).zipWithIndex.flatMap: (digit, index) =>
-    val isFile = index % 2 == 0
-    val id = index / 2
-    if isFile then List.fill(digit)(Some(id)) else List.fill(digit)(None)
-
-extension (blocks: FileSystem)
-  def availableFreeSpace(size: Int, leftOf: Int): Option[Long] =
-    blocks.take(leftOf).sliding(size).zipWithIndex.find(_._1.forall(!_.isDefined)).map(_._2)
-
-  def checksum: Long =
-    blocks.zipWithIndex.collect{case (Some(id), index) => id.toLong * index}.sum
-
-  def print: FileSystem =
-    println(blocks.map(_.map(_.toString).getOrElse(".")).mkString)
-    blocks
-
-  def compact: FileSystem =
-    blocks.zipWithIndex.reverse.foldLeft(blocks):
-      case (blocks, (Some(_), from)) => blocks.availableFreeSpace(1, from) match
-        case Some(to) => blocks.patch(to.toInt, blocks.slice(from, from + 1), 1).patch(from.toInt, List(None), 1)
-        case None => blocks
-      case (blocks, _) => blocks
-
-  def defrag: FileSystem =
+class FileSystem(free: List[Free], blocks: Set[Block], files: Set[File]):
+  def reverseFiles: Iterator[File] =
     ???
 
+  def reverseBlocks: Iterator[Block] =
+    blocks.toList.sortBy(-_.position).iterator
+
+  def moveToFree(file: File): FileSystem =
+    ???
+
+  def moveToFree(block: Block): FileSystem =
+    val Free(position, size) = free.head
+    if position < block.position then
+      val newFree = if size > 1 then Free(position + 1, size - 1) :: free.tail else free.tail
+      new FileSystem(newFree, blocks - block + Block(block.id, position), files)
+    else
+      this
+
+  def checksum: Long =
+    blocks.toList.map(block => block.id.toLong * block.position.toLong).sum
+
+  override def toString: String =
+    val maxPosition = (free.map(_.position) ++ blocks.map(_.position)).max
+    (0 to maxPosition).map(pos => blocks.find(_.position == pos).map(_.id.toString).getOrElse(".")).mkString
+
+  def compact: FileSystem =
+    reverseBlocks.foldLeft(this)(_.moveToFree(_))
+
+  def defrag: FileSystem =
+    reverseFiles.foldLeft(this)(_.moveToFree(_))
+
+given Read[FileSystem] = summon[Read[String]].map: input =>
+  val positions = input.map(_.asDigit).scanLeft(0)(_ + _)
+  val free = input.map(_.asDigit).zip(positions).zipWithIndex.filter(_._2 % 2 == 1).flatMap:
+    case ((size, position), _) if size > 0 => Some(Free(position, size))
+    case _ => None
+  val blocks = input.map(_.asDigit).zip(positions).zipWithIndex.filter(_._2 % 2 == 0).flatMap:
+    case ((size, position), index) => (position until (position + size)).map(Block(index / 2, _))
+  val files = input.map(_.asDigit).zip(positions).zipWithIndex.filter(_._2 % 2 == 0).flatMap:
+    case ((size, position), index) if size > 0 => Some(File(index / 2, position, size))
+    case _ => None
+  new FileSystem(free.toList, blocks.toSet, files.toSet)
+
 object Puzzle extends runner.Day[FileSystem, Long, Long]:
-  def part1(blocks: FileSystem): Long =
-    blocks.compact.checksum
+  def part1(fileSystem: FileSystem): Long =
+    fileSystem.compact.checksum
     
-  def part2(blocks: FileSystem): Long =
-    blocks.defrag.checksum
+  def part2(fileSystem: FileSystem): Long =
+    fileSystem.defrag.checksum
