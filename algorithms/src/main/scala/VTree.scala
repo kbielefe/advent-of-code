@@ -35,3 +35,6 @@ trait VTree[A]:
 
   def allReachable(node: A, goal: A => Boolean): Set[A] =
     depthFirstTraverse(node).filter(goal).toSet
+
+  def pathCount(node: A, goal: A => Boolean): Int =
+    depthFirstTraverse(node).count(goal)
