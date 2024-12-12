@@ -4,6 +4,8 @@ import _root_.breeze.linalg.*
 import io.circe.*
 import parse.Read
 import Grid.{Pos, Group}
+import scala.annotation.tailrec
+import scala.collection.immutable.Queue
 import scala.util.matching.Regex
 
 given Read[Grid] with
@@ -28,6 +30,9 @@ class Grid private (val cells: Map[Pos, Char]) derives CanEqual:
   // Need to reflect around Y axis to get normal positive-Y is up transformations
   def transform(m: Matrix[Int]): Grid =
     new Grid(cells.map((pos, char) => (Pos.fromAffine(m * pos.toAffine), char)))
+
+  def headOption: Option[(Pos, Char)] =
+    cells.headOption
 
   def map(f: Char => Char): Grid =
     new Grid(cells.view.mapValues(f).toMap)
@@ -148,6 +153,18 @@ class Grid private (val cells: Map[Pos, Char]) derives CanEqual:
 
   def neighborCount(pos: Pos, p: Char => Boolean = _ == '#')(using Grid.Neighbors): Int =
     pos.neighbors.toList.flatMap(cells.get).count(p)
+
+  def floodFill(start: Pos, p: Char => Boolean)(using Grid.Neighbors): Set[Pos] =
+    @tailrec
+    def helper(open: Queue[Pos], visited: Set[Pos]): Set[Pos] =
+      open.dequeueOption match
+        case Some((pos, open)) =>
+          val neighbors = pos.neighbors.filter(pos => cells.get(pos).map(p).getOrElse(false)) -- visited
+          helper(open.enqueueAll(neighbors), visited ++ neighbors)
+        case None =>
+          visited
+
+    helper(Queue(start), Set(start))
 
   override def equals(other: Any): Boolean =
     cells == other.asInstanceOf[Grid].cells
