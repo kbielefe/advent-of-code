@@ -27,6 +27,7 @@ object Mod:
     override def *(a: Mod[V], b: Mod[V]): Mod[V] = normalize(a * b)
     override def ==(a: Mod[V], b: Mod[V]): Boolean = a == b
     override def !=(a: Mod[V], b: Mod[V]): Boolean = a != b
+    // See NumberExtensions %+ for a normalized % operation that always returns a positive result
     def normalize(x: Mod[V]): Mod[V] =
       n.rem(n.plus(n.rem(x, m.mod), m.mod), m.mod)
 
