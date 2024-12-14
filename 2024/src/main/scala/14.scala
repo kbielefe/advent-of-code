@@ -1,5 +1,5 @@
 package day14
-import algorithms.Grid, Grid.Pos
+import algorithms.{Grid, %+}, Grid.Pos
 import parse.{*, given}
 
 val width = 101
@@ -7,7 +7,7 @@ val height = 103
 
 case class Robot(px: Int, py: Int, vx: Int, vy: Int):
   def move: Robot =
-    Robot(((px + vx) % width + width) % width, ((py + vy) % height + height) % height, vx, vy)
+    Robot((px + vx) %+ width, (py + vy) %+ height, vx, vy)
 
   def quadrant: Option[(Int, Int)] =
     Option.unless(px == width / 2 || py == height / 2)(2 * px / width -> 2 * py / height)
