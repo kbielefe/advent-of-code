@@ -1,8 +1,7 @@
 package day15
-import algorithms.{Grid, given}, Grid.{Pos, Dir}
+import algorithms.{Grid, QueueOnce, given}, Grid.{Pos, Dir}
 import parse.{*, given}
 import scala.annotation.tailrec
-import scala.collection.immutable.Queue
 
 case class Warehouse(grid: Grid, moves: List[Dir])
 given Read[List[Dir]] = summon[Read[String]].map: string =>
@@ -38,30 +37,32 @@ object Puzzle extends runner.Day[Warehouse, Int, Int]:
     Grid(expandedCells)
 
   def moveToEnd(grid: Grid, moves: List[Dir]): Grid =
-    moves.foldLeft(grid): (grid, dir) =>
-      val moved = allMoved(Queue(grid.find('@').get), grid, dir, Set.empty)
-      if moved.exists(pos => grid(pos.moveInDir(dir)) == '#') then
-        grid
-      else
-        move(grid, moved, dir)
+    moves.foldLeft((grid.find('@').get, grid)):
+      case ((robot, grid), dir) =>
+        val moved = allMoved(QueueOnce(robot), grid, dir, Set.empty)
+        if moved.isEmpty then (robot, grid) else (robot.moveInDir(dir), move(grid, moved, dir))
+    ._2
 
   def move(grid: Grid, moved: Set[Pos], dir: Dir): Grid =
     val newEmpty = moved -- moved.map(_.moveInDir(dir))
     grid ++ newEmpty.map(_ -> '.') ++ moved.map(pos => pos.moveInDir(dir) -> grid(pos))
 
   @tailrec
-  def allMoved(queue: Queue[Pos], grid: Grid, dir: Dir, visited: Set[Pos]): Set[Pos] =
+  def allMoved(queue: QueueOnce[Pos], grid: Grid, dir: Dir, visited: Set[Pos]): Set[Pos] =
     queue.dequeueOption match
       case Some(pos, rest) =>
         val char = grid(pos)
-        val nextEnqueued = if "@O[]".contains(char) && !visited.contains(pos.moveInDir(dir)) then rest.enqueue(pos.moveInDir(dir)) else rest
-        val newVisited = if "@O[]".contains(char) then visited + pos else visited
-        val boxHalfEnqueued =
-          if char == '[' && !visited.contains(pos.east) then
-            nextEnqueued.enqueue(pos.east)
-          else if char == ']'  && !visited.contains(pos.west) then
-            nextEnqueued.enqueue(pos.west)
-          else
-            nextEnqueued
-        allMoved(boxHalfEnqueued, grid, dir, newVisited)
+        if char == '#' then
+          Set.empty
+        else
+          val nextEnqueued = if "@O[]".contains(char) then rest.enqueue(pos.moveInDir(dir)) else rest
+          val newVisited = if "@O[]".contains(char) then visited + pos else visited
+          val boxHalfEnqueued =
+            if char == '[' then
+              nextEnqueued.enqueue(pos.east)
+            else if char == ']' then
+              nextEnqueued.enqueue(pos.west)
+            else
+              nextEnqueued
+          allMoved(boxHalfEnqueued, grid, dir, newVisited)
       case None => visited
