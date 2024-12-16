@@ -45,6 +45,37 @@ class AStar[Position, Weight : Numeric](
     val g = Map[Position, Weight](start -> initial)
     helper(open, cameFrom, g)
 
+  def getAllPositionsOnShortestPaths(start: Position)(using CanEqual[Position, Position]): Set[Position] =
+    @tailrec
+    def helper(open: PriorityQueue[Position, Weight], cameFrom: Map[Position, Set[Position]],
+      g: Map[Position, Weight]): Set[Position] =
+
+      if open.isEmpty then
+        cameFrom.keySet.find(goal) match
+          case Some(current) => reconstructAllPositionsOnPaths(current, cameFrom)
+          case None => Set.empty[Position]
+      else
+        val (current, openWithoutMin) = open.dequeue.get
+
+        def tentativeG(neighbor: Position) = g(current) + neighborWeight(current, neighbor)
+
+        val neighbors = getNeighbors(current) - current
+        val betterNeighbors = neighbors filter {neighbor => g.get(neighbor).map(tentativeG(neighbor) <= _).getOrElse(true)}
+
+        val newCameFrom = betterNeighbors.foldLeft(cameFrom):
+          case (cameFrom, neighbor) => cameFrom.addMulti(neighbor, current)
+        val newG = g ++ betterNeighbors.map{neighbor => (neighbor, tentativeG(neighbor))}
+        val updatedH = betterNeighbors.map{neighbor => (neighbor, tentativeG(neighbor) + heuristic(neighbor))}
+
+        val newOpen = openWithoutMin.enqueue(updatedH)
+
+        helper(newOpen, newCameFrom, newG)
+
+    val open = PriorityQueue(start -> heuristic(start))
+    val cameFrom = Map.empty[Position, Set[Position]]
+    val g = Map[Position, Weight](start -> initial)
+    helper(open, cameFrom, g)
+
   def getMinCost(starts: Position*): Option[Weight] =
     @tailrec
     def helper(open: PriorityQueue[Position, Weight], g: Map[Position, Weight]): Option[Weight] =
@@ -117,3 +148,15 @@ class AStar[Position, Weight : Numeric](
         case Some(previous) => helper(previous, previous :: result)
 
     helper(end, List(end))
+
+  private def reconstructAllPositionsOnPaths(end: Position, cameFrom: Map[Position, Set[Position]]): Set[Position] =
+    @tailrec
+    def helper(queue: QueueOnce[Position], result: Set[Position]): Set[Position] =
+      queue.dequeueOption match
+        case None => result
+        case Some((current, rest)) =>
+          cameFrom.get(current) match
+            case None => helper(rest, result + current)
+            case Some(previous) => helper(previous.foldLeft(rest)(_ `enqueue` _), result + current)
+
+    helper(QueueOnce(end), Set(end))
