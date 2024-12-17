@@ -1,8 +1,7 @@
 package day16
-import algorithms.{AStar, Grid, PriorityQueue, given}, Grid.{Pos, Dir, PosDir}
+import algorithms.{AStar, Grid, given}, Grid.{Pos, Dir, PosDir}
 import cats.data.NonEmptyList
 import parse.{*, given}
-import scala.annotation.tailrec
 
 object Puzzle extends runner.Day[Grid, Int, Int]:
   def part1(grid: Grid): Int =
@@ -12,20 +11,18 @@ object Puzzle extends runner.Day[Grid, Int, Int]:
     val maxCost = part1(grid)
     val start = PosDir(grid.find('S').get, Dir.East)
     val goal = grid.find('E').get
-    paths(PriorityQueue((start, Set(start.pos), 0), 0), goal, grid, Iterator.empty, maxCost).flatten.size
+    pathDFS(grid, start, Set.empty, 0, maxCost, goal, Map.empty)._2.size
 
-  @tailrec
-  def paths(queue: PriorityQueue[(PosDir, Set[Pos], Int), Int], goal: Pos, grid: Grid, accum: Iterator[Set[Pos]], maxCost: Int): Iterator[Set[Pos]] =
-    queue.dequeue match
-      case None => accum
-      case Some((posDir, path, cost) -> rest) if posDir.pos == goal => paths(rest, goal, grid, accum ++ Iterator(path + posDir.pos), maxCost)
-      case Some((posDir, path, cost) -> rest) =>
-        val neighbors = List(
-          (posDir.turnLeft,    path + posDir.pos, cost - 1000) -> (cost - 1000),
-          (posDir.turnRight,   path + posDir.pos, cost - 1000) -> (cost - 1000),
-          (posDir.moveForward, path + posDir.pos, cost - 1)    -> (cost - 1)
-        ).filter(n => -n._2 < maxCost && grid(n._1._1.pos) != '#' && !path.contains(n._1._1.pos))
-        paths(rest.enqueue(neighbors), goal, grid, accum, maxCost)
+  def pathDFS(grid: Grid, current: PosDir, path: Set[Pos], cost: Int, maxCost: Int, goal: Pos, minHere: Map[PosDir, Int]): (Map[PosDir, Int], Set[Pos]) =
+    if cost > maxCost || grid.get(current.pos) == Some('#') || minHere.getOrElse(current, Int.MaxValue) < cost then
+      (minHere, Set.empty)
+    else if current.pos == goal then
+      (minHere, path + goal)
+    else
+      val (minMove, resultMove)   = pathDFS(grid, current.moveForward, path + current.pos, cost + 1,    maxCost, goal, minHere + (current -> cost))
+      val (minLeft, resultLeft)   = pathDFS(grid, current.turnLeft, path + current.pos,    cost + 1000, maxCost, goal, minMove)
+      val (minRight, resultRight) = pathDFS(grid, current.turnRight, path + current.pos,   cost + 1000, maxCost, goal, minLeft)
+      (minRight, resultLeft ++ resultRight ++ resultMove)
 
   def getNeighbors(grid: Grid)(current: PosDir): Set[PosDir] =
     Set(
