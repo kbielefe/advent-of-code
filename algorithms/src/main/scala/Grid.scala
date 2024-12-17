@@ -213,7 +213,9 @@ object Grid:
   case class PosDir(pos: Pos, dir: Dir):
     def turnRight: PosDir = PosDir(pos, dir.turnRight)
     def turnLeft: PosDir = PosDir(pos, dir.turnLeft)
+    def turnAround: PosDir = PosDir(pos, dir.opposite)
     def moveForward: PosDir = PosDir(pos.moveInDir(dir), dir)
+    def moveBackward: PosDir = PosDir(pos.moveInDir(dir.opposite), dir)
 
   object Pos:
     def apply(row: Int, col: Int): Pos = (row, col)

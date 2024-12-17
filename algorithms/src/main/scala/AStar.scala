@@ -16,16 +16,23 @@ class AStar[Position, Weight : Numeric](
     getNeighbors: Position => Set[Position]):
 
   def getPath(start: Position)(using CanEqual[Position, Position]) : List[Position] =
+    calculate(start).map((_, cameFrom, goalPos) => reconstructPath(goalPos, cameFrom)).getOrElse(List.empty)
+
+  def getMinCost(starts: Position*): Option[Weight] =
+    calculate(starts*).map((lowestCostFromStart, cameFrom, goalPos) => lowestCostFromStart(goalPos))
+
+  /** Returns the lowest cost from start and the predecessor for every Position as well as the lowest cost goal Position */
+  def calculate(starts: Position*): Option[(Map[Position, Weight], Map[Position, Position], Position)] =
     @tailrec
     def helper(open: PriorityQueue[Position, Weight], cameFrom: Map[Position, Position],
-      g: Map[Position, Weight]): List[Position] =
+      g: Map[Position, Weight]): Option[(Map[Position, Weight], Map[Position, Position], Position)] =
 
       if open.isEmpty then
-        return List.empty[Position]
+        return None
 
       val (current, openWithoutMin) = open.dequeue.get
       if goal(current) then
-        return reconstructPath(current, cameFrom)
+        return Some((g, cameFrom, current))
 
       def tentativeG(neighbor: Position) = g(current) + neighborWeight(current, neighbor)
 
@@ -40,37 +47,9 @@ class AStar[Position, Weight : Numeric](
 
       helper(newOpen, newCameFrom, newG)
 
-    val open = PriorityQueue(start -> heuristic(start))
-    val cameFrom = Map[Position, Position]()
-    val g = Map[Position, Weight](start -> initial)
-    helper(open, cameFrom, g)
-
-  def getMinCost(starts: Position*): Option[Weight] =
-    @tailrec
-    def helper(open: PriorityQueue[Position, Weight], g: Map[Position, Weight]): Option[Weight] =
-
-      if open.isEmpty then
-        return None
-
-      val (current, openWithoutMin) = open.dequeue.get
-      if goal(current) then
-        return Some(g(current))
-
-      def tentativeG(neighbor: Position) = g(current) + neighborWeight(current, neighbor)
-
-      val neighbors = getNeighbors(current) - current
-      val betterNeighbors = neighbors filter {neighbor => g.get(neighbor).map(tentativeG(neighbor) < _).getOrElse(true)}
-
-      val newG = g ++ betterNeighbors.map{neighbor => (neighbor, tentativeG(neighbor))}
-      val updatedH = betterNeighbors.map{neighbor => (neighbor, tentativeG(neighbor) + heuristic(neighbor))}
-
-      val newOpen = openWithoutMin.enqueue(updatedH)
-
-      helper(newOpen, newG)
-
     val open = starts.map(start => (start -> heuristic(start))).foldLeft(PriorityQueue.Empty: PriorityQueue[Position, Weight])((queue, value) => queue.enqueue(value))
     val g = starts.map(start => start -> initial).toMap
-    helper(open, g)
+    helper(open, Map.empty, g)
 
   sealed trait Step
   case class Visited(position: Position) extends Step
