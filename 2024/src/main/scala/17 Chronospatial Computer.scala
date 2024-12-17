@@ -47,16 +47,14 @@ object Puzzle extends runner.Day[Computer, String, Long]:
     val aByOutputs = (0 until math.pow(2, 18).toInt).map: a =>
         computer.withA(a).run.take(3) -> a
       .groupMap(_._1)(_._2 & 511).view.mapValues(_.toSet).toMap
-    val possibleDigits = possibleQuineDigits(aByOutputs, Map.empty, 0, computer.program.toList).toList.sortBy(-_._1)
-    val mins = possibleDigits.map(_._2.min.toLong)
-    val result = mins.foldLeft(0L)((accum, min) => (accum << 3) + min)
-    println(computer.program.mkString(","))
-    println(part1(computer.withA(result)))
-    possibleDigits.foreach(println)
-    println(aByOutputs(List(2,4,1)).map(_ >> 3 & 7))
-    println(aByOutputs(List(4,1,5)).map(_ >> 0 & 7))
-    println(aByOutputs(List(1,5,7)))
-    result
+    val possibleDigits = possibleQuineDigits(aByOutputs, Map.empty, 0, computer.program.toList).toList.sortBy(-_._1).map(_._2.toList.map(_.toLong).sorted)
+    findSmallestQuine(computer, possibleDigits, 0).get
+
+  def findSmallestQuine(computer: Computer, possibleDigits: List[List[Long]], a: Long): Option[Long] =
+    possibleDigits.headOption match
+      case Some(digits) => digits.iterator.flatMap(digit => findSmallestQuine(computer, possibleDigits.tail, (a << 3) + digit)).nextOption
+      case None if computer.withA(a).run == computer.program => Some(a)
+      case _ => None
 
   @tailrec
   def possibleQuineDigits(aByOutputs: Map[List[Long], Set[Int]], possibleDigits: Map[Int, Set[Int]], currentDigit: Int, expectedOutput: List[Long]): Map[Int, Set[Int]] =
