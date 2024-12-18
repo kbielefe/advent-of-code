@@ -44,27 +44,15 @@ object Puzzle extends runner.Day[Computer, String, Long]:
     computer.run.mkString(",")
 
   def part2(computer: Computer): Long =
-    val aByOutputs = (0 until math.pow(2, 18).toInt).map: a =>
-        computer.withA(a).run.take(3) -> a
-      .groupMap(_._1)(_._2 & 511).view.mapValues(_.toSet).toMap
-    val possibleDigits = possibleQuineDigits(aByOutputs, Map.empty, 0, computer.program.toList).toList.sortBy(-_._1).map(_._2.toList.map(_.toLong).sorted)
-    findSmallestQuine(computer, possibleDigits, 0).get
+    findQuine(computer, computer.program.reverse.toList, 0).get
 
-  def findSmallestQuine(computer: Computer, possibleDigits: List[List[Long]], a: Long): Option[Long] =
-    possibleDigits.headOption match
-      case Some(digits) => digits.iterator.flatMap(digit => findSmallestQuine(computer, possibleDigits.tail, (a << 3) + digit)).nextOption
-      case None if computer.withA(a).run == computer.program => Some(a)
-      case _ => None
-
-  @tailrec
-  def possibleQuineDigits(aByOutputs: Map[List[Long], Set[Int]], possibleDigits: Map[Int, Set[Int]], currentDigit: Int, expectedOutput: List[Long]): Map[Int, Set[Int]] =
-    if expectedOutput.isEmpty then
-      possibleDigits
+  def findQuine(computer: Computer, output: List[Long], a: Long): Option[Long] =
+    if output.isEmpty then
+      Some(a)
     else
-      val newPossibleDigits = (0 to 2).foldLeft(possibleDigits): (possibleDigits, offset) =>
-        val currentSet = aByOutputs(expectedOutput.take(3)).map(_ >> (3 * offset) & 7)
-        val newSet = possibleDigits.get(currentDigit + offset) match
-          case Some(previousSet) => currentSet & previousSet
-          case None => currentSet
-        possibleDigits.updated(currentDigit + offset, newSet)
-      possibleQuineDigits(aByOutputs, newPossibleDigits, currentDigit + 1, expectedOutput.tail)
+      (0 to 7)
+        .map(_ + (a << 3))
+        .iterator
+        .filter(a => computer.withA(a).run.head == output.head)
+        .flatMap(findQuine(computer, output.tail, _))
+        .nextOption
