@@ -1,5 +1,5 @@
 package day18
-import algorithms.{AStar, Grid, given}, Grid.Pos
+import algorithms.{AStar, binarySearch, Grid, given}, Grid.Pos
 import parse.{*, given}
 
 given Read[Pos] = Read[(Int, Int)](",").map((col, row) => Pos(row, col))
@@ -11,9 +11,8 @@ object Puzzle extends runner.Day[List[Pos], Int, String]:
     astar(obstacles).getMinCost(Pos(0, 0)).get
 
   def part2(bytes: List[Pos]): String =
-    val blocker = (0 until bytes.size).find: size =>
-      !astar(bytes.take(size + 1).toSet).getMinCost(Pos(0, 0)).isDefined
-    val pos = bytes(blocker.get)
+    val (blocker, _) = binarySearch(1024, bytes.size, size => astar(bytes.take(size + 1).toSet).getMinCost(Pos(0, 0)), !_.isDefined)
+    val pos = bytes(blocker)
     s"${pos.col},${pos.row}"
 
   def astar(obstacles: Set[Pos]): AStar[Pos, Int] =
