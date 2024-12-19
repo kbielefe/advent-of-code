@@ -33,6 +33,7 @@ lazy val algorithms = (project in file("algorithms")).settings(
     "co.fs2" %% "fs2-core" % "3.11.0",
     "org.typelevel" %% "spire" % "0.18.0",
     "org.scalanlp" %% "breeze" % "2.1.0",
+    "org.typelevel" %% "cats-collections-core" % "0.9.9",
     "org.scalatest" %% "scalatest" % "3.2.19" % Test
   )
 ).dependsOn(parse)
