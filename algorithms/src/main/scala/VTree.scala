@@ -38,3 +38,17 @@ trait VTree[A]:
 
   def pathCount(node: A, goal: A => Boolean): Int =
     depthFirstTraverse(node).count(goal)
+
+  def allShortestPaths(node: A, goal: A => Boolean): Iterator[List[A]] =
+    def helper(queue: Iterator[(A, Set[A], List[A])]): Iterator[(A, Set[A], List[A])] =
+      if queue.hasNext then
+        val (q1, q2) = queue.duplicate
+        q1 ++ helper(q2.flatMap((a, visited, path) => children(a, visited).map(child =>  (child, (visited + a), a :: path))))
+      else
+        Iterator.empty
+    val (q1, q2) = helper(Iterator((node, Set.empty, List.empty))).dropWhile(x => !goal(x._1)).duplicate
+    if q1.hasNext then
+      val shortest = q1.next._3.size
+      q2.takeWhile(_._3.size == shortest).filter(x => goal(x._1)).map(x => x._1 :: x._3)
+    else
+      Iterator.empty
