@@ -1,6 +1,5 @@
 package day21
 import algorithms.{Graph, Edge}
-import cats.data.Chain
 import parse.{*, given}
 
 val directional = Graph.fromEdges(List(
@@ -58,16 +57,7 @@ object Puzzle extends runner.Day[List[String], Long, Long]:
     ???
 
   def complexity(code: String): Long =
-    shortest(numeric)(Chain.fromIterableOnce(code))
-      .flatMap(shortest(directional))
-      .flatMap(shortest(directional))
-      .map(_.size)
-      .min * code.take(3).toInt
+    ???
 
-  def shortest(graph: Graph[Char, Char])(code: Chain[Char]): Iterator[Chain[Char]] =
-    val segments = Chain.fromIterableOnce(('A' +: code).toList.sliding(2).map(x => Chain.fromIterableOnce(graph.shortestPaths(x(0), x(1)).map(x => Chain.fromIterableOnce('A' :: x.map(_.props))))))
-    def helper(segments: Chain[Chain[Chain[Char]]], prefix: Chain[Char]): Iterator[Chain[Char]] =
-      segments.uncons match
-        case None => Iterator(prefix.reverse)
-        case Some(head, tail) => head.iterator.flatMap(segment => helper(tail, segment ++ prefix))
-    helper(segments, Chain.empty)
+  def pathCounts(code: String): Map[List[Char], Long] =
+    ???
