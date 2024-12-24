@@ -1,81 +1,73 @@
 package day21
+import algorithms.{Graph, Edge}
+import cats.data.Chain
 import parse.{*, given}
-import algorithms.VTree
 
-val directional = Map(
-  ('^', '>') -> 'A',
-  ('^', 'v') -> 'v',
-  ('A', '<') -> '^',
-  ('A', 'v') -> '>',
-  ('<', '>') -> 'v',
-  ('v', '^') -> '^',
-  ('v', '<') -> '<',
-  ('v', '>') -> '>',
-  ('>', '^') -> 'A',
-  ('>', '<') -> 'v'
-)
+val directional = Graph.fromEdges(List(
+  Edge('^', 'A', '>'),
+  Edge('^', 'v', 'v'),
+  Edge('A', '^', '<'),
+  Edge('A', '>', 'v'),
+  Edge('<', 'v', '>'),
+  Edge('v', '^', '^'),
+  Edge('v', '<', '<'),
+  Edge('v', '>', '>'),
+  Edge('>', 'A', '^'),
+  Edge('>', 'v', '<')
+))
 
-val numeric = Map(
-  ('A', '<') -> '0',
-  ('A', '^') -> '3',
-  ('0', '>') -> 'A',
-  ('0', '^') -> '2',
-  ('1', '^') -> '4',
-  ('1', '>') -> '2',
-  ('2', '<') -> '1',
-  ('2', '>') -> '3',
-  ('2', '^') -> '5',
-  ('2', 'v') -> '0',
-  ('3', '<') -> '2',
-  ('3', '^') -> '6',
-  ('3', 'v') -> 'A',
-  ('4', '^') -> '7',
-  ('4', '>') -> '5',
-  ('4', 'v') -> '1',
-  ('5', '<') -> '4',
-  ('5', '>') -> '6',
-  ('5', '^') -> '8',
-  ('5', 'v') -> '2',
-  ('6', '<') -> '5',
-  ('6', '^') -> '9',
-  ('6', 'v') -> '3',
-  ('7', 'v') -> '4',
-  ('7', '>') -> '8',
-  ('8', '<') -> '7',
-  ('8', 'v') -> '5',
-  ('8', '>') -> '9',
-  ('9', '<') -> '8',
-  ('9', 'v') -> '6'
-)
+val numeric = Graph.fromEdges(List(
+  Edge('A', '0', '<'),
+  Edge('A', '3', '^'),
+  Edge('0', 'A', '>'),
+  Edge('0', '2', '^'),
+  Edge('1', '4', '^'),
+  Edge('1', '2', '>'),
+  Edge('2', '1', '<'),
+  Edge('2', '3', '>'),
+  Edge('2', '5', '^'),
+  Edge('2', '0', 'v'),
+  Edge('3', '2', '<'),
+  Edge('3', '6', '^'),
+  Edge('3', 'A', 'v'),
+  Edge('4', '7', '^'),
+  Edge('4', '5', '>'),
+  Edge('4', '1', 'v'),
+  Edge('5', '4', '<'),
+  Edge('5', '6', '>'),
+  Edge('5', '8', '^'),
+  Edge('5', '2', 'v'),
+  Edge('6', '5', '<'),
+  Edge('6', '9', '^'),
+  Edge('6', '3', 'v'),
+  Edge('7', '4', 'v'),
+  Edge('7', '8', '>'),
+  Edge('8', '7', '<'),
+  Edge('8', '5', 'v'),
+  Edge('8', '9', '>'),
+  Edge('9', '8', '<'),
+  Edge('9', '6', 'v')
+))
 
 given Read[List[String]] = Read("\n")
-object Puzzle extends runner.Day[List[String], Int, Int]:
-  def part1(codes: List[String]): Int =
-    allShortestPaths(numeric)(codes.head.toList).foreach(println)
-    codes.map(code => minCost(code.toList) * code.take(3).toInt).sum
+object Puzzle extends runner.Day[List[String], Long, Long]:
+  def part1(codes: List[String]): Long =
+    codes.map(complexity).sum
 
-  def part2(codes: List[String]): Int =
+  def part2(codes: List[String]): Long =
     ???
 
-  def minCost(code: List[Char]): Int =
-    val result = allShortestPaths(numeric)(code)
-      .flatMap(allShortestPaths(directional))
-      .flatMap(allShortestPaths(directional))
+  def complexity(code: String): Long =
+    shortest(numeric)(Chain.fromIterableOnce(code))
+      .flatMap(shortest(directional))
+      .flatMap(shortest(directional))
       .map(_.size)
-      .min
-    result
+      .min * code.take(3).toInt
 
-  def allShortestPaths(neighbors: Map[(Char, Char), Char])(code: List[Char]): Iterator[List[Char]] =
-    concatPaths(('A' :: code).sliding(2).map{case List(l, r) => vtree(neighbors).allShortestPaths(l, _ == r)})
-
-  def concatPaths(paths: Iterator[Iterator[List[Char]]]): Iterator[List[Char]] =
-    def helper(prefix: List[Char], paths: Iterator[Iterator[List[Char]]]): Iterator[List[Char]] =
-      if paths.isEmpty then
-        Iterator(prefix)
-      else
-        paths.next.flatMap(path => helper(path ++ ('A' :: prefix.drop(1)), paths))
-    helper(List.empty, paths)
-
-  def vtree(neighbors: Map[(Char, Char), Char]): VTree[Char] = new VTree[Char]:
-    override def children(node: Char, visited: Set[Char]): Iterator[Char] =
-      "><^v".iterator.flatMap(dir => neighbors.get(node -> dir).filterNot(visited.contains))
+  def shortest(graph: Graph[Char, Char])(code: Chain[Char]): Iterator[Chain[Char]] =
+    val segments = Chain.fromIterableOnce(('A' +: code).toList.sliding(2).map(x => Chain.fromIterableOnce(graph.shortestPaths(x(0), x(1)).map(x => Chain.fromIterableOnce('A' :: x.map(_.props))))))
+    def helper(segments: Chain[Chain[Chain[Char]]], prefix: Chain[Char]): Iterator[Chain[Char]] =
+      segments.uncons match
+        case None => Iterator(prefix.reverse)
+        case Some(head, tail) => head.iterator.flatMap(segment => helper(tail, segment ++ prefix))
+    helper(segments, Chain.empty)

@@ -68,6 +68,11 @@ class Graph[V, E] private (
             helper(next ++ remaining)
     helper(outgoingEdges(start).toList.map(edge => (edge, this, List.empty)))
 
+  // TODO: more efficient implementation
+  def shortestPaths(start: V, goal: V): Iterator[List[Edge[V, E]]] =
+    val shortest = paths(start, goal).map(_.size).min
+    paths(start, goal).filter(_.size == shortest)
+
   def combinedPaths(start: V, goal: V)(using M: Monoid[E]): Iterator[E] =
     def helper(list: List[(Edge[V, E], Graph[V, E], E)]): Iterator[E] =
       list match
