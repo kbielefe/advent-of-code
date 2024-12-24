@@ -51,7 +51,7 @@ val numeric = Map(
 given Read[List[String]] = Read("\n")
 object Puzzle extends runner.Day[List[String], Int, Int]:
   def part1(codes: List[String]): Int =
-    vtree(numeric).allShortestPaths('A', _ == '5').foreach(println)
+    allShortestPaths(numeric)(codes.head.toList).foreach(println)
     codes.map(code => minCost(code.toList) * code.take(3).toInt).sum
 
   def part2(codes: List[String]): Int =
@@ -66,7 +66,15 @@ object Puzzle extends runner.Day[List[String], Int, Int]:
     result
 
   def allShortestPaths(neighbors: Map[(Char, Char), Char])(code: List[Char]): Iterator[List[Char]] =
-    ('A' :: code).sliding(2).map{case List(l, r) => vtree(neighbors).allShortestPaths(l, _ == r)}.reduceLeft(_ ++ _)
+    concatPaths(('A' :: code).sliding(2).map{case List(l, r) => vtree(neighbors).allShortestPaths(l, _ == r)})
+
+  def concatPaths(paths: Iterator[Iterator[List[Char]]]): Iterator[List[Char]] =
+    def helper(prefix: List[Char], paths: Iterator[Iterator[List[Char]]]): Iterator[List[Char]] =
+      if paths.isEmpty then
+        Iterator(prefix)
+      else
+        paths.next.flatMap(path => helper(path ++ ('A' :: prefix.drop(1)), paths))
+    helper(List.empty, paths)
 
   def vtree(neighbors: Map[(Char, Char), Char]): VTree[Char] = new VTree[Char]:
     override def children(node: Char, visited: Set[Char]): Iterator[Char] =
