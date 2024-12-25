@@ -33,7 +33,7 @@ class ForceGraph[I: Read, V, E](
       <meta charset="utf-8">
       ${title.fold("")(t => s"""<title>$t</title>""")}
       <style> body { margin: 0; } </style>
-      <script src="https://cdn.jsdelivr.net/npm/force-graph/dist/force-graph.min.js" integrity="sha256-r5MkzmO7h/MwZDwEqQYsoXs74ygmI0ASGXztWV6w+Do=" crossorigin="anonymous"></script>
+      <script src="https://cdn.jsdelivr.net/npm/force-graph/dist/force-graph.min.js" crossorigin="anonymous"></script>
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/force-graph/src/force-graph.min.css">
     </head>
 
