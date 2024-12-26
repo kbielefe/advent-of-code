@@ -57,7 +57,17 @@ object Puzzle extends runner.Day[List[String], Long, Long]:
     ???
 
   def complexity(code: String): Long =
-    ???
+    pathCounts(code) * code.take(3).toLong
 
-  def pathCounts(code: String): Map[List[Char], Long] =
-    ???
+  def pathCounts(code: String): Long =
+    ("A" + code).sliding(2).map(segment => numeric.shortestPaths(segment(0), segment(1)).map(presses).map(pressCount(2)).min).sum
+
+  def presses(edges: List[Edge[Char, Char]]): List[Char] =
+    edges.map(_.props).prepended('A').reverse
+
+  def pressCount(depth: Int)(code: List[Char]): Long =
+    //println("  " * (2 - depth) + code.mkString)
+    if depth == 0 then
+      code.size
+    else
+      ('A' :: code).sliding(2).map(segment => directional.shortestPaths(segment(0), segment(1)).map(presses).map(pressCount(depth - 1)).min).sum
