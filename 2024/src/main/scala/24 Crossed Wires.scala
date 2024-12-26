@@ -11,6 +11,16 @@ case class Gate(lhs: String, kind: String, rhs: String, output: String):
     case "XOR" => input.calculate(lhs) ^ input.calculate(rhs)
     case _ => ???
 
+  def swap(left: String, right: String): Gate =
+    def helper(value: String): String =
+      if value == left then
+        right
+      else if value == right then
+        left
+      else
+        value
+    copy(output = helper(output))
+
 case class Input(initial: Map[String, Int], gates: List[Gate]):
   def signals: Set[String] =
     gates.flatMap(_.signals).toSet
@@ -28,32 +38,39 @@ case class Input(initial: Map[String, Int], gates: List[Gate]):
   def withOne(signal: String): Input =
     Input(initial + (signal -> 1), gates)
 
-  def isCorrect(signal: String): Boolean =
-    val num = signal.drop(1)
-    val carryCorrect =
-      num == "00" || {
-        val prev = "%02d".format(num.toInt - 1)
-        zeroInputs.withOne("x" + prev).withOne("y" + prev).calculate(signal)
-      }
-    carryCorrect &&
-    !zeroInputs.calculate(signal) &&
-    zeroInputs.withOne("x" + num).calculate(signal) &&
-    zeroInputs.withOne("y" + num).calculate(signal) &&
-    !zeroInputs.withOne("x" + num).withOne("y" + num).calculate(signal)
+  def containsLoop(visited: Set[String]): Boolean =
+    val inputs = signals.filter(_.startsWith("z")).flatMap:signal =>
+      val gate = gates.find(_.output == signal).get
+      List(gate.lhs, gate.rhs)
+    ???
 
-  def whyIncorrect(signal: String): String =
-    val num = signal.drop(1)
-    val carryCorrect = num == "00" || {
-      val prev = "%02d".format(num.toInt - 1)
-      zeroInputs.withOne("x" + prev).withOne("y" + prev).calculate(signal)
-    }
-    s"""$signal
-    |carry   $carryCorrect
-    |both 0  ${!zeroInputs.calculate(signal)}
-    |both 1  ${!zeroInputs.withOne("x" + num).withOne("y" + num).calculate(signal)}
-    |x$num = 1 ${zeroInputs.withOne("x" + num).calculate(signal)}
-    |y$num = 1 ${zeroInputs.withOne("y" + num).calculate(signal)}
-    """.stripMargin
+  def allCorrect(swaps: List[(String, String)]): Boolean =
+    val input = swaps.foldLeft(this){case (input, (left, right)) => input.swap(left, right)}
+    !input.containsLoop(Set.empty) &&
+    input.signals.filter(_.startsWith("z")).forall(signal => input.swaps(signal).isEmpty)
+
+  def swap(left: String, right: String): Input =
+    copy(gates = gates.map(_.swap(left, right)))
+
+  def swaps(signal: String): Set[(String, String)] =
+    zeroInputs.expectedSwap(false, signal) ++
+    zeroInputs.withOne("x" + signal.drop(1)).expectedSwap(true, signal) ++
+    zeroInputs.withOne("y" + signal.drop(1)).expectedSwap(true, signal) ++
+    zeroInputs.withOne("x" + signal.drop(1)).withOne("y" + signal.drop(1)).expectedSwap(false, signal)
+
+  def expectedSwap(expected: Boolean, signal: String): Set[(String, String)] =
+    if calculate(signal) == expected then
+      Set.empty
+    else
+      val (ones, zeros) = allOutputs(signal)
+        .filterNot(output => "xyz".contains(output.head))
+        .partition(calculate)
+      val pairs = for
+        one  <- ones
+        zero <- zeros
+      yield one -> zero
+      pairs.filter((left, right) => swap(left, right).calculate(signal) == expected)
+        .map((l, r) => if l < r then (l, r) else (r, l))
 
 given Read[Gate] = Read("""(\S+) (\S+) (\S+) -> (\S+)""".r)
 given Read[List[Gate]] = Read("\n")
@@ -66,5 +83,7 @@ object Puzzle extends runner.Day[Input, Long, String]:
     input.signals.filter(_.startsWith("z")).toList.sorted.reverse.map(input.calculate).map(bool => if bool then 1L else 0L).reduceLeft(_ * 2 + _)
 
   def part2(input: Input): String =
-    input.signals.filter(_.startsWith("z")).toList.sorted.map(signal => input.allOutputs(signal)).sliding(2).map{case Seq(l, r) => (r -- l).toList.sorted.mkString(",")}.foreach(println)
-    ???
+    val result = input.signals.filter(_.startsWith("z")).flatMap(input.swaps)
+    val actualResult = result.toList.combinations(4).find(input.allCorrect).get.map((l, r) => List(l, r)).sorted
+    assert(actualResult.size == 8, "Must be 8 swaps")
+    actualResult.mkString(",")
