@@ -1,5 +1,5 @@
 package day21
-import algorithms.{Graph, Edge}
+import algorithms.*
 import parse.{*, given}
 
 val directional = Graph.fromEdges(List(
@@ -50,24 +50,26 @@ val numeric = Graph.fromEdges(List(
 
 given Read[List[String]] = Read("\n")
 object Puzzle extends runner.Day[List[String], Long, Long]:
+  given Cache[(Int, List[Char]), Long] = Cache.empty
+
   def part1(codes: List[String]): Long =
-    codes.map(complexity).sum
+    codes.map(complexity(2)).sum
 
   def part2(codes: List[String]): Long =
-    ???
+    codes.map(complexity(25)).sum
 
-  def complexity(code: String): Long =
-    pathCounts(code) * code.take(3).toLong
+  def complexity(depth: Int)(code: String): Long =
+    pathCounts(code, depth) * code.take(3).toLong
 
-  def pathCounts(code: String): Long =
-    ("A" + code).sliding(2).map(segment => numeric.shortestPaths(segment(0), segment(1)).map(presses).map(pressCount(2)).min).sum
+  def pathCounts(code: String, depth: Int): Long =
+    ("A" + code).sliding(2).map(segment => numeric.shortestPaths(segment(0), segment(1)).map(presses).map(pressCount(depth)).min).sum
 
   def presses(edges: List[Edge[Char, Char]]): List[Char] =
     edges.map(_.props).prepended('A').reverse
 
-  def pressCount(depth: Int)(code: List[Char]): Long =
+  def pressCount(depth: Int)(code: List[Char]): Memoized[(Int, List[Char]), Long] =
     //println("  " * (2 - depth) + code.mkString)
     if depth == 0 then
       code.size
     else
-      ('A' :: code).sliding(2).map(segment => directional.shortestPaths(segment(0), segment(1)).map(presses).map(pressCount(depth - 1)).min).sum
+      ('A' :: code).sliding(2).map(segment => directional.shortestPaths(segment(0), segment(1)).map(presses).map(code => Memoize((depth - 1, code), pressCount(depth - 1)(code))).min).sum
