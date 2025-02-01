@@ -73,11 +73,3 @@ lazy val visualizations = crossProject(JSPlatform, JVMPlatform)
       "org.http4s" %%% "http4s-circe" % "0.23.30",
     )
   ).jvmConfigure(_.dependsOn(algorithms))
-
-lazy val leetcode = (project in file("leetcode")).settings(
-  name := "leetcode",
-  libraryDependencies ++= Seq(
-    "org.typelevel" %% "cats-core" % "2.12.0",
-    "org.scalatest" %% "scalatest" % "3.2.19" % Test,
-  )
-)
