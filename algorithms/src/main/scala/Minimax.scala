@@ -1,3 +1,0 @@
-package algorithms
-
-class Minimax
